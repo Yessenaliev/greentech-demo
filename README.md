@@ -4,6 +4,10 @@
 
 Сайт: https://yessenaliev.github.io/greentech-demo/
 
+## Показ за 2 минуты
+
+Ссылка с `#show` в конце сразу запускает показ: https://yessenaliev.github.io/greentech-demo/#show
+
 ## Что внутри
 
 - `index.html` — вся демо-версия в одном файле: трёхмерная сцена фермы, помещения специалистов, задачи, экономика с пересчётом.
