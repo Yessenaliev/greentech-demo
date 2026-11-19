@@ -1,0 +1,1107 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="description" content="Демо-версия приложения GreenTech для гидрофермы. Данные условные.">
+<style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<meta charset="utf-8">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>GreenTech демо фермы</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one-screen app. The 3D farm fills the left; a task panel docks right and drops below on phones. */
+:root{
+  --bg:#0B1210; --surface:#121C18; --surface-2:#19261F; --line:#25382E;
+  --fg:#E8F0EA; --muted:#9DB1A5; --grow:#5FD38D; --warn:#FFB14A; --on-accent:#06140C;
+  --scrim:rgba(11,18,16,.88);
+  --font-ui:'Manrope',system-ui,'Segoe UI',sans-serif;
+  --font-num:'IBM Plex Mono',ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:14px;line-height:1.45;overflow:hidden}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+h1,h2,p{margin:0}
+button{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--grow);outline-offset:2px}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 440px;grid-template-rows:auto minmax(0,1fr)}
+.bar{grid-column:1/-1;display:flex;flex-wrap:nowrap;align-items:center;gap:6px 18px;padding-block:10px;min-height:46px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line)}
+.brand{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.crumb{flex:1 1 0;min-width:0;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.demo{border:1px solid var(--warn);color:var(--warn);font-weight:700;font-size:12px;border-radius:6px;padding:3px 8px;white-space:nowrap;flex:none}
+.clock{flex:none}
+.clock{display:flex;align-items:center;gap:8px}
+.live{width:9px;height:9px;border-radius:50%;background:var(--grow);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(95,211,141,.6)}70%{box-shadow:0 0 0 9px rgba(95,211,141,0)}100%{box-shadow:0 0 0 0 rgba(95,211,141,0)}}
+@keyframes alert{0%{box-shadow:0 0 0 0 rgba(255,177,74,.75)}70%{box-shadow:0 0 0 9px rgba(255,177,74,0)}100%{box-shadow:0 0 0 0 rgba(255,177,74,0)}}
+
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--bg)}
+#gl{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#gl.drag{cursor:grabbing}
+.nogl{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;color:var(--muted)}
+#tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.tag{position:absolute;left:0;top:0;display:flex;align-items:center;gap:9px;white-space:nowrap;background:var(--scrim);border:1px solid var(--line);will-change:transform}
+.tag .dot{width:10px;height:10px;border-radius:50%;background:var(--grow);flex:none}
+.tag.go{pointer-events:auto;cursor:pointer;min-height:44px;padding:4px 16px 4px 12px;border-radius:999px;border-color:var(--grow);text-align:left}
+.tag.go:hover{background:var(--surface-2)}
+.tag.go .dot{animation:pulse 2s infinite}
+.tag.go.hot{border-color:var(--warn)}
+.tag.go.hot .dot{background:var(--warn);animation:alert 1.5s infinite}
+.tag .t{display:flex;flex-direction:column;line-height:1.25}
+.tag .t b{font-weight:800}
+.tag .t span{font-size:12px;color:var(--muted)}
+.tag.go.hot .t span{color:var(--warn)}
+.tag.chip{padding:5px 11px 5px 9px;border-radius:9px}
+.tag.chip .t b{font-family:var(--font-num);font-weight:600;font-size:13px}
+.tag.chip .t span{font-size:11px;font-weight:600}
+.tag.chip.hot{border-color:var(--warn)}
+.tag.chip.hot .dot{background:var(--warn);animation:alert 1.5s infinite}
+.tag.chip.hot .t b{color:var(--warn)}
+.hud{position:absolute;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.hud.top{left:max(12px,env(safe-area-inset-left,0px));top:12px}
+.hud.bottom{left:max(12px,env(safe-area-inset-left,0px));right:12px;bottom:12px}
+.hbtn{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--scrim);font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px}
+.hbtn[aria-pressed="true"]{border-color:var(--grow);color:var(--grow)}
+.hbtn.back{border-color:var(--grow)}
+.hint{color:var(--muted);font-size:12px;background:var(--scrim);border-radius:8px;padding:4px 10px}
+.hbtn.tour{border-color:var(--grow);background:var(--grow);color:var(--on-accent)}
+.hbtn.tour[aria-pressed="true"]{background:var(--scrim);color:var(--grow)}
+.vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 56%,rgba(0,0,0,.4) 100%);transition:box-shadow .5s ease}
+.app.touring .vig{box-shadow:inset 0 44px 0 #000,inset 0 -44px 0 #000}
+.app.touring #tags,.app.touring .hint,.app.touring #tSensors{display:none}
+.cap{position:absolute;left:50%;bottom:74px;transform:translateX(-50%);width:max-content;max-width:min(88%,760px);text-align:center;font-size:19px;font-weight:800;line-height:1.25;background:var(--scrim);border-radius:12px;padding:10px 18px;text-wrap:balance}
+
+.panel{min-width:0;min-height:0;overflow-y:auto;background:var(--surface);border-left:1px solid var(--line);
+  padding-block:18px;padding-left:18px;padding-right:max(18px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+.kicker{color:var(--grow);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.panel h1{font-size:24px;font-weight:800;line-height:1.2;letter-spacing:-.01em;text-wrap:balance}
+.panel h2{font-size:15px;font-weight:800}
+.lead{color:var(--muted)}
+.sec{display:flex;flex-direction:column;gap:10px}
+.where{gap:4px}
+.ways{display:flex;flex-wrap:wrap;gap:6px}
+.way{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px}
+.way:hover{border-color:var(--grow)}
+.way .n{background:var(--warn);color:#2B1600;border-radius:10px;padding:0 7px;font-size:12px;font-family:var(--font-num);font-weight:600}
+.task{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:7px}
+.task.urgent{border-color:var(--warn)}
+.task.done{opacity:.5}
+.task .top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px}
+.lvl{font-weight:800;font-size:12px;border-radius:6px;padding:2px 8px}
+.lvl.urgent{background:var(--warn);color:#2B1600}
+.lvl.warn{background:#3A2A10;color:var(--warn)}
+.lvl.plan{background:#16301F;color:var(--grow)}
+.who{color:var(--muted);font-size:12px;font-weight:600}
+.what{color:var(--muted);font-size:13px}
+.what b{color:var(--fg)}
+.act{font-weight:800;font-size:15px;line-height:1.3}
+details{background:var(--surface-2);border-radius:8px;padding:8px 10px}
+summary{cursor:pointer;font-weight:700;font-size:13px;min-height:24px}
+.why{display:grid;grid-template-columns:104px minmax(0,1fr);gap:5px 10px;font-size:12px;margin-top:8px}
+.why dt{color:var(--muted)}
+.why dd{margin:0}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.btn{min-height:44px;padding:0 16px;border-radius:9px;border:1px solid var(--grow);background:transparent;color:var(--grow);font-weight:800;cursor:pointer}
+.btn.solid{background:var(--grow);color:var(--on-accent)}
+.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fact{background:var(--surface-2);border-radius:10px;padding:9px 11px;min-width:0}
+.fact .k{color:var(--muted);font-size:12px;font-weight:600}
+.fact .v{font-family:var(--font-num);font-size:18px;font-weight:600;overflow-wrap:anywhere}
+.fact .v small{font-size:11px;color:var(--muted);font-weight:500}
+.fact .n{font-family:var(--font-num);font-size:11px;color:var(--muted)}
+.fact.bad .v{color:var(--warn)}
+.note{font-size:12px;color:var(--muted)}
+.crops{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.crop{min-height:44px;padding:6px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px}
+.crop i{width:12px;height:12px;border-radius:50%;flex:none;border:1px solid rgba(255,255,255,.35)}
+.crop[aria-pressed="true"]{border-color:var(--grow);color:var(--grow)}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.card h2{font-size:18px}
+.src{align-self:flex-start;font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;border:1px solid var(--line);color:var(--muted)}
+.src.check{border-color:var(--warn);color:var(--warn)}
+.sl{display:grid;grid-template-columns:minmax(0,1fr) 78px;gap:2px 10px;align-items:center}
+.sl label{font-weight:700;font-size:13px}
+.sl output{font-family:var(--font-num);text-align:right;font-weight:600}
+.sl input{grid-column:1/-1;width:100%;accent-color:var(--grow);min-height:28px}
+.sl .rng{grid-column:1/-1;font-family:var(--font-num);font-size:11px;color:var(--muted)}
+.calc{display:flex;flex-direction:column;gap:6px}
+.res{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;background:var(--surface-2);border-radius:10px;padding:9px 11px}
+.res .k{font-weight:700}
+.res .v{font-family:var(--font-num);font-weight:600;font-size:16px;text-align:right}
+.res .f{grid-column:1/-1;font-family:var(--font-num);font-size:11px;color:var(--muted)}
+.res .s{grid-column:1/-1;font-size:12px;font-weight:700;color:var(--grow)}
+.res.bad .v,.res.bad .s{color:var(--warn)}
+
+/* вкладки функций: видна только секция выбранной вкладки */
+.panel #pTasks,.panel #pFacts,.panel #pCrops,.panel #pExtra{display:none}
+.panel[data-tab="tasks"] #pTasks,.panel[data-tab="facts"] #pFacts,.panel[data-tab="crops"] #pCrops,.panel[data-tab="extra"] #pExtra{display:flex}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tab{min-height:44px;padding:0 13px;border-radius:9px;border:1px solid transparent;background:transparent;color:var(--muted);font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px}
+.tab:hover{color:var(--fg)}
+.tab[aria-selected="true"]{background:var(--surface-2);border-color:var(--grow);color:var(--fg)}
+.tab .n{background:var(--warn);color:#2B1600;border-radius:10px;padding:0 7px;font-size:12px;font-family:var(--font-num);font-weight:600}
+.bdg{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 7px;border:1px solid var(--line);color:var(--muted);vertical-align:middle;white-space:nowrap}
+.bdg.w{border-color:var(--warn);color:var(--warn)}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:7px 12px;margin:0;font-size:13px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;display:flex;flex-direction:column}
+.kv dd b{font-weight:600;font-size:14px}
+.kv dd span{font-size:11px;color:var(--muted);font-family:var(--font-num)}
+.kv dd.bad b{color:var(--warn)}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--grow)}
+.bar.w i{background:var(--warn)}
+.box{background:var(--surface-2);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.box .t{font-weight:800}
+.box .s{font-size:12px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.frm{font-family:var(--font-num);font-size:12px;color:var(--muted);background:var(--surface-2);border-radius:8px;padding:8px 10px;line-height:1.6;overflow-wrap:anywhere}
+.line{display:flex;align-items:center;gap:10px;min-height:44px;border-bottom:1px solid var(--line)}
+.line:last-child{border-bottom:0}
+.line .g{flex:1;min-width:0}
+.line .g b{display:block;font-weight:700}
+.line .g span{font-size:12px;color:var(--muted)}
+.line .r{font-family:var(--font-num);font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+.dotS{width:9px;height:9px;border-radius:50%;background:var(--grow);flex:none}
+.dotS.w{background:var(--warn)}
+.chk{width:44px;height:44px;flex:none;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.chk[aria-pressed="true"]{background:var(--grow);border-color:var(--grow);color:var(--on-accent)}
+.chk svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.chk[aria-pressed="true"] svg{opacity:1}
+.mini{min-height:44px;padding:0 12px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--grow);font-weight:700;cursor:pointer;white-space:nowrap}
+.fld{display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:4px 10px;align-items:center}
+.fld label{font-weight:700;font-size:13px}
+.fld input{min-height:44px;width:100%;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-family:var(--font-num);font-size:14px;padding:0 10px;text-align:right}
+.seg{display:flex;gap:4px}
+.seg button{flex:1;min-height:44px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;cursor:pointer}
+.seg button[aria-pressed="true"]{border-color:var(--grow);color:var(--grow)}
+.big{font-family:var(--font-num);font-size:22px;font-weight:600}
+.big.pos{color:var(--grow)}
+.big.neg{color:var(--warn)}
+.scn{width:100%;border-collapse:collapse;font-size:12px}
+.scn th,.scn td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--line);font-family:var(--font-num);font-weight:500}
+.scn th:first-child,.scn td:first-child{text-align:left;font-family:var(--font-ui);color:var(--muted)}
+.scn thead th{font-family:var(--font-ui);font-weight:800;color:var(--fg)}
+.scroll{overflow-x:auto}
+.steps{display:flex;flex-direction:column;gap:8px;counter-reset:st}
+.photo{width:100%;height:auto;display:block;border-radius:10px;background:var(--bg)}
+
+@media (max-width:860px){
+  body{overflow:hidden}
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(240px,44%) minmax(0,1fr)}
+  .panel{border-left:0;border-top:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .hint{display:none}
+  .bar{gap:6px 10px}
+  .brand{font-size:18px}
+  .demo{font-size:11px;padding:2px 6px}
+  .clock .num{display:none}
+  .tag.go{min-height:34px;padding:2px 11px 2px 8px;font-size:12px;gap:7px}
+  .tag.go .t span{display:none}
+  .tag.chip{display:none}
+  .hbtn{min-height:40px;padding:0 11px;font-size:13px}
+  .cap{font-size:15px;bottom:62px}
+}
+@media (prefers-reduced-motion:reduce){.live,.tag .dot{animation:none!important}}
+</style>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand">GreenTech</div>
+    <div class="crumb num" id="crumb">Ферма</div>
+    <span class="demo">Демо-версия. Данные условные</span>
+    <span class="clock"><span class="live"></span><span class="num" id="clock">14:32:00</span></span>
+  </header>
+
+  <div class="stage" id="stage">
+    <canvas id="gl" aria-label="Трёхмерная модель фермы в цоколе"></canvas>
+    <div class="nogl" id="nogl" hidden>Трёхмерный вид не запустился в этом браузере. Переходы и задачи доступны в панели.</div>
+    <div class="vig"></div>
+    <div id="tags"></div>
+    <div class="cap" id="cap" hidden></div>
+    <div class="hud top"><button class="hbtn back" id="back" type="button" hidden>Общий вид</button></div>
+    <div class="hud bottom">
+      <button class="hbtn tour" id="tTour" type="button" aria-pressed="false">Облёт</button>
+      <button class="hbtn" id="tSensors" type="button" aria-pressed="true">Датчики</button>
+      <button class="hbtn" id="tNight" type="button" aria-pressed="false">Ночной режим</button>
+      <span class="hint">Тяните сцену, чтобы осмотреться. Метки ведут в помещения.</span>
+    </div>
+  </div>
+
+  <aside class="panel" id="panel">
+    <section class="sec where" id="pWhere"></section>
+    <section class="sec" id="pWays"></section>
+    <nav class="sec" id="pTabs" aria-label="Функции"></nav>
+    <section class="sec" id="pCrops" hidden></section>
+    <section class="sec" id="pTasks"></section>
+    <section class="sec" id="pFacts"></section>
+    <section class="sec" id="pExtra"></section>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+'use strict';
+var $ = function (s) { return document.querySelector(s); };
+var fmt = function (v, d) { return v.toFixed(d === undefined ? 1 : d).replace('.', ','); };
+var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- расчёты (те же формулы, что в ТЗ) ---------- */
+var svp = function (t) { return 0.6108 * Math.exp(17.27 * t / (t + 237.3)); };
+var vpd = function (t, rh) { return svp(t) * (1 - rh / 100); };
+var dli = function (ppfd, h) { return ppfd * h * 0.0036; };
+var doSat = function (t) { return 14.652 - 0.41022 * t + 0.007991 * t * t - 0.000077774 * t * t * t; };
+
+/* ---------- состояние ---------- */
+var S = { loc: 'overview', crop: null, sensors: true, night: false, done: {}, tick: 0, tabs: {}, shift: {} };
+var wob = function (amp, ph) { return Math.sin(S.tick * 0.9 + ph) * amp; };
+var live = function () {
+  var t = 21.0 + wob(0.15, 0), rh = 65 + wob(0.6, 1.3), ts = 23.5 + wob(0.05, 0.7);
+  return { t: t, rh: rh, vpd: vpd(t, rh), ts: ts, o2: 6.8, sat: 6.8 / doSat(ts) * 100 };
+};
+
+/* ---------- геометрия фермы (по реестру: цоколь 29 × 20 м, 8 стеллажей NFT 15 × 1,4 м, 7 ярусов) ---------- */
+var RACKS = 8, TIERS = 7, RL = 15, RW = 1.4, X0 = 13.75;
+var rackZ = function (i) { return 1.95 + 2.3 * i; };
+var tierY = function (t) { return 0.35 + 0.5 * t; };
+var AISLE_Z = 10.0;            // проход между стеллажами 4 и 5
+var HOT = { rack: 3, tier: 1 }; // стеллаж 4, ярус 2
+
+/* ---------- культуры ---------- */
+var LETTUCE = { t: [20, 22], rh: [60, 70], vpdR: [0.8, 1.0], dliR: [14, 17], ec: '1,4–1,8', ph: '5,8–6,2', src: 'guide', set: { t: 21, rh: 65, ppfd: 270, h: 16 } };
+function crop(id, name, color, shape, cycle, p) {
+  var c = { id: id, name: name, color: color, shape: shape, cycle: cycle };
+  for (var k in p) c[k] = p[k];
+  if (!c.vpdR) c.vpdR = [vpd(c.t[0], c.rh[1]), vpd(c.t[1], c.rh[0])];
+  return c;
+}
+var CROPS = [
+  crop('batavia', 'Батавия', 0x7FCB4E, 'head', '35–42', LETTUCE),
+  crop('lollo', 'Лолло росса', 0x8E3345, 'head', '35–42', LETTUCE),
+  crop('romaine', 'Мини-ромэн', 0x5FAF3F, 'tall', '35–42', LETTUCE),
+  crop('rucola', 'Руккола', 0x4E9A3C, 'spiky', '25–30', { t: [16, 20], rh: [60, 70], dliR: [10, 14], ec: '0,8–1,2', ph: '6,0–7,0', src: 'check', set: { t: 18, rh: 65, ppfd: 210, h: 16 } }),
+  crop('basil', 'Базилик', 0x2F8F4A, 'bush', '35–45', { t: [22, 26], rh: [60, 70], dliR: [12, 17], ec: '1,0–1,6', ph: '5,5–6,5', src: 'check', set: { t: 24, rh: 65, ppfd: 250, h: 16 } }),
+  crop('dill', 'Укроп', 0x8FD06A, 'spiky', '30–40', { t: [16, 22], rh: [60, 70], dliR: [12, 16], ec: '1,0–1,6', ph: '5,5–6,4', src: 'check', set: { t: 19, rh: 65, ppfd: 240, h: 16 } }),
+  crop('cilantro', 'Кинза', 0x57B356, 'spiky', '28–40', { t: [16, 22], rh: [60, 70], dliR: [10, 14], ec: '1,2–1,8', ph: '6,0–6,7', src: 'check', set: { t: 19, rh: 65, ppfd: 210, h: 16 } }),
+  crop('parsley', 'Петрушка', 0x3F9A46, 'bush', '45–60', { t: [18, 24], rh: [60, 70], dliR: [12, 16], ec: '0,8–1,8', ph: '5,5–6,5', src: 'check', set: { t: 21, rh: 65, ppfd: 240, h: 16 } }),
+  crop('onion', 'Лук на перо', 0x6FBF5A, 'blades', '20–25', { t: [18, 22], rh: [60, 70], dliR: [10, 14], ec: '1,4–1,8', ph: '6,0–6,7', src: 'check', set: { t: 20, rh: 65, ppfd: 200, h: 16 } }),
+  crop('micro', 'Микрозелень', 0xA6DE7A, 'carpet', '7–12', { t: [20, 24], rh: [60, 70], dliR: [6, 12], ec: 'до 0,8', ph: '5,5–6,5', src: 'check', set: { t: 22, rh: 65, ppfd: 150, h: 16 } })
+];
+CROPS.forEach(function (c, i) { c.pos = [7.3 + 1.1 * (i % 5), 0.9, i < 5 ? 15.6 : 18.0]; c.cur = { t: c.set.t, rh: c.set.rh, ppfd: c.set.ppfd, h: c.set.h }; });
+var cropById = function (id) { return CROPS.filter(function (c) { return c.id === id; })[0]; };
+
+/* ---------- задачи ---------- */
+var TASKS = [
+  { id: 'ph', loc: 'shelf', who: 'агроном', lvl: 'urgent', when: 'до 20:00', place: 'Стеллаж 4, ярус 2', what: 'pH 6,6 при норме 5,8–6,2',
+    act: 'Проверить дозатор кислоты и довести pH до 6,0, через 15 мин перемерить',
+    calc: '6,6 − 6,0 = 0,6 pH сверх цели · доза по калибровке дозатора [уточнить]', basis: 'гайд фермы: pH 5,8–6,2', conf: 'высокая — прямое измерение', risk: 'за 2–3 дня хуже усваивается железо, лист бледнеет' },
+  { id: 'temp', loc: 'solution', who: 'инженер', lvl: 'warn', when: 'до 18:00', place: 'Бак раствора', what: '23,5 °C при норме 18–22, O₂ 6,8 мг/л',
+    act: 'Проверить чиллер и циркуляцию, через 30 мин перемерить кислород',
+    calc: 'DOₛ(23,5 °C) = 8,4 мг/л → 6,8 / 8,4 = 81 % насыщения', basis: 'гайд фермы: раствор 18–22 °C, O₂ от 7 мг/л', conf: 'высокая — прямое измерение', risk: 'выше 22 °C растёт риск корневой гнили' },
+  { id: 'ec', loc: 'hall', who: 'агроном', lvl: 'plan', when: 'сегодня', place: 'Стеллаж 6', what: 'до сбора 4 дня',
+    act: 'Снизить EC с 1,6 до 1,2 мСм/см',
+    calc: '1,6 × (1 − 0,25) = 1,2 · правило: −20…30 % за 3–5 дней до сбора', basis: 'гайд фермы: предуборочное снижение нитратов', conf: 'средняя — по плану партии', risk: 'нитраты в листе могут выйти за норму; норму проверить по ТР ТС 021/2011' },
+  { id: 'cal', loc: 'hall', who: 'инженер', lvl: 'plan', when: 'сегодня', place: 'Датчик pH, стеллаж 1', what: 'калибровка 32 дня назад при норме 30',
+    act: 'Откалибровать по буферам 4,0 и 7,0',
+    calc: '32 − 30 = 2 дня просрочки', basis: 'регламент ТО датчиков [уточнить интервал]', conf: 'высокая — по журналу', risk: 'показания pH стеллажа 1 недостоверны' },
+  { id: 'lab', loc: 'lab', who: 'лаборант', lvl: 'plan', when: 'до 22.11', place: 'Партия стеллажа 6', what: 'сбор 23.11',
+    act: 'Отобрать пробу листа на нитраты до сбора',
+    calc: 'сбор 23.11 − 1 день на анализ = 22.11', basis: 'ТР ТС 021/2011 · значение ПДК — проверить', conf: 'высокая — по плану сбора', risk: 'партия уйдёт без подтверждения по нитратам' }
+];
+var LVL = { urgent: 'Срочно', warn: 'Внимание', plan: 'Планово' };
+var openIn = function (loc) { return TASKS.filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id]; }).length; };
+var word = function (n) { return n === 0 ? 'задач нет' : n === 1 ? '1 задача' : n < 5 ? n + ' задачи' : n + ' задач'; };
+
+/* ---------- места ---------- */
+var LOCS = {
+  overview: { name: 'Вся ферма', who: 'Цоколь 29 × 20 м', lead: 'Нажмите метку в сцене или кнопку ниже — камера пройдёт в помещение. Колонны и балки в раскладке пока не показаны.',
+    cam: [13.5, 17.5, -9.5], tgt: [14.5, 0, 9.5], orbit: true, links: ['owner', 'hall', 'showcase', 'solution', 'seedling', 'lab', 'prep', 'store'], anchor: [14, 6, 10] },
+  owner: { name: 'Экономика фермы', who: 'Собственник', lead: 'Производство — по реестру проекта. Тариф, цена и расходы — примеры: введите свои, всё пересчитается.',
+    cam: [24, 13, -4.5], tgt: [13.5, 0.5, 10.5], links: ['overview', 'hall', 'solution', 'store'], anchor: [22, 0.6, 0.6], sub: 'собственник' },
+  hall: { name: 'Проход между стеллажами', who: 'Агроном', lead: '8 стеллажей NFT по 7 ярусов. Впереди, в конце прохода, растворный узел.',
+    cam: [28.7, 1.65, AISLE_Z], tgt: [13, 1.45, AISLE_Z], links: ['shelf', 'solution', 'showcase', 'overview'], anchor: [21.5, 4.6, 10], sub: 'агроном' },
+  shelf: { name: 'Стеллаж 4, ярус 2', who: 'Агроном', lead: 'Батавия, этап доращивания, день 12 из 16. Показания привязаны к этому ярусу.',
+    cam: [23.6, 1.32, 10.3], tgt: [20.6, 0.9, 8.9], links: ['hall', 'solution', 'overview'], anchor: [23.5, 1.25, 9.5], sub: 'к полке' },
+  solution: { name: 'Растворный узел', who: 'Инженер', lead: 'Баки, насосы, дозаторы и шкаф управления. Отсюда раствор идёт на все стеллажи.',
+    cam: [13.2, 2.0, AISLE_Z], tgt: [9, 1.0, 10], links: ['hall', 'lab', 'prep', 'seedling', 'overview'], anchor: [9.6, 2.9, 10], sub: 'инженер' },
+  seedling: { name: 'Рассадная', who: 'Агроном', lead: 'Столы прилив-отлив в два яруса, около 50 м². Каждый день сеется одинаковая партия.',
+    cam: [13.0, 2.5, 7.2], tgt: [9.5, 0.9, 3.4], links: ['hall', 'solution', 'lab', 'overview'], anchor: [9.5, 2.7, 3.4], sub: 'агроном' },
+  lab: { name: 'Лаборатория', who: 'Лаборант', lead: 'Анализы воды, раствора и продукции, журнал проб с привязкой к партии.',
+    cam: [6.3, 2.1, 7.4], tgt: [2.6, 0.9, 3.2], links: ['prep', 'solution', 'seedling', 'overview'], anchor: [3, 2.7, 3.4], sub: 'лаборант' },
+  prep: { name: 'Заготовочный цех', who: 'Упаковщик', lead: 'Приёмка урожая, мойка, фасовка и маркировка партий.',
+    cam: [6.6, 2.3, 10.6], tgt: [2.6, 0.8, 10.4], links: ['store', 'lab', 'solution', 'overview'], anchor: [3, 2.7, 10.5], sub: 'упаковщик' },
+  store: { name: 'Склад и холодильная камера', who: 'Кладовщик', lead: 'Хранение партий, расходники и отгрузка заказов.',
+    cam: [6.6, 2.3, 13.8], tgt: [2.8, 1.0, 17.2], links: ['prep', 'showcase', 'overview'], anchor: [3, 2.9, 17.2], sub: 'кладовщик' },
+  showcase: { name: 'Ассортимент', who: 'Агроном', lead: 'Все культуры, которые можно выращивать. У каждой свой режим — выберите культуру и подвигайте параметры.',
+    cam: [13.5, 2.7, 13.4], tgt: [9.5, 0.8, 16.8], links: ['hall', 'store', 'solution', 'overview'], anchor: [9.5, 2.8, 16.8], sub: 'культуры и режимы' }
+};
+
+function factsFor(loc) {
+  var L = live(), F = function (k, v, u, n, bad) { return { k: k, v: v, u: u || '', n: n || '', bad: !!bad }; };
+  if (loc === 'overview') return { title: 'Ферма по реестру проекта', rows: [
+    F('Посадочная площадь', '1 176', 'м²', 'расчёт'), F('Стеллажи NFT', '8 × 7', 'ярусов', 'расчёт'),
+    F('План сбора', '1 040', 'гол./сут', 'расчёт, после 10 % отхода'), F('Урожай', '4,7–5,6', 'т/мес', 'расчёт'),
+    F('Индекс состояния', '82', '/ 100', 'условно'), F('Открытых задач', String(openIn()), '', '', openIn() > 0)] };
+  if (loc === 'hall') return { title: 'Воздух и свет в зале', rows: [
+    F('Воздух', fmt(L.t), '°C', 'норма 20–22'), F('Влажность', fmt(L.rh, 0), '%', 'норма 60–70'),
+    F('VPD', fmt(L.vpd, 2), 'кПа', 'норма 0,8–1,0'), F('DLI', fmt(dli(270, 16)), 'моль/м²', '270 × 16 × 0,0036'),
+    F('CO₂', '900', 'ppm', 'норма 800–1 200'), F('Обдув кроны', '0,5', 'м/с', 'норма 0,3–0,7')] };
+  if (loc === 'shelf') return { title: 'Показания яруса', rows: [
+    F('pH', S.done.ph ? '6,0' : '6,6', '', 'норма 5,8–6,2', !S.done.ph), F('EC', '1,5', 'мСм/см', 'норма 1,4–1,8'),
+    F('PPFD', '270', 'мкмоль', 'норма 240–295'), F('DLI', fmt(dli(270, 16)), 'моль/м²', 'норма 14–17'),
+    F('Раствор', '20,5', '°C', 'норма 18–22'), F('Плотность', '22', 'раст./м²', 'этап B')] };
+  if (loc === 'solution') return { title: 'Раствор', rows: [
+    F('Температура', fmt(L.ts), '°C', 'норма 18–22', !S.done.temp), F('Кислород', '6,8', 'мг/л', 'норма от 7', !S.done.temp),
+    F('Насыщение O₂', fmt(L.sat, 0), '%', '6,8 / DOₛ(t)'), F('EC', '1,6', 'мСм/см', 'норма 1,2–1,8'),
+    F('pH', '6,0', '', 'норма 5,8–6,2'), F('До смены раствора', '9', 'дн.', 'раз в 3–4 недели')] };
+  if (loc === 'seedling') return { title: 'Режим рассады', rows: [
+    F('Воздух', '23,0', '°C', 'норма 22–24'), F('Влажность', '75', '%', 'норма 70–80'),
+    F('VPD', fmt(vpd(23, 75), 2), 'кПа', 'норма 0,5–0,8'), F('DLI', fmt(dli(180, 16)), 'моль/м²', 'норма 10–12'),
+    F('PPFD', '180', 'мкмоль', 'норма 150–200'), F('Посев в сутки', '1 250', 'ячеек', 'норма 1 200–1 300')] };
+  if (loc === 'lab') return { title: 'Анализы', rows: [
+    F('Плановых проб', String(openIn('lab')), '', 'нитраты перед сбором'), F('Нормативов проверено', '2', 'из 8', 'реестр документов'),
+    F('ПДК нитратов', 'проверить', '', 'ТР ТС 021/2011', true), F('Вода после осмоса', 'уточнить', '', 'анализ не загружен', true)] };
+  if (loc === 'prep') return { title: 'Приёмка и фасовка', rows: [
+    F('План сбора', '1 040', 'гол./сут', 'расчёт'), F('Отход по плану', '10', '%', '1 150 до отхода'),
+    F('Масса головки', '150–180', 'г', 'ориентир'), F('Маркировка', 'проверить', '', 'ТР ТС 022/2011', true)] };
+  if (loc === 'store') return { title: 'Хранение и отгрузка', rows: [
+    F('Заказов на неделю', '3', '', 'условно'), F('Ближайший сбор', '23.11', '', 'стеллаж 6'),
+    F('Камера', 'уточнить', '', 'режим хранения', true), F('Расходники', 'уточнить', '', 'точки заказа', true)] };
+  return null;
+}
+
+function chipsFor(loc) {
+  var L = live(), C = function (p, label, value, hot) { return { p: p, label: label, value: value, hot: !!hot }; };
+  if (loc === 'overview') return [C([25, 4.3, 3], 'Воздух в зале', fmt(L.t) + ' °C · ' + fmt(L.rh, 0) + ' %')];
+  if (loc === 'hall') return [C([20, 3.7, AISLE_Z], 'Воздух', fmt(L.t) + ' °C · ' + fmt(L.rh, 0) + ' % · VPD ' + fmt(L.vpd, 2)), C([26.5, 2.9, 11.15], 'Стеллаж 5 · ярус 6', 'EC 1,5 · pH 6,0')];
+  if (loc === 'shelf') return [C([20.7, 1.08, 8.5], 'pH', S.done.ph ? '6,0' : '6,6', !S.done.ph), C([21.5, 1.3, 8.95], 'Свет', 'PPFD 270 · DLI ' + fmt(dli(270, 16))), C([20.1, 0.75, 9.3], 'Раствор', 'EC 1,5 · 20,5 °C')];
+  if (loc === 'solution') return [C([8.2, 2.25, 9.0], 'Бак раствора', fmt(L.ts) + ' °C · O₂ 6,8', !S.done.temp), C([11.6, 2.1, 8.0], 'Шкаф управления', 'насос работает'), C([8.2, 2.25, 11.2], 'Насыщение O₂', fmt(L.sat, 0) + ' %')];
+  if (loc === 'seedling') return [C([9.5, 2.0, 2.0], 'Рассада', '23,0 °C · 75 % · VPD ' + fmt(vpd(23, 75), 2))];
+  return [];
+}
+
+/* ================= 3D ================= */
+var THREE = window.THREE, canvas = $('#gl'), stage = $('#stage'), tagsEl = $('#tags');
+var renderer = null, scene, camera, tags = [], frontWalls = [], ceiling, lights = {}, stripMat, haloMat, hotFrame;
+var base = { p: null, t: null }, tween = null, yaw = 0, pitch = 0, W = 0, H = 0;
+var tour = null, tourP = null, tourT = null, tourLook = null;
+/* маршрут облёта: те же точки, по которым потом рендерится видео */
+var TOUR = [
+  { p: [13.5, 17.5, -9.5], t: [14.5, 0, 9.5], c: 'Ферма в цоколе 29 × 20 м: 8 стеллажей NFT по 7 ярусов' },
+  { p: [30.6, 7.5, 10], t: [20, 1.5, 10], c: 'Посадочная площадь 1 176 м², план — 1 040 головок в сутки' },
+  { p: [28.6, 1.7, 10], t: [13, 1.45, 10], c: 'Проход между стеллажами: зона агронома' },
+  { p: [23.6, 1.4, 10.2], t: [20.6, 0.95, 8.9], c: 'Стеллаж 4, ярус 2: pH 6,6 — срочная задача агроному' },
+  { p: [16.5, 1.7, 10], t: [9, 1.2, 10], c: 'В конце прохода — растворный узел' },
+  { p: [13.2, 2.0, 10], t: [9, 1.0, 10], c: 'Растворный узел: баки, насосы, дозаторы — зона инженера' },
+  { p: [12.6, 2.6, 7.3], t: [9.5, 0.9, 3.4], c: 'Рассадная: каждый день сеется одинаковая партия' },
+  { p: [6.3, 2.2, 7.3], t: [2.6, 0.9, 3.2], c: 'Лаборатория: анализы воды, раствора и продукции' },
+  { p: [6.5, 2.3, 10.6], t: [2.6, 0.8, 10.4], c: 'Заготовочный цех: мойка, фасовка, маркировка' },
+  { p: [6.5, 2.3, 13.8], t: [2.8, 1.0, 17.2], c: 'Склад и холодильная камера: партии и отгрузка' },
+  { p: [13.3, 2.7, 13.4], t: [9.5, 0.8, 16.8], c: 'Ассортимент: десять культур, у каждой свой режим' },
+  { p: [13.2, 6.5, 10.5], t: [15, 1, 10], c: 'Одна система на всю ферму: указания, датчики, расчёты' }
+];
+var SEG_MS = 4600;
+function overviewCam() {
+  var L = LOCS.overview, far = Math.max(1, Math.min(2.3, 1.55 / (W / H || 1.55)));
+  return [L.tgt[0] + (L.cam[0] - L.tgt[0]) * far, L.tgt[1] + (L.cam[1] - L.tgt[1]) * far, L.tgt[2] + (L.cam[2] - L.tgt[2]) * far];
+}
+
+function initGL() {
+  if (!THREE) return false;
+  try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, powerPreference: 'high-performance' }); }
+  catch (e) { return false; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0B1210);
+  scene.fog = new THREE.FogExp2(0x0B1210, 0.009);
+  /* окружение для отражений: светлая «комната» с потолочными панелями */
+  var envS = new THREE.Scene();
+  envS.add(new THREE.Mesh(new THREE.BoxGeometry(40, 20, 40), new THREE.MeshBasicMaterial({ color: 0x7C857F, side: THREE.BackSide })));
+  [[-12, 5], [0, 7], [12, 5]].forEach(function (q) { var pn = new THREE.Mesh(new THREE.BoxGeometry(34, 0.2, q[1]), new THREE.MeshBasicMaterial({ color: 0xffffff })); pn.position.set(0, 9.8, q[0]); envS.add(pn); });
+  var envFloor = new THREE.Mesh(new THREE.BoxGeometry(39, 0.2, 39), new THREE.MeshBasicMaterial({ color: 0x39413C })); envFloor.position.y = -9.8; envS.add(envFloor);
+  var pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(envS, 0.03).texture;
+  camera = new THREE.PerspectiveCamera(46, 1.6, 0.1, 200);
+  base.p = new THREE.Vector3().fromArray(LOCS.overview.cam);
+  base.t = new THREE.Vector3().fromArray(LOCS.overview.tgt);
+
+  lights.amb = new THREE.AmbientLight(0xffffff, 0.22); scene.add(lights.amb);
+  lights.hemi = new THREE.HemisphereLight(0xfff1dc, 0x1b2a22, 0.4); scene.add(lights.hemi);
+  lights.dir = new THREE.DirectionalLight(0xfff6ea, 0.55); lights.dir.position.set(18, 30, -8); scene.add(lights.dir);
+
+  var mat = function (c, o) { var m = new THREE.MeshStandardMaterial({ color: c, roughness: 0.82, metalness: 0.05 }); if (o) for (var k in o) m[k] = o[k]; return m; };
+  var box = function (w, h, d, m, x, y, z, parent) { var b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); (parent || scene).add(b); return b; };
+  var cyl = function (r, h, m, x, y, z, seg) { var c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 20), m); c.position.set(x, y, z); scene.add(c); return c; };
+
+  /* процедурные текстуры: бетон, световые полосы, мягкие тени */
+  var tex = function (draw, size, rx, ry) {
+    var cv = document.createElement('canvas'); cv.width = cv.height = size; draw(cv.getContext('2d'), size);
+    var tx = new THREE.CanvasTexture(cv); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(rx || 1, ry || 1); tx.encoding = THREE.sRGBEncoding; tx.anisotropy = 4; return tx;
+  };
+  var concreteTex = function (rx, ry, panels) {
+    return tex(function (g, s) {
+      g.fillStyle = '#c3c6c2'; g.fillRect(0, 0, s, s);
+      for (var q = 0; q < 2600; q++) { g.fillStyle = 'rgba(' + (Math.random() < 0.5 ? '70,74,72' : '240,241,237') + ',' + (0.05 + Math.random() * 0.1) + ')'; g.fillRect(Math.random() * s, Math.random() * s, 1 + Math.random() * 2.5, 1 + Math.random() * 2.5); }
+      for (q = 0; q < 14; q++) { g.fillStyle = 'rgba(60,64,62,' + (0.03 + Math.random() * 0.04) + ')'; g.beginPath(); g.arc(Math.random() * s, Math.random() * s, 20 + Math.random() * 50, 0, 6.3); g.fill(); }
+      if (panels) { g.strokeStyle = 'rgba(40,44,42,.4)'; g.lineWidth = 1.5; g.strokeRect(0.75, 0.75, s - 1.5, s - 1.5); }
+    }, 256, rx, ry);
+  };
+  var bandTex = function (rgb) {
+    return tex(function (g, s) { var gr = g.createLinearGradient(0, 0, 0, s); gr.addColorStop(0, 'rgba(' + rgb + ',0)'); gr.addColorStop(0.5, 'rgba(' + rgb + ',1)'); gr.addColorStop(1, 'rgba(' + rgb + ',0)'); g.fillStyle = gr; g.fillRect(0, 0, s, s); }, 64);
+  };
+  var blobTex = tex(function (g, s) { var gr = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2); gr.addColorStop(0, 'rgba(0,0,0,.7)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, s, s); }, 64);
+  var decal = function (w, d, tx, x, z, y, extra) {
+    var dm = new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false }); if (extra) for (var k in extra) dm[k] = extra[k];
+    var pl = new THREE.Mesh(new THREE.PlaneGeometry(w, d), dm); pl.rotation.x = -Math.PI / 2; pl.position.set(x, y, z); scene.add(pl); return pl;
+  };
+  var mConcrete = mat(0xA4ABA5, { map: concreteTex(10, 2, true), roughness: 0.9 }), mFloor = mat(0x8E9690, { map: concreteTex(7, 5, false), roughness: 0.28, metalness: 0.05 });
+  var mWhite = mat(0xECEFEA, { roughness: 0.4 }), mAlu = mat(0xAEB8B2, { metalness: 0.8, roughness: 0.32 });
+  var mSteel = mat(0x9AA6A0, { metalness: 0.6, roughness: 0.35 }), mWood = mat(0xB58B55), mDark = mat(0x26302B), mBlue = mat(0x3F7FBF);
+
+  /* пол, стены, потолок */
+  var floor = new THREE.Mesh(new THREE.PlaneGeometry(29, 20), mFloor); floor.rotation.x = -Math.PI / 2; floor.position.set(14.5, 0, 10); scene.add(floor);
+  var slab = box(31, 0.6, 22, mat(0x2A322E), 14.5, -0.31, 10);
+  box(29.4, 4.5, 0.25, mConcrete, 14.5, 2.25, 20.12);
+  box(0.25, 4.5, 20, mConcrete, -0.12, 2.25, 10);
+  frontWalls.push(box(29.4, 4.5, 0.25, mConcrete, 14.5, 2.25, -0.12));
+  frontWalls.push(box(0.25, 4.5, 20, mConcrete, 29.12, 2.25, 10));
+  ceiling = new THREE.Mesh(new THREE.PlaneGeometry(29, 20), mat(0x7A827C, { map: concreteTex(8, 5, true), roughness: 0.95 })); ceiling.rotation.x = Math.PI / 2; ceiling.position.set(14.5, 4.5, 10); scene.add(ceiling);
+  frontWalls.push(ceiling);
+  /* воздуховод над главным проходом и потолочные светильники — видны только изнутри */
+  var duct = cyl(0.4, 15.6, mat(0xC9CFCB, { metalness: 0.9, roughness: 0.28 }), 21.2, 4.02, AISLE_Z, 28); duct.rotation.z = Math.PI / 2; frontWalls.push(duct);
+  for (var dr = 0; dr < 9; dr++) { var ring = cyl(0.42, 0.06, mat(0x9FA7A2, { metalness: 0.9, roughness: 0.35 }), 14 + dr * 1.8, 4.02, AISLE_Z, 28); ring.rotation.z = Math.PI / 2; frontWalls.push(ring); }
+  var mLamp = new THREE.MeshBasicMaterial({ color: 0xFFFFFF }); mLamp.toneMapped = false;
+  [1, 3, 5, 7].forEach(function (a) { [17.5, 25].forEach(function (lx) { frontWalls.push(box(2.6, 0.04, 0.14, mLamp, lx, 4.47, 0.8 + 2.3 * a)); }); });
+  [3, 10, 17].forEach(function (lz) { [3, 9.5].forEach(function (lx) { frontWalls.push(box(2.2, 0.04, 0.14, mLamp, lx, 4.47, lz)); }); });
+  [6, 12, 18, 24].forEach(function (px) { box(0.4, 4.5, 0.4, mConcrete, px, 2.25, 19.82); });
+  [6.5, 13.5].forEach(function (pz) { box(0.4, 4.5, 0.4, mConcrete, 0.18, 2.25, pz); });
+  frontWalls.forEach(function (w) { w.visible = false; });
+
+  /* зоны обслуживания: цветной пол и низкие перегородки */
+  var zones = [[0.5, 5.5, 0.5, 6.5, 0x35505C], [0.5, 5.5, 7.5, 13.5, 0x54503A], [0.5, 5.5, 14.5, 19.5, 0x3E4760], [6.5, 12.5, 0.5, 6.5, 0x375A3F], [6.5, 12.5, 7.5, 12.5, 0x3B4A52], [6.5, 12.5, 13.5, 19.5, 0x4A5A37]];
+  var mPart = mat(0x6F7C75);
+  zones.forEach(function (z) {
+    var w = z[1] - z[0], d = z[3] - z[2], cx = (z[0] + z[1]) / 2, cz = (z[2] + z[3]) / 2;
+    var f = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat(z[4], { roughness: 0.35, transparent: true, opacity: 0.5 })); f.rotation.x = -Math.PI / 2; f.position.set(cx, 0.012, cz); scene.add(f);
+    box(w, 1.0, 0.07, mPart, cx, 0.5, z[2]); box(w, 1.0, 0.07, mPart, cx, 0.5, z[3]);
+    box(0.07, 1.0, d * 0.55, mPart, z[0], 0.5, z[2] + d * 0.275);
+  });
+
+  /* стеллажи: лотки, свет, стойки, растения */
+  var dummy = new THREE.Object3D(), n, i, t;
+  var trays = new THREE.InstancedMesh(new THREE.BoxGeometry(RL, 0.07, RW), mat(0xE6EAE5, { roughness: 0.42 }), RACKS * TIERS);
+  stripMat = new THREE.MeshBasicMaterial({ color: 0xFFF1DE }); stripMat.toneMapped = false;
+  haloMat = new THREE.MeshBasicMaterial({ map: bandTex('255,232,205'), transparent: true, opacity: 0.34, blending: THREE.AdditiveBlending, depthWrite: false });
+  var halos = new THREE.InstancedMesh(new THREE.PlaneGeometry(RL, RW * 0.96), haloMat, RACKS * TIERS);
+  var fans = new THREE.InstancedMesh(new THREE.BoxGeometry(0.07, 0.3, 0.3), mat(0x1B211F, { roughness: 0.5 }), RACKS * TIERS * 2);
+  var strips = new THREE.InstancedMesh(new THREE.BoxGeometry(RL, 0.025, 0.13), stripMat, RACKS * TIERS * 2);
+  n = 0;
+  for (i = 0; i < RACKS; i++) for (t = 0; t < TIERS; t++) {
+    dummy.position.set(X0 + RL / 2, tierY(t), rackZ(i)); dummy.scale.set(1, 1, 1); dummy.rotation.set(0, 0, 0); dummy.updateMatrix(); trays.setMatrixAt(n, dummy.matrix);
+    dummy.position.set(X0 + RL / 2, tierY(t) + 0.43, rackZ(i) - 0.36); dummy.updateMatrix(); strips.setMatrixAt(n * 2, dummy.matrix);
+    dummy.position.z = rackZ(i) + 0.36; dummy.updateMatrix(); strips.setMatrixAt(n * 2 + 1, dummy.matrix);
+    dummy.position.set(X0 + RL / 2, tierY(t) + 0.41, rackZ(i)); dummy.rotation.set(Math.PI / 2, 0, 0); dummy.updateMatrix(); halos.setMatrixAt(n, dummy.matrix);
+    dummy.rotation.set(0, 0, 0); dummy.position.set(X0 + RL + 0.04, tierY(t) + 0.24, rackZ(i) - 0.45); dummy.updateMatrix(); fans.setMatrixAt(n * 2, dummy.matrix);
+    dummy.position.x = X0 - 0.04; dummy.updateMatrix(); fans.setMatrixAt(n * 2 + 1, dummy.matrix); n++;
+  }
+  scene.add(trays); scene.add(strips); scene.add(halos); scene.add(fans);
+  for (i = 0; i < RACKS; i++) decal(RL + 0.7, RW + 1.0, bandTex('0,0,0'), X0 + RL / 2, rackZ(i), 0.016, { opacity: 0.6 });
+  for (i = 0; i <= RACKS; i++) decal(RL, 1.25, bandTex('255,228,196'), X0 + RL / 2, 0.8 + 2.3 * i, 0.019, { opacity: 0.2, blending: THREE.AdditiveBlending });
+  var posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.06, 3.95, 0.06), mAlu, RACKS * 12); n = 0;
+  for (i = 0; i < RACKS; i++) for (var kx = 0; kx < 6; kx++) for (var sz = -1; sz <= 1; sz += 2) {
+    dummy.position.set(X0 + kx * 3, 1.975, rackZ(i) + sz * (RW / 2 - 0.03)); dummy.updateMatrix(); posts.setMatrixAt(n++, dummy.matrix);
+  }
+  scene.add(posts);
+
+  /* салат: розетка из листьев, тёмная у основания и светлая к кончикам */
+  var plantGeo = (function () {
+    var pos = [], colr = [];
+    var leaf = function (a, da, r1, h1, r2, h2, shade) {
+      var b = [0, 0, 0], Lf = [Math.cos(a - da) * r1, h1, Math.sin(a - da) * r1], Rt = [Math.cos(a + da) * r1, h1, Math.sin(a + da) * r1], Tp = [Math.cos(a) * r2, h2, Math.sin(a) * r2];
+      [b, Lf, Rt, Lf, Tp, Rt].forEach(function (v, k) { pos.push(v[0], v[1], v[2]); var cc = (k === 0 ? 0.5 : k === 4 ? 1 : 0.8) * shade; colr.push(cc, cc, cc); });
+    };
+    var k;
+    for (k = 0; k < 6; k++) leaf(k * 1.047 + 0.2, 0.62, 0.14, 0.035, 0.26, 0.08, 0.88);
+    for (k = 0; k < 5; k++) leaf(k * 1.257 + 0.7, 0.7, 0.09, 0.09, 0.17, 0.17, 1);
+    for (k = 0; k < 3; k++) leaf(k * 2.094, 0.9, 0.05, 0.13, 0.07, 0.21, 1);
+    var g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(colr, 3)); g.computeVertexNormals(); return g;
+  })();
+  var NX = 40, NZ = 4;
+  var plantMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.7, flatShading: true, vertexColors: true, side: THREE.DoubleSide });
+  var seedMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, flatShading: true });
+  var plants = new THREE.InstancedMesh(plantGeo, plantMat, RACKS * TIERS * NX * NZ);
+  var greens = [0x58B03C, 0x4FA436, 0x6CC048, 0x43962F, 0x7BCB50], red = 0x7A2238, col = new THREE.Color(), seed = 7;
+  var rnd = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  n = 0;
+  for (i = 0; i < RACKS; i++) for (t = 0; t < TIERS; t++) for (var ix = 0; ix < NX; ix++) for (var iz = 0; iz < NZ; iz++) {
+    var young = i < 2, age = young ? 0.45 + 0.2 * (ix / (NX - 1)) : 0.7 + 0.45 * (((ix + t * 5) % NX) / (NX - 1));
+    var s = age * (0.9 + rnd() * 0.25);
+    dummy.position.set(X0 + 0.25 + ix * (14.5 / (NX - 1)) + (rnd() - 0.5) * 0.05, tierY(t) + 0.04, rackZ(i) - 0.5 + iz * (1.0 / (NZ - 1)));
+    dummy.scale.set(s, s, s); dummy.rotation.set(0, rnd() * 6.28, 0); dummy.updateMatrix(); plants.setMatrixAt(n, dummy.matrix);
+    var isRed = !young && ((Math.floor(ix / 5) + i + t) % 4 === 0);
+    col.setHex(isRed ? red : greens[Math.floor(rnd() * greens.length)]); plants.setColorAt(n, col); n++;
+  }
+  scene.add(plants);
+  hotFrame = box(RL + 0.12, 0.035, RW + 0.12, new THREE.MeshBasicMaterial({ color: 0xFFB14A, transparent: true }), X0 + RL / 2, tierY(HOT.tier) - 0.06, rackZ(HOT.rack));
+
+  /* люди */
+  var person = function (x, z, ry, coat) {
+    var g = new THREE.Group();
+    box(0.3, 0.8, 0.2, mat(0x2F4A6B), 0, 0.4, 0, g);
+    var body = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.24, 0.82, 14), mat(coat || 0xF2F4F1)); body.position.y = 1.18; g.add(body);
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 12), mat(0xE3B89A)); head.position.y = 1.72; g.add(head);
+    var cap = new THREE.Mesh(new THREE.SphereGeometry(0.14, 14, 8, 0, 6.28, 0, 1.5), mat(0xF2F4F1)); cap.position.y = 1.75; g.add(cap);
+    g.position.set(x, 0, z); g.rotation.y = ry || 0; scene.add(g);
+    decal(1.1, 1.1, blobTex, x, z, 0.022);
+    return g;
+  };
+  person(18.2, AISLE_Z + 0.2, 0.9);           // агроном в проходе
+  person(9.7, 12.0, 2.4, 0x3D6FA8);           // инженер
+  person(2.5, 3.6, -1.2);                     // лаборант
+  person(3.4, 10.4, -1.57, 0xCFE3D4);         // упаковщик
+  person(3.3, 16.2, -0.4, 0xD9C9A3);          // кладовщик
+
+  /* растворный узел */
+  var mTank = mat(0xEEF1ED, { roughness: 0.3, metalness: 0.15 });
+  cyl(0.68, 1.9, mTank, 8.2, 0.95, 9.0, 32); cyl(0.68, 1.9, mTank, 8.2, 0.95, 11.0, 32); cyl(0.42, 1.3, mTank, 10.1, 0.65, 8.3, 28);
+  decal(2.3, 2.3, blobTex, 8.2, 9.0, 0.022); decal(2.3, 2.3, blobTex, 8.2, 11.0, 0.022); decal(1.5, 1.5, blobTex, 10.1, 8.3, 0.022);
+  decal(6.2, 3.4, blobTex, 9.5, 2.2, 0.022, { opacity: 0.7 }); decal(6.2, 3.4, blobTex, 9.5, 4.8, 0.022, { opacity: 0.7 });
+  box(0.7, 1.6, 0.3, mSteel, 11.6, 1.0, 7.8); box(0.3, 0.2, 0.02, new THREE.MeshBasicMaterial({ color: 0x5FD38D }), 11.6, 1.4, 7.96);
+  var pipe = cyl(0.05, 5.6, mBlue, 11.0, 2.3, 10.0, 10); pipe.rotation.z = Math.PI / 2;
+  cyl(0.05, 1.4, mBlue, 8.2, 2.3, 10.0, 10).rotation.x = Math.PI / 2;
+  cyl(0.05, 0.5, mBlue, 8.2, 2.1, 9.3, 10); cyl(0.05, 0.5, mBlue, 8.2, 2.1, 10.7, 10);
+  box(0.5, 0.6, 0.5, mBlue, 9.9, 0.3, 11.4);
+
+  /* рассадная: два стола в два яруса */
+  var seedGeo = new THREE.IcosahedronGeometry(0.05, 0), seedlings = new THREE.InstancedMesh(seedGeo, seedMat, 2 * 2 * 46 * 12); n = 0;
+  [2.2, 4.8].forEach(function (zc) { [0.8, 1.5].forEach(function (y) {
+    box(5.0, 0.06, 1.6, mWhite, 9.5, y, zc); box(5.0, 0.02, 1.3, stripMat, 9.5, y + 0.5, zc);
+    for (var a = 0; a < 46; a++) for (var b = 0; b < 12; b++) {
+      dummy.position.set(7.15 + a * 0.104, y + 0.07, zc - 0.68 + b * 0.124); dummy.scale.set(1, 1.2, 1); dummy.rotation.set(0, 0, 0); dummy.updateMatrix();
+      seedlings.setMatrixAt(n, dummy.matrix); col.setHex(greens[(a + b) % greens.length]); seedlings.setColorAt(n, col); n++;
+    }
+  }); [7.05, 11.95].forEach(function (x) { box(0.06, 2.1, 0.06, mAlu, x, 1.05, zc - 0.77); box(0.06, 2.1, 0.06, mAlu, x, 1.05, zc + 0.77); }); });
+  scene.add(seedlings);
+
+  /* лаборатория */
+  box(1.0, 0.9, 4.6, mWhite, 1.1, 0.45, 3.5); box(1.04, 0.05, 4.64, mDark, 1.1, 0.925, 3.5);
+  [0x8FD4FF, 0xA6F0C0, 0xFFD27A, 0x8FD4FF, 0xE9A6FF].forEach(function (c, k) { cyl(0.07, 0.24, mat(c, { transparent: true, opacity: 0.8 }), 0.95, 1.07, 1.8 + k * 0.42, 12); });
+  box(0.45, 0.4, 0.5, mSteel, 1.1, 1.15, 4.6); box(0.35, 0.28, 0.35, mDark, 1.1, 1.09, 5.3);
+  box(3.2, 0.9, 0.7, mWhite, 3.2, 0.45, 1.0); box(0.5, 1.9, 0.9, mSteel, 0.85, 0.95, 6.0);
+
+  /* заготовочный цех */
+  [9.2, 11.7].forEach(function (zc) { box(2.4, 0.06, 0.95, mSteel, 2.1, 0.9, zc); [[-1.1, -0.4], [1.1, -0.4], [-1.1, 0.4], [1.1, 0.4]].forEach(function (o) { box(0.05, 0.9, 0.05, mSteel, 2.1 + o[0], 0.45, zc + o[1]); }); });
+  var crate = function (x, y, z) { box(0.55, 0.3, 0.38, mWood, x, y, z); box(0.5, 0.08, 0.33, mat(0x6FBE45, { flatShading: true }), x, y + 0.17, z); };
+  crate(1.4, 1.08, 9.2); crate(2.1, 1.08, 9.2); crate(2.8, 1.08, 9.2); crate(1.6, 1.08, 11.7); crate(2.5, 1.08, 11.7);
+  box(0.9, 0.85, 0.6, mSteel, 0.95, 0.43, 13.0); crate(4.6, 0.15, 12.6); crate(4.6, 0.45, 12.6); crate(4.6, 0.15, 13.05);
+
+  /* склад и камера */
+  for (var lv = 0; lv < 4; lv++) { box(0.6, 0.04, 3.6, mSteel, 0.95, 0.35 + lv * 0.55, 16.6); for (var cz = 0; cz < 5; cz++) if ((lv + cz) % 4 !== 3) box(0.5, 0.3, 0.55, mWood, 0.95, 0.53 + lv * 0.55, 15.1 + cz * 0.72); }
+  [14.8, 18.4].forEach(function (zz) { box(0.05, 2.2, 0.05, mSteel, 0.67, 1.1, zz); box(0.05, 2.2, 0.05, mSteel, 1.23, 1.1, zz); });
+  box(2.4, 2.4, 2.2, mat(0xBFE3F2, { transparent: true, opacity: 0.28, roughness: 0.2 }), 4.1, 1.2, 18.2);
+  box(2.44, 0.06, 2.24, mSteel, 4.1, 2.43, 18.2); box(0.9, 1.9, 0.05, mat(0xDCEBF0), 4.1, 0.95, 17.07);
+
+  /* ассортимент: десять лотков с разными культурами */
+  CROPS.forEach(function (c) {
+    var x = c.pos[0], z = c.pos[2];
+    box(0.9, 0.1, 1.0, mWhite, x, 0.8, z); box(0.06, 0.8, 0.06, mAlu, x - 0.38, 0.4, z - 0.42); box(0.06, 0.8, 0.06, mAlu, x + 0.38, 0.4, z - 0.42);
+    box(0.06, 0.8, 0.06, mAlu, x - 0.38, 0.4, z + 0.42); box(0.06, 0.8, 0.06, mAlu, x + 0.38, 0.4, z + 0.42);
+    box(0.8, 0.02, 0.9, stripMat, x, 1.75, z); box(0.04, 0.95, 0.04, mAlu, x - 0.42, 1.3, z + 0.46); box(0.04, 0.95, 0.04, mAlu, x + 0.42, 1.3, z + 0.46);
+    var m = new THREE.MeshStandardMaterial({ color: c.color, roughness: 0.85, flatShading: true });
+    var mv = new THREE.MeshStandardMaterial({ color: c.color, roughness: 0.7, flatShading: true, vertexColors: true, side: THREE.DoubleSide });
+    decal(1.5, 1.6, blobTex, x, z, 0.022, { opacity: 0.8 });
+    if (c.shape === 'carpet') { box(0.8, 0.09, 0.9, m, x, 0.895, z); return; }
+    for (var a = 0; a < 3; a++) for (var b = 0; b < 2; b++) {
+      var px = x - 0.27 + a * 0.27, pz = z - 0.22 + b * 0.44, o;
+      if (c.shape === 'head' || c.shape === 'tall') { o = new THREE.Mesh(plantGeo, mv); o.scale.set(c.shape === 'tall' ? 0.6 : 0.85, c.shape === 'tall' ? 1.9 : 0.85, c.shape === 'tall' ? 0.6 : 0.85); o.rotation.y = a * 1.3 + b; o.position.set(px, 0.86, pz); scene.add(o); }
+      else if (c.shape === 'bush') { for (var q = 0; q < 4; q++) { o = new THREE.Mesh(new THREE.IcosahedronGeometry(0.07, 0), m); o.position.set(px + (q % 2 - 0.5) * 0.09, 0.93 + q * 0.035, pz + (q > 1 ? 0.05 : -0.05)); scene.add(o); } }
+      else if (c.shape === 'blades') { for (var e = 0; e < 5; e++) { o = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.016, 0.42, 6), m); o.position.set(px + (e - 2) * 0.03, 1.06, pz + ((e * 7) % 3 - 1) * 0.03); o.rotation.z = (e - 2) * 0.09; scene.add(o); } }
+      else { for (var g2 = 0; g2 < 5; g2++) { o = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.3, 5), m); o.position.set(px + (g2 - 2) * 0.035, 1.0, pz + ((g2 * 5) % 3 - 1) * 0.035); o.rotation.z = (g2 - 2) * 0.22; o.rotation.x = ((g2 * 3) % 3 - 1) * 0.2; scene.add(o); } }
+    }
+  });
+  return true;
+}
+
+/* ---------- камера ---------- */
+function actualView() {
+  var dir = base.t.clone().sub(base.p), L = LOCS[S.loc];
+  if (L.orbit && !S.crop && !tween) {
+    var off = base.p.clone().sub(base.t), r = Math.hypot(off.x, off.z), a = Math.atan2(off.z, off.x) + Math.max(-1.1, Math.min(1.1, yaw));
+    var p = new THREE.Vector3(base.t.x + Math.cos(a) * r, Math.max(6, off.y * (1 - pitch * 1.6)), base.t.z + Math.sin(a) * r);
+    return { p: p, t: base.t.clone() };
+  }
+  var len = dir.length(), h = Math.hypot(dir.x, dir.z), a2 = Math.atan2(dir.z, dir.x) + yaw, el = Math.atan2(dir.y, h) - pitch;
+  var d = new THREE.Vector3(Math.cos(a2) * Math.cos(el), Math.sin(el), Math.sin(a2) * Math.cos(el)).multiplyScalar(len);
+  return { p: base.p.clone(), t: base.p.clone().add(d) };
+}
+function flyTo(pArr, tArr, lift, from) {
+  if (!renderer) return;
+  var v = from || actualView();
+  var toP = new THREE.Vector3().fromArray(pArr), toT = new THREE.Vector3().fromArray(tArr), dist = v.p.distanceTo(toP);
+  yaw = 0; pitch = 0;
+  if (reduceMotion || dist < 0.01) { base.p.copy(toP); base.t.copy(toT); tween = null; return; }
+  tween = { t0: performance.now(), dur: Math.min(2400, Math.max(1100, dist * 75)), fp: v.p, ft: v.t, tp: toP, tt: toT, lift: lift || 0 };
+}
+var LEVEL = { hall: 1, shelf: 1, solution: 1 };
+function go(id, cropId, fromView) {
+  var from = S.loc, L = LOCS[id];
+  var wasTour = !!tour;
+  if (tour) stopTour(true);
+  var start = fromView || (!renderer ? null : wasTour ? { p: base.p.clone(), t: base.t.clone() } : actualView());
+  S.loc = id; S.crop = cropId || null;
+  if (renderer) {
+    var lift = (from === 'overview' || id === 'overview') ? 0 : (LEVEL[from] && LEVEL[id]) ? 0 : 1.4;
+    if (cropId) { var c = cropById(cropId); flyTo([c.pos[0] + 1.0, 1.75, c.pos[2] - 1.9], [c.pos[0], 0.98, c.pos[2]], 0.3, start); }
+    else flyTo(id === 'overview' ? overviewCam() : L.cam, L.tgt, lift, start);
+  }
+  renderAll();
+}
+function startTour() {
+  if (!renderer) return;
+  if (!tourP) {
+    tourP = new THREE.CatmullRomCurve3(TOUR.map(function (k) { return new THREE.Vector3().fromArray(k.p); }), true, 'centripetal');
+    tourT = new THREE.CatmullRomCurve3(TOUR.map(function (k) { return new THREE.Vector3().fromArray(k.t); }), true, 'centripetal');
+    tourLook = new THREE.Vector3();
+  }
+  S.loc = 'overview'; S.crop = null; tween = null; yaw = 0; pitch = 0; renderAll();
+  tour = { t0: performance.now(), seg: -1 };
+  $('.app').classList.add('touring'); $('#cap').hidden = false; $('#back').hidden = true;
+  $('#tTour').setAttribute('aria-pressed', 'true'); $('#tTour').textContent = 'Остановить облёт';
+}
+function stopTour(silent) {
+  if (!tour) return;
+  var view = { p: camera.position.clone(), t: tourLook.clone() };
+  tour = null;
+  $('.app').classList.remove('touring'); $('#cap').hidden = true;
+  $('#tTour').setAttribute('aria-pressed', 'false'); $('#tTour').textContent = 'Облёт';
+  base.p.copy(view.p); base.t.copy(view.t);
+  if (!silent) go('overview', null, view);
+}
+
+/* ---------- метки в сцене ---------- */
+function buildTags() {
+  tagsEl.textContent = ''; tags = [];
+  var L = LOCS[S.loc];
+  var add = function (el, p) { tagsEl.appendChild(el); tags.push({ el: el, p: new THREE.Vector3().fromArray(p) }); };
+  if (!renderer) return;
+  L.links.forEach(function (id) {
+    if (id === 'overview') return;
+    var T = LOCS[id], n = openIn(id), b = document.createElement('button');
+    b.type = 'button'; b.className = 'tag go' + (n ? ' hot' : '');
+    b.innerHTML = '<span class="dot"></span><span class="t"><b>' + T.name + '</b><span>' + (n ? T.sub + ' · ' + word(n) : T.sub) + '</span></span>';
+    b.addEventListener('click', function () { go(id); });
+    add(b, T.anchor);
+  });
+  if (S.loc === 'showcase') CROPS.forEach(function (c) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'tag go';
+    b.innerHTML = '<span class="dot" style="background:#' + c.color.toString(16).padStart(6, '0') + '"></span><span class="t"><b>' + c.name + '</b></span>';
+    b.addEventListener('click', function () { go('showcase', c.id); });
+    add(b, [c.pos[0], 1.95, c.pos[2]]);
+  });
+  if (S.sensors) chipsFor(S.loc).forEach(function (c, i) {
+    var d = document.createElement('div'); d.className = 'tag chip' + (c.hot ? ' hot' : ''); d.dataset.chip = i;
+    d.innerHTML = '<span class="dot"></span><span class="t"><span>' + c.label + '</span><b>' + c.value + '</b></span>';
+    add(d, c.p);
+  });
+}
+function refreshChips() {
+  if (!S.sensors) return;
+  var cs = chipsFor(S.loc);
+  tagsEl.querySelectorAll('.tag.chip').forEach(function (el) { var c = cs[+el.dataset.chip]; if (c) el.querySelector('b').textContent = c.value; });
+}
+var v3 = null;
+function placeTags(w, h) {
+  if (!v3) v3 = new THREE.Vector3();
+  var placed = [];
+  for (var i = 0; i < tags.length; i++) {
+    var tg = tags[i]; v3.copy(tg.p).project(camera);
+    var vis = v3.z < 1 && v3.x > -1.05 && v3.x < 1.05 && v3.y > -1.05 && v3.y < 1.05;
+    if (!vis) { if (tg.el.style.visibility !== 'hidden') tg.el.style.visibility = 'hidden'; continue; }
+    if (tg.el.style.visibility !== 'visible') tg.el.style.visibility = 'visible';
+    if (!tg.w) { tg.w = tg.el.offsetWidth; tg.h = tg.el.offsetHeight; }
+    var x = (v3.x * 0.5 + 0.5) * w - tg.w / 2, y = (-v3.y * 0.5 + 0.5) * h - tg.h / 2;
+    x = Math.max(6, Math.min(w - tg.w - 6, x)); y = Math.max(62, y);
+    for (var guard = 0; guard < 10; guard++) {
+      var hit = false;
+      for (var j = 0; j < placed.length; j++) {
+        var r = placed[j];
+        if (x < r.x + r.w + 5 && x + tg.w + 5 > r.x && y < r.y + r.h + 5 && y + tg.h + 5 > r.y) { y = r.y + r.h + 6; hit = true; }
+      }
+      if (!hit) break;
+    }
+    if (y > h - tg.h - 60) { tg.el.style.visibility = 'hidden'; continue; }   // низ занят кнопками сцены
+    placed.push({ x: x, y: y, w: tg.w, h: tg.h });
+    tg.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
+  }
+}
+
+/* ---------- панель ---------- */
+function renderWhere() {
+  var L = LOCS[S.loc], c = S.crop && cropById(S.crop);
+  $('#pWhere').innerHTML = '<div class="kicker">' + L.who + '</div><h1>' + (c ? c.name : L.name) + '</h1><p class="lead">' + L.lead + '</p>';
+  $('#crumb').textContent = S.loc === 'overview' ? 'Ферма' : 'Ферма › ' + (S.loc === 'shelf' ? 'Проход между стеллажами › ' : '') + L.name + (c ? ' › ' + c.name : '');
+  $('#back').hidden = S.loc === 'overview';
+}
+function renderWays() {
+  var L = LOCS[S.loc];
+  $('#pWays').innerHTML = '<h2>Куда пройти</h2><div class="ways">' + L.links.map(function (id) {
+    var n = id === 'overview' ? 0 : openIn(id);
+    return '<button class="way" type="button" data-go="' + id + '">' + (id === 'overview' ? 'Общий вид' : LOCS[id].name) + (n ? '<span class="n">' + n + '</span>' : '') + '</button>';
+  }).join('') + '</div>';
+}
+function renderTasks() {
+  var here = S.loc, all = here === 'overview';
+  var list = TASKS.filter(function (t) { return all || t.loc === here || (here === 'hall' && t.loc === 'shelf'); });
+  var el = $('#pTasks');
+  if (here === 'showcase') { el.hidden = true; return; }
+  el.hidden = false;
+  var html = '<h2>' + (all ? 'Задачи по всей ферме' : 'Задачи здесь') + '</h2>';
+  if (!list.length) html += '<p class="lead">Открытых задач в этом помещении нет.</p>';
+  html += list.map(function (t) {
+    var done = !!S.done[t.id], away = t.loc !== here;
+    return '<article class="task ' + (t.lvl === 'urgent' && !done ? 'urgent' : '') + (done ? ' done' : '') + '">' +
+      '<div class="top"><span class="lvl ' + t.lvl + '">' + LVL[t.lvl] + ' · ' + t.when + '</span><span class="who">' + t.who + '</span></div>' +
+      '<div class="what"><b>' + t.place + '</b> · ' + t.what + '</div><div class="act">' + t.act + '</div>' +
+      '<details><summary>Расчёт и основание</summary><dl class="why"><dt>Расчёт</dt><dd class="num">' + t.calc + '</dd><dt>Основание</dt><dd>' + t.basis + '</dd><dt>Уверенность</dt><dd>' + t.conf + '</dd><dt>Если не сделать</dt><dd>' + t.risk + '</dd></dl></details>' +
+      '<div class="btns">' + (away ? '<button class="btn" type="button" data-go="' + t.loc + '">Пройти к месту</button>' : '') +
+      '<button class="btn solid" type="button" data-done="' + t.id + '">' + (done ? 'Вернуть в работу' : 'Сделано') + '</button></div></article>';
+  }).join('');
+  el.innerHTML = html;
+}
+function renderFacts() {
+  var el = $('#pFacts'), f = factsFor(S.loc);
+  if (!f) { el.hidden = true; return; }
+  el.hidden = false;
+  el.innerHTML = '<h2>' + f.title + '</h2><div class="facts">' + f.rows.map(function (r) {
+    return '<div class="fact' + (r.bad ? ' bad' : '') + '"><div class="k">' + r.k + '</div><div class="v">' + r.v + ' <small>' + r.u + '</small></div><div class="n">' + r.n + '</div></div>';
+  }).join('') + '</div>';
+}
+function slider(id, label, unit, min, max, step, val, rng) {
+  return '<div class="sl"><label for="' + id + '">' + label + '</label><output id="' + id + 'o" for="' + id + '">' + val + ' ' + unit + '</output>' +
+    '<input id="' + id + '" type="range" min="' + min + '" max="' + max + '" step="' + step + '" value="' + val + '"><span class="rng">' + rng + '</span></div>';
+}
+function renderCrops() {
+  var el = $('#pCrops');
+  if (S.loc !== 'showcase') { el.hidden = true; return; }
+  el.hidden = false;
+  var html = '<h2>Культуры</h2><div class="crops">' + CROPS.map(function (c) {
+    return '<button class="crop" type="button" data-crop="' + c.id + '" aria-pressed="' + (S.crop === c.id) + '"><i style="background:#' + c.color.toString(16).padStart(6, '0') + '"></i>' + c.name + '</button>';
+  }).join('') + '</div>';
+  var c = S.crop && cropById(S.crop);
+  if (c) {
+    html += '<div class="card"><h2>' + c.name + '</h2>' +
+      '<span class="src' + (c.src === 'check' ? ' check' : '') + '">' + (c.src === 'check' ? 'ориентиры · проверить у агронома' : 'по гайду фермы') + '</span>' +
+      '<div class="facts"><div class="fact"><div class="k">EC раствора</div><div class="v">' + c.ec + ' <small>мСм/см</small></div></div>' +
+      '<div class="fact"><div class="k">pH</div><div class="v">' + c.ph + '</div></div>' +
+      '<div class="fact"><div class="k">Цикл</div><div class="v">' + c.cycle + ' <small>дней</small></div></div>' +
+      '<div class="fact"><div class="k">Свет, коридор DLI</div><div class="v">' + c.dliR[0] + '–' + c.dliR[1] + '</div></div></div>' +
+      slider('sT', 'Воздух', '°C', 14, 30, 0.5, c.cur.t, 'коридор ' + c.t[0] + '–' + c.t[1] + ' °C') +
+      slider('sRH', 'Влажность', '%', 40, 90, 1, c.cur.rh, 'коридор ' + c.rh[0] + '–' + c.rh[1] + ' %') +
+      slider('sP', 'Свет, PPFD', 'мкмоль', 100, 400, 10, c.cur.ppfd, 'мкмоль/м²·с на уровне кроны') +
+      slider('sH', 'Свет в сутки', 'ч', 10, 20, 1, c.cur.h, 'фотопериод') +
+      '<div class="calc" id="calc"></div></div>';
+  } else html += '<p class="lead">Выберите культуру в сцене или в списке — камера подойдёт к лотку.</p>';
+  el.innerHTML = html;
+  if (c) updateCalc();
+}
+function updateCalc() {
+  var c = cropById(S.crop); if (!c) return;
+  var q = c.cur, V = vpd(q.t, q.rh), D = dli(q.ppfd, q.h), W = q.ppfd / 2.7, E = W * q.h / 1000;
+  var st = function (v, r, lo, hi) { return v < r[0] ? [true, lo] : v > r[1] ? [true, hi] : [false, 'в коридоре']; };
+  var sT = st(q.t, c.t, 'холоднее коридора — рост замедлится', 'теплее коридора — риск стрелкования и ожога');
+  var sV = st(V, c.vpdR, 'воздух слишком влажный — риск гнили и ожога края', 'воздух слишком сухой — лист теряет воду');
+  var sD = st(D, c.dliR, 'света мало — рост замедлится', c.src === 'guide' ? 'выше 17 — риск краевого ожога' : 'света больше, чем нужно культуре');
+  var res = function (k, v, f, s) { return '<div class="res' + (s[0] ? ' bad' : '') + '"><span class="k">' + k + '</span><span class="v">' + v + '</span><span class="f">' + f + '</span><span class="s">' + s[1] + '</span></div>'; };
+  $('#calc').innerHTML =
+    res('Температура', fmt(q.t) + ' °C', 'коридор ' + c.t[0] + '–' + c.t[1] + ' °C', sT) +
+    res('VPD', fmt(V, 2) + ' кПа', '0,6108·e^(17,27t/(t+237,3)) × (1 − RH) · коридор ' + fmt(c.vpdR[0], 2) + '–' + fmt(c.vpdR[1], 2), sV) +
+    res('DLI', fmt(D) + ' моль/м²·сут', q.ppfd + ' × ' + q.h + ' × 0,0036 · коридор ' + c.dliR[0] + '–' + c.dliR[1], sD) +
+    res('Энергия света', fmt(E, 2) + ' кВт·ч/м²·сут', q.ppfd + ' / 2,7 мкмоль/Дж = ' + fmt(W, 0) + ' Вт/м² × ' + q.h + ' ч', [false, 'светильники от 2,7 мкмоль/Дж']);
+  [['sT', q.t, '°C'], ['sRH', q.rh, '%'], ['sP', q.ppfd, 'мкмоль'], ['sH', q.h, 'ч']].forEach(function (a) { var o = $('#' + a[0] + 'o'); if (o) o.textContent = String(a[1]).replace('.', ',') + ' ' + a[2]; });
+}
+/* ---------- функции специалистов: вкладки ---------- */
+var TABS = {
+  overview: [['tasks', 'Задачи'], ['facts', 'Ферма'], ['shift', 'Смена']],
+  owner: [['econ', 'Экономика'], ['scen', 'Сценарии'], ['ramp', 'Ввод и штат'], ['risk', 'Риски']],
+  hall: [['tasks', 'Задачи'], ['facts', 'Воздух'], ['batches', 'Партии'], ['modes', 'Режимы']],
+  shelf: [['tasks', 'Задачи'], ['facts', 'Ярус'], ['photo', 'Фото']],
+  solution: [['tasks', 'Задачи'], ['facts', 'Раствор'], ['unit', 'Узел'], ['power', 'Электрика'], ['climate', 'Климат'], ['service', 'ТО']],
+  seedling: [['facts', 'Режим'], ['sowing', 'Посев']],
+  lab: [['tasks', 'Задачи'], ['samples', 'Журнал проб'], ['elements', 'Раствор'], ['norms', 'Нормативы']],
+  prep: [['intake', 'Приёмка'], ['packing', 'Фасовка'], ['facts', 'Показатели']],
+  store: [['stock', 'Остатки'], ['orders', 'Отгрузка'], ['cold', 'Камера'], ['facts', 'Сводка']],
+  showcase: [['crops', 'Культуры']]
+};
+var BDG = { reg: 'реестр проекта', guide: 'гайд фермы', cond: 'условно', ask: 'уточнить', ex: 'пример' };
+var badge = function (k) { return '<span class="bdg' + (k === 'reg' || k === 'guide' ? '' : ' w') + '">' + BDG[k] + '</span>'; };
+var head = function (t, k) { return '<h2>' + t + (k ? ' ' + badge(k) : '') + '</h2>'; };
+var kv = function (rows) { return '<dl class="kv">' + rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd' + (r[3] ? ' class="bad"' : '') + '><b class="num">' + r[1] + '</b>' + (r[2] ? '<span>' + r[2] + '</span>' : '') + '</dd>'; }).join('') + '</dl>'; };
+var bar = function (pct, warn) { return '<div class="bar' + (warn ? ' w' : '') + '"><i style="width:' + Math.max(0, Math.min(100, pct)).toFixed(0) + '%"></i></div>'; };
+var line = function (title, sub, right, warn) { return '<div class="line"><span class="dotS' + (warn ? ' w' : '') + '"></span><span class="g"><b>' + title + '</b>' + (sub ? '<span>' + sub + '</span>' : '') + '</span>' + (right ? '<span class="r">' + right + '</span>' : '') + '</div>'; };
+var grp = function (n) { return Math.round(n).toLocaleString('ru-RU').replace(/[  ]/g, ' '); };
+var money = function (v) { return grp(v) + ' ₸'; };
+var mln = function (v) { return fmt(v / 1e6, 2) + ' млн ₸'; };
+
+/* экономика: производство из реестра, деньги вводит собственник */
+var PROD = { headsDay: 1040, headKg: 0.165, kwhDay: 3300 };
+var E = { tar: 30, price: 3500, fot: 3600000, cons: 450, other: 800000, capex: 0, tiers: 7 };
+var M = { ppfd: 270, h: 16 };
+function econ(scn, o) {
+  o = o || {};
+  var tf = E.tiers / 7, kg = PROD.headsDay * 30 * PROD.headKg * scn * tf * (o.yld || 1), kwh = PROD.kwhDay * 30 * tf;
+  var rev = kg * E.price * (o.price || 1), en = kwh * E.tar * (o.tar || 1), cons = kg * E.cons, cost = en + cons + E.fot + E.other, profit = rev - cost;
+  return { kg: kg, kwh: kwh, rev: rev, en: en, cons: cons, cost: cost, profit: profit, margin: rev ? profit / rev * 100 : 0, perKg: cost / kg, perHead: cost / kg * PROD.headKg,
+    enShare: en / cost * 100, kwhKg: kwh / kg, payback: E.capex > 0 && profit > 0 ? E.capex * 1e6 / profit : null };
+}
+function econOut() {
+  var el = $('#eOut'); if (!el) return;
+  var b = econ(1), part = function (name, v, how) { return '<div class="line"><span class="g"><b>' + name + '</b><span class="num">' + how + '</span>' + bar(v / b.cost * 100) + '</span><span class="r">' + mln(v) + '<br>' + fmt(v / b.cost * 100, 1) + ' %</span></div>'; };
+  el.innerHTML =
+    '<div class="grid2"><div class="box"><span class="s">Выручка в месяц</span><span class="big">' + mln(b.rev) + '</span><span class="s num">' + grp(b.kg) + ' кг × ' + grp(E.price) + ' ₸</span></div>' +
+    '<div class="box"><span class="s">Затраты в месяц</span><span class="big">' + mln(b.cost) + '</span><span class="s num">сумма четырёх статей</span></div>' +
+    '<div class="box"><span class="s">Прибыль в месяц</span><span class="big ' + (b.profit >= 0 ? 'pos' : 'neg') + '">' + mln(b.profit) + '</span><span class="s num">маржа ' + fmt(b.margin, 1) + ' %</span></div>' +
+    '<div class="box"><span class="s">Себестоимость</span><span class="big">' + grp(b.perKg) + ' ₸/кг</span><span class="s num">' + grp(b.perHead) + ' ₸ за головку 165 г</span></div></div>' +
+    '<div>' + part('Электроэнергия', b.en, grp(b.kwh) + ' кВт·ч × ' + grp(E.tar) + ' ₸') + part('Фонд оплаты труда', E.fot, '8–9 человек, с налогами') +
+    part('Расходники и упаковка', b.cons, grp(b.kg) + ' кг × ' + grp(E.cons) + ' ₸') + part('Прочие постоянные', E.other, 'обслуживание, логистика, анализы') + '</div>' +
+    '<div class="frm">сверка: ' + mln(b.rev) + ' − ' + mln(b.cost) + ' = ' + mln(b.profit) + '<br>энергия: ' + fmt(b.kwhKg, 1) + ' кВт·ч на кг (реестр: 17–22) · доля в затратах ' + fmt(b.enShare, 1) + ' %<br>безубыточная цена: ' + grp(b.perKg) + ' ₸/кг' +
+    '<br>окупаемость: ' + (b.payback ? fmt(b.payback, 1) + ' мес. при полной загрузке' : E.capex > 0 ? 'прибыли нет — не окупается' : 'введите вложения') + '</div>';
+}
+function dliOut() {
+  var el = $('#dOut'); if (!el) return;
+  var d = dli(M.ppfd, M.h), bad = d < 14 || d > 17;
+  el.innerHTML = '<div class="res' + (bad ? ' bad' : '') + '"><span class="k">DLI этапа B</span><span class="v">' + fmt(d) + ' моль/м²·сут</span><span class="f">' + M.ppfd + ' × ' + M.h + ' × 0,0036 · коридор 14–17</span><span class="s">' +
+    (d > 17 ? 'выше 17 — риск краевого ожога, свет не добавлять' : d < 14 ? 'ниже 14 — рост замедлится, цикл удлинится' : 'в коридоре — режим можно применять') + '</span></div>';
+  var a = $('#dPo'), c = $('#dHo'); if (a) a.textContent = M.ppfd + ' мкмоль'; if (c) c.textContent = M.h + ' ч';
+}
+var SHIFT = [['walk', 'Обход стеллажей 1–8, запись показаний', 'hall'], ['sow', 'Посев: 1 250 ячеек', 'seedling'], ['toA', 'Пересадка рассады на этап A', 'seedling'], ['space', 'Раздвижка: этап A → этап B', 'hall'],
+  ['harvest', 'Сбор: план 1 040 головок', 'hall'], ['pack', 'Передать партию в заготовочный цех', 'prep'], ['wash', 'Мойка освободившихся лотков', 'prep']];
+var CHECK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>';
+var EXTRA = {
+  shift: function () {
+    var n = SHIFT.filter(function (s) { return S.shift[s[0]]; }).length;
+    return head('Смена оператора', 'cond') + '<p class="lead">Чек-лист смены: оператор отмечает сделанное с телефона. Выполнено ' + n + ' из ' + SHIFT.length + '.</p>' + bar(n / SHIFT.length * 100) +
+      '<div>' + SHIFT.map(function (s) { return '<div class="line"><button class="chk" type="button" data-check="' + s[0] + '" aria-pressed="' + !!S.shift[s[0]] + '" aria-label="' + s[1] + '">' + CHECK + '</button><span class="g"><b>' + s[1] + '</b><span>' + LOCS[s[2]].name + '</span></span><button class="mini" type="button" data-go="' + s[2] + '">Пройти</button></div>'; }).join('') + '</div>';
+  },
+  econ: function () {
+    var f = function (id, label, val, hint) { return '<div class="fld"><label for="' + id + '">' + label + ' ' + badge(hint || 'ex') + '</label><input id="' + id + '" type="number" inputmode="decimal" min="0" value="' + (val || '') + '"' + (val ? '' : ' placeholder="—"') + '></div>'; };
+    return head('Что вводит собственник') + f('eTar', 'Тариф, ₸ за кВт·ч', E.tar) + f('ePrice', 'Цена продажи, ₸ за кг', E.price) + f('eFot', 'Фонд оплаты труда, ₸ в месяц', E.fot) + f('eCons', 'Расходники и упаковка, ₸ на кг', E.cons) + f('eOther', 'Прочие постоянные, ₸ в месяц', E.other) + f('eCapex', 'Вложения, млн ₸', E.capex, 'ask') +
+      '<div class="seg" role="group" aria-label="Число ярусов"><button type="button" data-tiers="7" aria-pressed="' + (E.tiers === 7) + '">7 ярусов · 1 176 м²</button><button type="button" data-tiers="6" aria-pressed="' + (E.tiers === 6) + '">6 ярусов · ≈ 1 010 м²</button></div>' +
+      head('Что получается', 'reg') + '<p class="lead">Урожай: 1 040 головок в сутки × 165 г. Энергия: 3 300 кВт·ч в сутки.</p><div class="sec" id="eOut"></div>';
+  },
+  scen: function () {
+    var a = econ(0.8), b = econ(1), c = econ(1.15), row = function (n, g) { return '<tr><td>' + n + '</td><td>' + g(a) + '</td><td>' + g(b) + '</td><td>' + g(c) + '</td></tr>'; };
+    var sens = function (n, o) { var p = econ(1, o).profit; return line(n, 'прибыль ' + mln(p) + ' в месяц', (p - b.profit >= 0 ? '+' : '−') + fmt(Math.abs(p - b.profit) / 1e6, 2) + ' млн ₸', p < 0); };
+    return head('Три сценария урожая', 'reg') + '<div class="scroll"><table class="scn"><thead><tr><th></th><th>Осторожный −20 %</th><th>Базовый</th><th>Оптимист. +15 %</th></tr></thead><tbody>' +
+      row('Урожай, кг/мес', function (x) { return grp(x.kg); }) + row('Выручка, млн ₸', function (x) { return fmt(x.rev / 1e6, 2); }) + row('Затраты, млн ₸', function (x) { return fmt(x.cost / 1e6, 2); }) +
+      row('Прибыль, млн ₸', function (x) { return fmt(x.profit / 1e6, 2); }) + row('Себестоимость, ₸/кг', function (x) { return grp(x.perKg); }) + row('Энергия, кВт·ч/кг', function (x) { return fmt(x.kwhKg, 1); }) + '</tbody></table></div>' +
+      head('Что сильнее всего двигает прибыль') + '<div>' + sens('Тариф +30 %', { tar: 1.3 }) + sens('Тариф −30 %', { tar: 0.7 }) + sens('Цена −20 %', { price: 0.8 }) + sens('Цена +20 %', { price: 1.2 }) + sens('Урожай −20 %', { yld: 0.8 }) + sens('Урожай +20 %', { yld: 1.2 }) + '</div>' +
+      '<p class="note">Считается от значений на вкладке «Экономика». Субсидии и льготные кредиты в расчёт не включены.</p>';
+  },
+  ramp: function () {
+    return head('Ввод мощностей', 'reg') + '<div>' + line('Пилот 60–100 м²', '3–6 месяцев до запуска фермы', 'этап 1') + line('Запуск по секциям', 'одна секция раз в 2–4 недели', 'этап 2') + line('Полная загрузка', 'не раньше 4–6 месяцев после запуска', 'этап 3') + '</div>' +
+      head('Штат при полной загрузке', 'reg') + kv([['Агроном', '1'], ['Техник', '1'], ['Операторы', '3–4'], ['Упаковщик', '1'], ['Менеджер продаж', '1'], ['Водитель', '1'], ['Бухгалтер', 'на аутсорсе'], ['Всего', '8–9 человек']]);
+  },
+  risk: function () {
+    return head('Открытые риски проекта') + '<div>' + line('6 ярусов вместо 7', 'при балках под плитой или высоте 4,2 м площадь ≈ 1 010 м²', 'в «Экономике»', true) + line('Колонны и балки', 'колонны 400 × 400 с шагом 6 м в раскладке не учтены', 'уточнить', true) +
+      line('Электрическая мощность', 'техусловия ≈ 350 кВт — оценка до проекта ОВ', 'уточнить', true) + line('Нормативы', 'проверено 2 документа из 8', 'лаборатория', true) + line('Субсидии', 'не подтверждены, в расчёт не включены', '', false) +
+      line('Открытые задачи', word(openIn()), '', openIn() > 0) + '</div>';
+  },
+  batches: function () {
+    var st = function (n, d, den, ar) { return '<div class="box"><span class="t">' + n + '</span><span class="num">' + d + '</span><span class="s">' + den + '</span><span class="s">' + ar + '</span></div>'; };
+    return head('Конвейер партий', 'guide') + '<div class="grid2">' + st('Проращивание', '2–3 дня', '1 семя на кубик', 'без света') + st('Рассада', '10–14 дней', '250–400 кубиков/м²', '≈ 50 м² столов') + st('Этап A', '7–10 дней', '45 раст./м²', '≈ 256 м² · 1,7 стеллажа') + st('Этап B', '14–18 дней', '22 раст./м²', '≈ 944 м² · 6,4 стеллажа') + '</div>' +
+      '<div class="frm">этап A: 256 м² × 45 / 10 дней = 1 152 раст./сут<br>этап B: 944 м² × 22 / 18 дней = 1 154 раст./сут<br>после 10 % отхода ≈ 1 040 головок в сутки</div>' +
+      head('Сегодня', 'cond') + kv([['Посеять', '1 250 ячеек', 'норма 1 200–1 300'], ['Собрать', '1 040 головок', 'план'], ['Собрано вчера', '1 012 головок', '1 150 посажено'], ['Отход вчера', '12,0 %', 'план 10 %', true]]);
+  },
+  modes: function () {
+    var m = function (n, r) { return '<div class="box"><span class="t">' + n + '</span>' + kv(r) + '</div>'; };
+    return head('Режим по этапам', 'guide') + m('Рассада', [['PPFD', '150–200'], ['EC', '0,8–1,2'], ['Воздух день / ночь', '22–24 / 20 °C'], ['Влажность', '70–80 %'], ['DLI', '10–12']]) +
+      m('Этап A', [['PPFD', '220–280'], ['EC', '1,2–1,5'], ['Воздух день / ночь', '20–22 / 17–18 °C'], ['Влажность', '60–70 %'], ['DLI', '14–17']]) +
+      m('Этап B', [['PPFD', '240–295 при 16 ч'], ['EC', '1,4–1,8'], ['Воздух день / ночь', '20–22 / 17–18 °C'], ['Влажность', '60–70 %'], ['DLI', '14–17']]) +
+      head('Проверка перед сменой света') + '<div class="sl"><label for="dP">Свет, PPFD</label><output id="dPo" for="dP">' + M.ppfd + ' мкмоль</output><input id="dP" type="range" min="150" max="350" step="5" value="' + M.ppfd + '"></div>' +
+      '<div class="sl"><label for="dH">Свет в сутки</label><output id="dHo" for="dH">' + M.h + ' ч</output><input id="dH" type="range" min="14" max="20" step="1" value="' + M.h + '"></div><div id="dOut"></div>' +
+      head('Правила', 'guide') + '<div>' + line('Перед сбором', 'за 3–5 дней снизить EC на 20–30 %, собирать утром') + line('CO₂ и обдув', '800–1 200 ppm, над кроной 0,3–0,7 м/с') + line('Раствор', 'полная смена раз в 3–4 недели') + '</div>';
+  },
+  photo: function () {
+    var p = '', k;
+    for (k = 0; k < 8; k++) { var cx = 50 + (k % 4) * 80, cy = 48 + Math.floor(k / 4) * 74, r = k === 5 ? 20 : 27; p += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" style="fill:' + (k === 2 ? '#7A9A3A' : '#4FA436') + '"></circle>'; }
+    return head('Камера яруса', 'cond') + '<svg class="photo" viewBox="0 0 340 170" role="img" aria-label="Схема лотка: восемь растений, два отмечены разметкой">' +
+      '<rect x="8" y="8" width="324" height="154" rx="8" style="fill:#E6EAE5"></rect>' + p +
+      '<rect x="20" y="18" width="60" height="60" style="fill:none;stroke:#1F5A3A;stroke-width:2"></rect><text x="22" y="92" style="fill:#1F5A3A;font:700 10px sans-serif">норма</text>' +
+      '<rect x="180" y="18" width="60" height="60" style="fill:none;stroke:#B34A05;stroke-width:2"></rect><text x="182" y="92" style="fill:#B34A05;font:700 10px sans-serif">бурый край</text>' +
+      '<rect x="100" y="98" width="60" height="50" style="fill:none;stroke:#B34A05;stroke-width:2"></rect><text x="164" y="126" style="fill:#B34A05;font:700 10px sans-serif">отстаёт −22 %</text></svg>' +
+      '<p class="note">Вместо снимка — схема лотка. В рабочей версии здесь фото с камеры, 4 снимка в сутки.</p>' +
+      head('Что это может быть') + '<div>' + line('Краевой ожог', 'проверить обдув кроны, VPD и DLI не выше 17; кальций в раствор не добавлять', 'вероятнее', true) + line('Высокий EC в лотке', 'замерить EC на входе и выходе яруса', 'реже', true) + '</div>' +
+      kv([['Уверенность', 'низкая', 'только фото — нужна проверка человеком', true], ['Отставание', '−22 %', 'площадь листа против кривой роста', true]]);
+  },
+  unit: function () {
+    return head('Состав узла', 'cond') + '<div>' + line('Обратный осмос', 'подготовка воды', 'работает') + line('Концентрат A', 'кальциевая селитра, железо', '62 %') + line('Концентрат B', 'фосфаты, сульфаты, калий, микроэлементы', '48 %') +
+      line('Дозатор кислоты', 'pH яруса 4-2 выше нормы', 'проверить', !S.done.ph) + line('УФ на возврате', 'обеззараживание раствора', 'работает') + line('Насосы циркуляции', 'подача на 8 стеллажей', 'работают') + line('Чиллер', 'раствор 23,5 °C при норме 18–22', 'проверить', !S.done.temp) + line('Смена раствора', 'раз в 3–4 недели', 'через 9 дн.') + '</div>' +
+      '<p class="note">Концентраты A и B хранятся и подаются раздельно: кальций нельзя смешивать с сульфатами и фосфатами.</p>';
+  },
+  power: function () {
+    return head('Электрика', 'reg') + '<div class="box"><span class="s">Нагрузка сейчас ' + badge('cond') + '</span><span class="big">268 из 350 кВт</span>' + bar(268 / 350 * 100) + '<span class="s num">268 / 350 = 77 % от техусловий</span></div>' +
+      kv([['Расчётная мощность', '250–350 кВт', 'оценка до проекта ОВ'], ['Техусловия', '≈ 350 кВт', 'до 450 с запасом'], ['Свет', '120–155 кВт', '100–130 Вт/м² × 1 176 м²'], ['Климат, насосы, чиллер', '+35–50 % к свету', 'уточнить', true], ['Энергия', '3 100–3 500 кВт·ч/сут', ''], ['На 1 кг', '17–22 кВт·ч', ''], ['ИБП и генератор', 'уточнить', 'состав не задан', true]]);
+  },
+  climate: function () {
+    var L = live();
+    return head('Климат зала') + kv([['Воздух', fmt(L.t) + ' °C', 'день 20–22, ночь 17–18'], ['Влажность', fmt(L.rh, 0) + ' %', 'норма 60–70'], ['VPD', fmt(L.vpd, 2) + ' кПа', 'норма 0,8–1,0'], ['CO₂', '900 ppm', 'норма 800–1 200'], ['Обдув кроны', '0,5 м/с', 'норма 0,3–0,7']]) +
+      head('Осушение', 'reg') + kv([['Испарение', '2–3,5 л/м²·сут', 'оценка'], ['На всю ферму', '2,5–4 т воды в сутки', 'уточнить проектом ОВ']]) +
+      head('Тревоги') + '<div>' + line('CO₂ выше 5 000 ppm', 'опасно для людей: подача отключается, включается приток', 'нет') + line('Раствор теплее 22 °C', 'задача инженеру, риск корневой гнили', S.done.temp ? 'нет' : 'есть', !S.done.temp) + '</div>';
+  },
+  service: function () {
+    return head('Регламент обслуживания') + '<div>' + line('Калибровка датчиков pH и EC', 'стеллаж 1 — 32 дня назад', S.done.cal ? 'сделано' : 'просрочено', !S.done.cal) + line('Смена раствора', 'раз в 3–4 недели', 'через 9 дн.') + line('УФ-лампа', 'ресурс лампы', 'уточнить', true) + line('Мембраны осмоса', 'интервал замены', 'уточнить', true) + line('Фильтры вентиляции', 'интервал замены', 'уточнить', true) + '</div>' +
+      head('Аварийные сценарии') + '<div>' + line('Отключение питания', 'ИБП держит насосы и автоматику', 'уточнить состав', true) + line('Перегрев раствора', 'выше 22 °C — задача инженеру') + line('Протечка', 'датчики воды на полу', 'уточнить', true) + '</div>';
+  },
+  sowing: function () {
+    return head('Ежедневный посев', 'guide') + kv([['Норма партии', '1 200–1 300 ячеек', 'каждый день одинаково'], ['Плотность', '250–400 кубиков/м²', ''], ['Столы', '≈ 50 м²', 'прилив-отлив, 2 яруса']]) +
+      head('Журнал посева', 'cond') + '<div>' + ['19.11', '18.11', '17.11', '16.11', '15.11'].map(function (d, i) { return line(d, i === 0 ? 'сегодня — не отмечено' : 'посеяно', i === 0 ? '0 из 1 250' : '1 250 ячеек', i === 0); }).join('') + '</div>';
+  },
+  samples: function () {
+    return head('Журнал проб', 'cond') + '<div>' + line('П-015 · лист, стеллаж 6', 'нитраты перед сбором 23.11', S.done.lab ? 'отобрана' : 'до 22.11', !S.done.lab) + line('П-014 · раствор, бак', 'состав по элементам', 'в работе') + line('П-013 · вода после осмоса', 'исходный анализ', 'результат не загружен', true) + '</div>' +
+      '<p class="note">Каждая проба привязана к партии: проба → стеллаж → партия → покупатель.</p>';
+  },
+  elements: function () {
+    var el = [['N', '150–200'], ['P', '40–50'], ['K', '200–250'], ['Ca', '150–180'], ['Mg', '40–50'], ['S', '50–70'], ['Fe', '2–3'], ['Mn', '0,5'], ['B', '0,3–0,5'], ['Zn', '0,1–0,3'], ['Cu', '0,05'], ['Mo', '0,05']];
+    return head('Целевой состав раствора, мг/л', 'guide') + '<div class="grid2">' + el.map(function (e) { return '<div class="box"><span class="t">' + e[0] + '</span><span class="num">' + e[1] + '</span></div>'; }).join('') + '</div>' +
+      '<p class="note">Последний анализ раствора не загружен. После загрузки каждое значение сравнивается с коридором.</p>';
+  },
+  norms: function () {
+    var d = [['ТР ТС 021/2011 «О безопасности пищевой продукции»', 1], ['Санитарные правила для объектов производства пищевой продукции, приказ МЗ РК № ҚР ДСМ-197/2020', 1], ['ТР ТС 022/2011, маркировка пищевой продукции', 0], ['ТР ТС 005/2011, безопасность упаковки', 0],
+      ['ПДК нитратов для листовых овощей', 0], ['Строительные и пожарные нормы, ПУЭ', 0], ['Требования к воде для полива и мойки', 0], ['Учётный номер объекта производства', 0]];
+    return head('Реестр нормативов') + '<p class="lead">Проверено 2 из 8. Названия и значения, которые не проверены, как факт не показываются.</p>' + bar(25) + '<div>' + d.map(function (x) { return line(x[0], '', x[1] ? 'проверено' : 'проверить', !x[1]); }).join('') + '</div>';
+  },
+  intake: function () {
+    return head('Приёмка урожая', 'reg') + kv([['План сбора', '1 040 головок/сут', 'после 10 % отхода'], ['Масса партии', '156–187 кг', '1 040 × 150–180 г'], ['Принято сегодня', '0 из 1 040', 'сбор не начат']]) +
+      head('Партия', 'cond') + kv([['Номер', 'С6-2311', 'стеллаж 6, сбор 23.11'], ['Проба на нитраты', S.done.lab ? 'отобрана' : 'ждёт лаборанта', 'П-015', !S.done.lab]]) + '<div class="frm">прослеживаемость: стеллаж → партия → покупатель</div>';
+  },
+  packing: function () {
+    return head('Порядок фасовки') + '<div>' + line('Мойка и сушка', 'вода — требования уточнить') + line('Фасовка', 'масса головки 150–180 г') + line('Маркировка', 'состав этикетки по ТР ТС 022/2011', 'проверить', true) + line('В холодильную камеру', 'режим хранения', 'уточнить', true) + '</div>';
+  },
+  stock: function () {
+    var it = [['Семена', 70], ['Субстрат, кубики', 35], ['Концентрат A', 62], ['Концентрат B', 48], ['Кислота для pH', 55], ['Упаковка', 80], ['CO₂', 45]];
+    return head('Расходники', 'cond') + '<div class="sec">' + it.map(function (x) { var low = x[1] < 40; return '<div class="box"><span class="t">' + x[0] + ' <span class="num" style="font-weight:500">' + x[1] + ' %</span></span>' + bar(x[1], low) + (low ? '<span class="s" style="color:var(--warn)">ниже точки заказа 40 % — заказать</span>' : '') + '</div>'; }).join('') + '</div><p class="note">Точки заказа и единицы учёта — уточнить.</p>';
+  },
+  orders: function () {
+    return head('Заказы на неделю', 'cond') + '<div>' + line('Кафе, заказ 1', 'отгрузка 24.11', '40 кг') + line('Магазин, заказ 2', 'отгрузка 24.11', '120 кг') + line('Ресторан, заказ 3', 'отгрузка 25.11', '25 кг') + '</div>' +
+      '<div class="frm">резерв под заказы: 40 + 120 + 25 = 185 кг<br>суточный сбор по плану: 156–187 кг</div>';
+  },
+  cold: function () {
+    return head('Холодильная камера', 'cond') + kv([['Сейчас', '4,1 °C', ''], ['Режим хранения', 'уточнить', 'норма не задана', true]]) + '<div>' + [['08:00', '4,1'], ['10:00', '3,9'], ['12:00', '4,2'], ['14:00', '4,0']].map(function (x) { return line(x[0], 'запись в журнал температуры', x[1] + ' °C'); }).join('') + '</div>';
+  }
+};
+function curTab() { var list = TABS[S.loc] || [['tasks', 'Задачи']], id = S.tabs[S.loc]; return list.some(function (t) { return t[0] === id; }) ? id : list[0][0]; }
+function renderTabs(keepFocus) {
+  var list = TABS[S.loc] || [['tasks', 'Задачи']], id = curTab(), el = $('#pTabs'), n = openIn(S.loc === 'overview' ? null : S.loc);
+  el.hidden = list.length < 2;
+  el.innerHTML = '<div class="tabs" role="tablist">' + list.map(function (t) { return '<button class="tab" type="button" role="tab" data-tab="' + t[0] + '" aria-selected="' + (t[0] === id) + '">' + t[1] + (t[0] === 'tasks' && n ? '<span class="n">' + n + '</span>' : '') + '</button>'; }).join('') + '</div>';
+  var builtin = id === 'tasks' || id === 'facts' || id === 'crops';
+  $('#panel').dataset.tab = builtin ? id : 'extra';
+  $('#pExtra').innerHTML = builtin ? '' : EXTRA[id]();
+  if (id === 'econ') econOut();
+  if (id === 'modes') dliOut();
+  if (keepFocus) { var f = el.querySelector('[aria-selected="true"]'); if (f) f.focus(); }
+}
+function renderAll() { renderWhere(); renderWays(); renderCrops(); renderTasks(); renderFacts(); renderTabs(); buildTags(); }
+
+/* ---------- события ---------- */
+$('#panel').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.tab) { S.tabs[S.loc] = b.dataset.tab; renderTabs(true); }
+  else if (b.dataset.check) { S.shift[b.dataset.check] = !S.shift[b.dataset.check]; renderTabs(); }
+  else if (b.dataset.tiers) { E.tiers = +b.dataset.tiers; renderTabs(); }
+  else if (b.dataset.go) go(b.dataset.go);
+  else if (b.dataset.crop) go('showcase', b.dataset.crop);
+  else if (b.dataset.done) { S.done[b.dataset.done] = !S.done[b.dataset.done]; renderWays(); renderTasks(); renderFacts(); renderTabs(); buildTags(); }
+});
+$('#panel').addEventListener('input', function (e) {
+  var id = e.target.id, em = { eTar: 'tar', ePrice: 'price', eFot: 'fot', eCons: 'cons', eOther: 'other', eCapex: 'capex' };
+  if (em[id]) { E[em[id]] = Math.max(0, parseFloat(e.target.value) || 0); econOut(); return; }
+  if (id === 'dP' || id === 'dH') { M[id === 'dP' ? 'ppfd' : 'h'] = parseFloat(e.target.value); dliOut(); return; }
+  var c = S.crop && cropById(S.crop); if (!c) return;
+  var map = { sT: 't', sRH: 'rh', sP: 'ppfd', sH: 'h' }, k = map[e.target.id];
+  if (k) { c.cur[k] = parseFloat(e.target.value); updateCalc(); }
+});
+$('#back').addEventListener('click', function () { go(S.crop ? 'showcase' : S.loc === 'shelf' ? 'hall' : 'overview'); });
+$('#tSensors').addEventListener('click', function () { S.sensors = !S.sensors; this.setAttribute('aria-pressed', S.sensors); buildTags(); });
+$('#tNight').addEventListener('click', function () {
+  S.night = !S.night; this.setAttribute('aria-pressed', S.night);
+  if (!renderer) return;
+  renderer.toneMappingExposure = S.night ? 0.34 : 1.1;
+  lights.dir.intensity = S.night ? 0.05 : 0.55;
+  stripMat.color.setHex(S.night ? 0x2C2A3A : 0xFFF1DE); haloMat.opacity = S.night ? 0.03 : 0.34;
+});
+$('#tTour').addEventListener('click', function () { if (tour) stopTour(false); else startTour(); });
+
+var drag = null;
+canvas.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, y: e.clientY }; canvas.classList.add('drag'); try { canvas.setPointerCapture(e.pointerId); } catch (err) {} });
+canvas.addEventListener('pointermove', function (e) {
+  if (!drag || tween || tour) return;
+  yaw += (e.clientX - drag.x) * 0.005; pitch += (e.clientY - drag.y) * 0.003;
+  pitch = Math.max(-0.45, Math.min(0.45, pitch)); drag.x = e.clientX; drag.y = e.clientY;
+});
+var endDrag = function () { drag = null; canvas.classList.remove('drag'); };
+canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
+
+/* ---------- цикл ---------- */
+function resize() {
+  var r = stage.getBoundingClientRect(); W = Math.max(1, r.width); H = Math.max(1, r.height);
+  if (!renderer) return;
+  renderer.setSize(W, H, false); camera.aspect = W / H; camera.fov = W / H < 1 ? 62 : 46; camera.updateProjectionMatrix();
+  if (S.loc === 'overview' && !tween && !tour) base.p.fromArray(overviewCam());
+}
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (!renderer || document.hidden) return;
+  if (tour) {
+    var total = TOUR.length * SEG_MS, u = ((now - tour.t0) % total) / total, seg = Math.floor(u * TOUR.length + 0.35) % TOUR.length;
+    tourP.getPoint(u, camera.position); tourT.getPoint(u, tourLook); camera.lookAt(tourLook);
+    if (seg !== tour.seg) { tour.seg = seg; $('#cap').textContent = TOUR[seg].c; }
+  } else {
+    if (tween) {
+      var k = Math.min(1, (now - tween.t0) / tween.dur), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      base.p.lerpVectors(tween.fp, tween.tp, e); base.p.y += Math.sin(Math.PI * e) * tween.lift;
+      base.t.lerpVectors(tween.ft, tween.tt, e);
+      if (k >= 1) tween = null;
+    }
+    var v = actualView();
+    if (!reduceMotion && !tween) { v.p.x += Math.sin(now / 2600) * 0.03; v.p.y += Math.sin(now / 1900) * 0.015; }
+    camera.position.copy(v.p); camera.lookAt(v.t);
+  }
+  var cp = camera.position, inside = cp.y < 4.42 && cp.x > -0.1 && cp.x < 29.1 && cp.z > -0.1 && cp.z < 20.1;
+  if (frontWalls[0].visible !== inside) frontWalls.forEach(function (w) { w.visible = inside; });
+  hotFrame.visible = !S.done.ph; hotFrame.material.opacity = 0.55 + 0.45 * Math.sin(now / 300);
+  renderer.render(scene, camera);
+  placeTags(W, H);
+}
+
+var ok = false;
+try { ok = initGL(); } catch (err) { ok = false; renderer = null; }
+if (!ok) { renderer = null; canvas.hidden = true; $('#nogl').hidden = false; $('#tSensors').hidden = true; $('#tNight').hidden = true; }
+renderAll(); resize();
+if (window.ResizeObserver) new ResizeObserver(resize).observe(stage); else window.addEventListener('resize', resize);
+requestAnimationFrame(frame);
+setInterval(function () {
+  S.tick++;
+  var total = 14 * 3600 + 32 * 60 + S.tick * 2, p = function (n) { return String(n).padStart(2, '0'); };
+  $('#clock').textContent = p(Math.floor(total / 3600) % 24) + ':' + p(Math.floor(total / 60) % 60) + ':' + p(total % 60);
+  var a = document.activeElement;
+  if (!(a && a.closest && a.closest('#pFacts'))) renderFacts();
+  refreshChips();
+}, 2000);
+})();
+</script>
+
+</body>
+</html>
