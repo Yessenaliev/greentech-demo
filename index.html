@@ -342,7 +342,7 @@ div.bar{display:block;padding:0;min-height:0;border:0;flex:none}
     <div class="cap" id="cap" hidden></div>
     <div class="hud top"><button class="hbtn back" id="back" type="button" hidden>Общий вид</button></div>
     <div class="hud bottom">
-      <button class="hbtn show" id="tShow" type="button">Показ за 2 минуты</button>
+      <button class="hbtn show" id="tShow" type="button">Путь салата</button>
       <button class="hbtn tour" id="tTour" type="button" aria-pressed="false">Облёт</button>
       <button class="hbtn" id="tSensors" type="button" aria-pressed="true">Датчики</button>
       <button class="hbtn" id="tNight" type="button" aria-pressed="false">Ночной режим</button>
@@ -368,7 +368,7 @@ div.bar{display:block;padding:0;min-height:0;border:0;flex:none}
     <button type="button" data-m="farm"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg><span>Ферма</span></button>
     <button type="button" data-m="tasks"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11"></path><path d="M9 12h11"></path><path d="M9 18h11"></path><path d="M4 6l1 1 2-2"></path><path d="M4 12l1 1 2-2"></path><path d="M4 18l1 1 2-2"></path></svg><span>Задачи</span></button>
     <button type="button" data-m="shift"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg><span>Смена</span></button>
-    <button type="button" data-m="pilot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"></path><path d="M6 3v18"></path><path d="M10 8h5"></path><path d="M10 12h5"></path><path d="M10 16h3"></path></svg><span>Журнал</span></button>
+    <button type="button" data-m="journal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"></path><path d="M6 3v18"></path><path d="M10 8h5"></path><path d="M10 12h5"></path><path d="M10 16h3"></path></svg><span>Журнал</span></button>
     <button type="button" data-m="scene" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"></path><path d="M12 12l8-4.5"></path><path d="M12 12v9"></path><path d="M12 12L4 7.5"></path></svg><span>Скрыть 3D</span></button>
   </nav>
 </div>
@@ -388,14 +388,14 @@ var dli = function (ppfd, h) { return ppfd * h * 0.0036; };
 var doSat = function (t) { return 14.652 - 0.41022 * t + 0.007991 * t * t - 0.000077774 * t * t * t; };
 
 /* ---------- состояние ---------- */
-
+/* ---------- режимы: ферму и пилот в погребе видят все. Режим команды добавляет общий журнал с настоящими записями; у остальных записи хранятся на устройстве ---------- */
 var QS = location.search || '', HASCL = !!(window.claude && typeof window.claude.use === 'function'), FORCE_USER = /[?&]mode=user\b/.test(QS);
-var CAN_TEAM = false;
+var CAN_TEAM = !FORCE_USER && (HASCL ? (function () { try { return localStorage.getItem('gt-team') === '1'; } catch (e) { return false; } })() : (location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)));
 var TEAM = CAN_TEAM;
 var S = { loc: 'overview', crop: null, sensors: true, night: false, done: {}, tick: 0, tabs: {}, shift: {}, ev: {} };
 var wob = function (amp, ph) { return Math.sin(S.tick * 0.9 + ph) * amp; };
 var live = function () {
-  var t = 21.0 + wob(0.15, 0), rh = 65 + wob(0.6, 1.3), ts = (S.ev.heat ? 25.8 : 23.5) + wob(0.05, 0.7), o2 = S.ev.heat ? 6.1 : 6.8;
+  var t = 21.0 + wob(0.15, 0), rh = 65 + wob(0.6, 1.3), ts = (S.done.temp ? 21.4 : S.ev.heat ? 25.8 : 23.5) + wob(0.05, 0.7), o2 = S.done.temp ? 7.6 : S.ev.heat ? 6.1 : 6.8;
   return { t: t, rh: rh, vpd: vpd(t, rh), ts: ts, o2: o2, sat: o2 / doSat(ts) * 100 };
 };
 var farmIndex = function () { return 82 - (S.ev.heat ? 7 : 0) - (S.ev.pump ? 12 : 0) - (S.ev.ph ? 3 : 0) - (S.ev.norm ? 1 : 0) - 2 * allTasks().filter(function (t) { return t.overdue; }).length; };
@@ -563,14 +563,14 @@ function allTasks() {
   });
   return out;
 }
-var openIn = function (loc) { return allTasks().filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id]; }).length + (!loc || loc === 'pilot' ? pilotOpen().length : 0); };
+var openIn = function (loc) { return allTasks().filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id]; }).length + pilotOpen().filter(function (c) { return !loc || c.loc === loc || (loc === 'journal' && c.site === 'farm'); }).length; };
 var word = function (n) { return n === 0 ? 'задач нет' : n === 1 ? '1 задача' : n < 5 ? n + ' задачи' : n + ' задач'; };
 
 /* ---------- места ---------- */
 var LOCS = {
   overview: { name: 'Вся ферма', who: 'Цоколь 29 × 20 м', lead: 'Нажмите метку в сцене или кнопку ниже — камера пройдёт в помещение. Колонны и балки в раскладке пока не показаны.',
-    cam: [13.5, 17.5, -9.5], tgt: [14.5, 0, 9.5], orbit: true, links: ['pilot', 'owner', 'hall', 'showcase', 'solution', 'seedling', 'lab', 'prep', 'store'], anchor: [14, 6, 10] },
-  pilot: { name: 'Журнал и диагностика', who: 'Агроном · настоящие замеры', lead: 'Здесь не условные данные, а ваши: внесите замер — система разберёт его по нормам гайда и скажет, что сделать и почему.',
+    cam: [13.5, 17.5, -9.5], tgt: [14.5, 0, 9.5], orbit: true, links: ['journal', 'owner', 'hall', 'showcase', 'solution', 'seedling', 'lab', 'prep', 'store'], anchor: [14, 6, 10] },
+  journal: { name: 'Журнал и диагностика', who: 'Агроном · настоящие замеры', lead: 'Здесь не условные данные, а ваши: внесите замер — система разберёт его по нормам гайда и скажет, что сделать и почему.',
     cam: [10, 6.8, -2.6], tgt: [9.5, 0.6, 4.2], links: ['overview', 'hall', 'seedling', 'lab'], anchor: [9.5, 4.4, 0.9], sub: 'настоящие замеры' },
   owner: { name: 'Экономика фермы', who: 'Собственник', lead: 'Производство — по реестру проекта. Тариф, цена и расходы — примеры: введите свои, всё пересчитается.',
     cam: [24, 13, -4.5], tgt: [13.5, 0.5, 10.5], links: ['overview', 'hall', 'solution', 'store'], anchor: [22, 0.6, 0.6], sub: 'собственник' },
@@ -747,6 +747,77 @@ function initGL() {
     box(w, 1.0, 0.07, mPart, cx, 0.5, z[2]); box(w, 1.0, 0.07, mPart, cx, 0.5, z[3]);
     box(0.07, 1.0, d * 0.55, mPart, z[0], 0.5, z[2] + d * 0.275);
   });
+
+  /* ---------- погреб пилота: под фермой, в реальных размерах, метры. План: длина 2,95 → ось x, ширина 2,15 → ось z. Виден только команде ---------- */
+  cellarG = new THREE.Group(); scene.add(cellarG);
+  (function () {
+    var CX = 15.975, CY = -2.6, CZ = -1.5, V = function (a) { return new THREE.Vector3(CX - a[0], CY + a[1], CZ - a[2]); };
+    /* cb: коробка по плану — центр [вдоль, высота, поперёк]; tube: труба между двумя точками плана */
+    var cb = function (w, h, d, m, px, hy, py, par) { var b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.copy(par ? new THREE.Vector3(-px, hy, -py) : V([px, hy, py])); (par || cellarG).add(b); return b; };
+    var tube = function (a, b, r, m) { var A = V(a), B = V(b), d = B.clone().sub(A), c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 14), m); c.position.copy(A).addScaledVector(d, 0.5); c.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.clone().normalize()); cellarG.add(c); return c; };
+    var mCW = mat(0xB5B0A4, { map: concreteTex(2, 1.3, false), roughness: 0.95 }), mCF = mat(0x7F817C, { roughness: 0.85 }), mFr = mat(0x8C6B42), mBd = mat(0xC4A26E), mFilm = mat(0x15181A, { roughness: 0.45 });
+    var mRaft = mat(0xEDE8D8), mPipe = mat(0xA7ABA8, { roughness: 0.5 }), mTank = mat(0x2C5E9C, { roughness: 0.4 }), mTray = mat(0x2A2E2C), mLeaf = mat(0x5DB04A, { roughness: 0.7 }), mFan = mat(0xB06A1E);
+    var mLed = new THREE.MeshBasicMaterial({ color: 0xFFF1CF }); mLed.toneMapped = false;
+    var gLeaf = new THREE.SphereGeometry(0.062, 10, 8);
+    /* оболочка: пол, три стены; ближняя стена и перекрытие видны только изнутри */
+    cb(2.95, 0.12, 2.15, mCF, 1.475, -0.06, 1.075);
+    cb(3.35, 2.02, 0.2, mCW, 1.475, 0.89, -0.1); cb(0.2, 2.02, 2.15, mCW, -0.1, 0.89, 1.075); cb(0.2, 2.02, 2.15, mCW, 3.05, 0.89, 1.075);
+    cellarLid.push(cb(3.35, 2.02, 0.2, mCW, 1.475, 0.89, 2.25));
+    /* перекрытие с проёмом люка 0,73 × 0,70 м у торца */
+    [[2.17, 2.15, 1.085, 1.075], [0.78, 0.76, 2.56, 0.38], [0.78, 0.69, 2.56, 1.805], [0.05, 0.70, 2.925, 1.11]].forEach(function (q) { cellarLid.push(cb(q[0], 0.1, q[1], mCW, q[2], 1.95, q[3])); });
+    cellarLid.forEach(function (w) { w.visible = false; });
+    [[0.83, 0.05, 2.535, 0.76], [0.83, 0.05, 2.535, 1.46], [0.05, 0.70, 2.17, 1.11], [0.05, 0.70, 2.90, 1.11]].forEach(function (q) { cb(q[0], 0.06, q[1], mDark, q[2], 2.03, q[3]); });
+    /* лестница к люку */
+    [0.9, 1.32].forEach(function (py) { tube([2.3, 0, py], [2.82, 1.98, py], 0.022, mFr); });
+    for (var rg = 1; rg <= 6; rg++) tube([2.3 + 0.52 * rg / 7, 1.98 * rg / 7, 0.9], [2.3 + 0.52 * rg / 7, 1.98 * rg / 7, 1.32], 0.016, mFr);
+    /* вытяжка: колено Ø110 из торцевой стены под потолком, вентилятор на выходе, снаружи труба поднята над плиткой */
+    tube([-0.3, 1.72, 0.7], [0.26, 1.72, 0.7], 0.055, mPipe); cb(0.14, 0.15, 0.15, mFan, 0.33, 1.72, 0.7);
+    tube([-0.3, 1.67, 0.7], [-0.3, 2.6, 0.7], 0.055, mPipe); cb(0.16, 0.03, 0.16, mDark, -0.3, 2.62, 0.7);
+    /* стеллаж: стойки 50 × 50, полки на 200 / 760 / 1320 мм */
+    var rack = function (px0, py0, len, sec) {
+      for (var k = 0; k <= sec; k++) [0.025, 0.575].forEach(function (dy) { cb(0.05, 1.8, 0.05, mFr, px0 + Math.min(len - 0.025, Math.max(0.025, len * k / sec)), 0.9, py0 + dy); });
+      [0.2, 0.76, 1.32].forEach(function (h) { cb(len, 0.018, 0.6, mBd, px0 + len / 2, h - 0.009, py0 + 0.3); });
+      [0.025, 0.575].forEach(function (dy) { cb(len, 0.05, 0.05, mFr, px0 + len / 2, 1.775, py0 + dy); });
+    };
+    /* растения места — группа, видна, когда на месте стоит партия */
+    var plants = function (id) { var g = new THREE.Group(); g.visible = false; cellarG.add(g); cellarPl[id] = g; return g; };
+    var leaf = function (g, px, hy, py, k) { var l = new THREE.Mesh(gLeaf, mLeaf); l.position.copy(V([px, hy, py])); l.scale.set(k || 1, (k || 1) * 0.62, k || 1); g.add(l); };
+    var bath = function (id, px, py, h) {
+      cb(0.66, 0.15, 0.57, mFilm, px, h + 0.075, py); cb(0.59, 0.03, 0.51, mRaft, px, h + 0.145, py);
+      var g = plants(id); [-0.225, -0.075, 0.075, 0.225].forEach(function (dx) { [-0.13, 0.13].forEach(function (dy) { leaf(g, px + dx, h + 0.2, py + dy); }); });
+    };
+    var led = function (len, px, h, py) { cb(len, 0.022, 0.05, mLed, px, h, py); };
+    /* стеллаж А: 1,5 × 0,6 м. А1 — две ванны, А2 — три трубы Ø110 с уклоном 3 % к баку, А3 — рассада и микрозелень */
+    rack(0, 0, 1.5, 2);
+    bath('А1-1', 0.375, 0.3, 0.2); bath('А1-2', 1.125, 0.3, 0.2);
+    [0.1, 0.3, 0.5].forEach(function (py, j) {
+      tube([0.05, 0.857, py], [1.45, 0.815, py], 0.055, mPipe);
+      var g = plants('А2-' + (j + 1)); for (var q = 0; q < 7; q++) leaf(g, 0.15 + 0.2 * q, 0.93 - 0.03 * (0.1 + 0.2 * q), py, 0.85);
+      tube([1.45, 0.8, py], [1.56, 0.74, 0.3], 0.02, mPipe);
+    });
+    tube([1.56, 0.74, 0.3], [1.87, 0.6, 0.25], 0.025, mPipe);
+    tube([1.72, 0.3, 0.06], [1.72, 1.02, 0.03], 0.008, mBlue); tube([1.72, 1.02, 0.03], [0.04, 1.02, 0.03], 0.008, mBlue);
+    [0.375, 1.125].forEach(function (px, j) { cb(0.54, 0.05, 0.28, mTray, px, 1.345, 0.3); if (!j) cb(0.54, 0.11, 0.28, mat(0xDCE8E1, { transparent: true, opacity: 0.3, roughness: 0.2 }), px, 1.425, 0.3); });
+    var gA3 = plants('А3'); [0.375, 1.125].forEach(function (px) { cb(0.5, 0.03, 0.24, mLeaf, 0, 0, 0, gA3).position.copy(V([px, 1.385, 0.3])); });
+    [0.09, 0.23, 0.37, 0.51].forEach(function (py) { led(1.2, 0.75, 0.735, py); });
+    [0.06, 0.18, 0.3, 0.42, 0.54].forEach(function (py) { led(1.2, 0.75, 1.295, py); });
+    [0.2, 0.4].forEach(function (py) { led(1.2, 0.75, 1.66, py); });
+    /* бак 60 л с насосом на поддоне 0,7 × 0,5 м — у торца стеллажа А со стороны лестницы */
+    cb(0.7, 0.05, 0.5, mTray, 1.87, 0.025, 0.25);
+    var tank = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.19, 0.5, 20), mTank); tank.position.copy(V([1.87, 0.3, 0.25])); cellarG.add(tank);
+    var lid = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.03, 20), mDark); lid.position.copy(V([1.87, 0.565, 0.25])); cellarG.add(lid);
+    /* полка на стене выше метра: компрессоры, бесперебойник, таймеры */
+    cb(0.66, 0.025, 0.2, mBd, 2.6, 1.1, 0.1); cb(0.3, 0.13, 0.14, mDark, 2.44, 1.18, 0.1); cb(0.1, 0.09, 0.1, mBlue, 2.72, 1.16, 0.1); cb(0.1, 0.09, 0.1, mBlue, 2.85, 1.16, 0.1);
+    /* стеллаж Б: около 2,15 × 0,6 м, три секции. Б1 и Б2 — по три ванны, Б3 — микрозелень */
+    rack(0, 1.55, 2.15, 3);
+    [0.36, 1.075, 1.79].forEach(function (px, j) { bath('Б1-' + (j + 1), px, 1.85, 0.2); bath('Б2-' + (j + 1), px, 1.85, 0.76); cb(0.54, 0.05, 0.28, mTray, px, 1.345, 1.85); });
+    var gB3 = plants('Б3'); [0.36, 1.075, 1.79].forEach(function (px) { cb(0.5, 0.03, 0.24, mLeaf, 0, 0, 0, gB3).position.copy(V([px, 1.385, 1.85])); });
+    [0.735, 1.66].forEach(function (h) { [1.75, 1.95].forEach(function (py) { led(1.2, 0.65, h, py); led(0.6, 1.8, h, py); }); });
+    /* вентиляторы-клипсы и термогигрометр */
+    cb(0.07, 0.12, 0.12, mDark, 1.47, 1.02, 0.66); cb(0.07, 0.12, 0.12, mDark, 0.1, 1.02, 1.51); cb(0.06, 0.06, 0.015, mWhite, 0.75, 1.5, 0.02);
+    var pl = new THREE.PointLight(0xFFE7BF, 0.7, 6); pl.position.copy(V([1.3, 1.7, 1.075])); cellarG.add(pl);
+    cellarSync();
+  })();
 
   /* стеллажи: лотки, свет, стойки, растения */
   var dummy = new THREE.Object3D(), n, i, t;
@@ -1034,13 +1105,13 @@ function renderTasks() {
   if (here === 'showcase') { el.hidden = true; return; }
   el.hidden = false;
   var html = '<h2>' + (all ? 'Задачи по всей ферме' : 'Задачи здесь') + '</h2>';
-  var pc = all ? pilotOpen() : [];
+  var pc = pilotOpen().filter(function (c) { return all || c.loc === here; });
   if (!list.length && !pc.length) html += '<p class="lead">Открытых задач в этом помещении нет.</p>';
   html += pc.map(function (c) { var la = c.acts[c.acts.length - 1];
-    return '<article class="task"><div class="top"><span class="lvl ' + (c.st ? 'plan' : 'warn') + '">' + 'Журнал' + ' · ' + (c.st ? 'ждёт повторного замера' : 'ждёт действия') + '</span><span class="who">' + PRM[c.k][1] + '</span></div>' +
+    return '<article class="task"><div class="top"><span class="lvl ' + (c.st ? 'plan' : 'warn') + '">' + (c.site === 'cellar' ? 'Погреб' : 'Журнал') + ' · ' + (c.st ? 'ждёт повторного замера' : 'ждёт действия') + '</span><span class="who">' + PRM[c.k][1] + '</span></div>' +
       '<div class="what"><b>' + esc(c.z) + '</b> · ' + c.v + ' вне нормы с ' + dm(c.from.d) + (c.last.ex ? ' ' + badge('ex') : '') + '</div>' +
       '<div class="act">' + (c.st ? 'Действие записано ' + dm(la.d) + '. Нужен повторный замер.' : 'Откройте разбор: там указание с расчётом.') + (fresh(c.last).lvl === 2 ? ' Замер устарел (' + fresh(c.last).txt + ') — сначала перемерьте.' : '') + ' Задача закроется замером в норме, а не отметкой.</div>' +
-      '<div class="btns"><button class="btn solid" type="button" data-bt="review" data-p="' + esc(c.z) + '">Открыть разбор</button></div></article>'; }).join('');
+      '<div class="btns"><button class="btn solid" type="button" data-j="open" data-z="' + esc(c.z) + '">Открыть разбор</button></div></article>'; }).join('');
   html += list.map(function (t) {
     var done = !!S.done[t.id], away = t.loc !== here, off = !done && !!snz[t.id], fid = 't:' + t.id;
     return '<article class="task ' + (t.lvl === 'urgent' && !done && !off ? 'urgent' : '') + (done ? ' done' : '') + (off ? ' snz' : '') + '">' +
@@ -1106,23 +1177,17 @@ function updateCalc() {
   [['sT', q.t, '°C'], ['sRH', q.rh, '%'], ['sP', q.ppfd, 'мкмоль'], ['sH', q.h, 'ч']].forEach(function (a) { var o = $('#' + a[0] + 'o'); if (o) o.textContent = String(a[1]).replace('.', ',') + ' ' + a[2]; });
 }
 /* ---------- функции специалистов: вкладки ---------- */
-
-var MODE_V = {
-  user: { pilot: { name: 'Журнал и диагностика', who: 'Агроном · настоящие замеры', lead: 'Здесь не условные данные, а ваши: внесите замер — система разберёт его по нормам гайда и скажет, что сделать и почему.',
-      cam: [10, 6.8, -2.6], tgt: [9.5, 0.6, 4.2], links: ['overview', 'hall', 'seedling', 'lab'], anchor: [9.5, 4.4, 0.9], sub: 'настоящие замеры' },
-    ov: { cam: [13.5, 17.5, -9.5], tgt: [14.5, 0, 9.5] } },
-  team: null
-};
-var PILOT_TABS = [['jadd', 'Ввод'], ['jrev', 'Разбор'], ['diag', 'Диагностика'], ['recipe', 'Рецептура'], ['verify', 'Сверка норм']];
+/* общий вид: когда раздел пилота подключён, камера отодвинута, чтобы погреб под фермой входил в кадр */
+var OV_VIEW = { farm: { cam: [13.5, 17.5, -9.5], tgt: [14.5, 0, 9.5] }, withPilot: { cam: [13.5, 20, -13], tgt: [14.5, -0.5, 7] } };
+var BASE_LINKS = ['journal', 'owner', 'hall', 'showcase', 'solution', 'seedling', 'lab', 'prep', 'store'];
 function applyMode() {
-  var v = MODE_V[TEAM ? 'team' : 'user'], k;
-  for (k in v.pilot) LOCS.pilot[k] = v.pilot[k];
-  LOCS.overview.cam = v.ov.cam; LOCS.overview.tgt = v.ov.tgt;
-  TABS.pilot = [].concat(PILOT_TABS);
+  var v = OV_VIEW[LOCS.pilot ? 'withPilot' : 'farm'];
+  LOCS.overview.cam = v.cam; LOCS.overview.tgt = v.tgt;
+  LOCS.overview.links = (LOCS.pilot ? ['pilot'] : []).concat(BASE_LINKS);
 }
 var TABS = {
   overview: [['tasks', 'Задачи'], ['facts', 'Ферма'], ['shift', 'Смена'], ['events', 'Сценарии и время'], ['how', 'Как это работает']],
-  pilot: PILOT_TABS,
+  journal: [['jadd', 'Ввод'], ['jrev', 'Разбор'], ['diag', 'Диагностика'], ['recipe', 'Рецептура'], ['verify', 'Сверка норм']],
   owner: [['summary', 'Сводка'], ['econ', 'Экономика'], ['scen', 'Три сценария'], ['payback', 'Окупаемость'], ['scale', 'Масштаб'], ['ramp', 'Ввод и штат'], ['risk', 'Риски']],
   hall: [['tasks', 'Задачи'], ['facts', 'Воздух'], ['batches', 'Партии'], ['week', 'Неделя'], ['modes', 'Режимы']],
   shelf: [['tasks', 'Задачи'], ['facts', 'Ярус'], ['charts', 'Графики'], ['growth', 'Рост'], ['photo', 'Фото']],
@@ -1476,14 +1541,31 @@ var NORM = {
   grow: { name: 'доращивание', ph: [5.8, 6.2], ec: [1.2, 1.8], ts: [18, 22], ta: [20, 22], rh: [60, 70], vpd: [0.8, 1.0], dli: [14, 17], ecT: 1.6 },
   seed: { name: 'рассада', ph: [5.8, 6.2], ec: [0.8, 1.2], ts: [18, 22], ta: [22, 24], rh: [70, 80], vpd: [0.5, 0.8], dli: [10, 12], ecT: 1.0 }
 };
+/* примеры замеров пилота: o — сколько дней назад. Показывают, как выглядит журнал, пока своих записей нет */
 var JEX = [
-  { d: '2026-11-17', z: 'Б1-2', s: 'grow', ph: 6.0, ec: 1.5, ts: 20.5, ta: 21, rh: 65, v: 30, ex: 1 },
-  { d: '2026-11-18', z: 'Б1-2', s: 'grow', ph: 6.3, ec: 1.5, ts: 20.8, ta: 21, rh: 64, v: 30, ex: 1 },
-  { d: '2026-11-19', z: 'Б1-2', s: 'grow', ph: 6.6, ec: 1.55, ts: 21.0, ta: 21, rh: 65, v: 30, ex: 1 },
-  { d: '2026-11-18', z: 'А2 NFT', s: 'grow', ph: 6.0, ec: 1.85, ts: 23.0, ta: 21, rh: 62, v: 60, lx: 21000, h: 16, ex: 1 },
-  { d: '2026-11-19', z: 'А2 NFT', s: 'grow', ph: 6.0, ec: 1.95, ts: 23.5, ta: 23.5, rh: 52, v: 60, lx: 21000, h: 16, ex: 1 }
+  { o: -3, z: 'Б1-2', s: 'grow', c: 'dill', ph: 5.8, ec: 1.2, ts: 20.5, ta: 21, rh: 65, v: 30 },
+  { o: -2, z: 'Б1-2', s: 'grow', c: 'dill', ph: 6.3, ec: 1.2, ts: 20.8, ta: 21, rh: 64, v: 30 },
+  { o: -1, z: 'Б1-2', s: 'grow', c: 'dill', ph: 6.6, ec: 1.25, ts: 21.0, ta: 21, rh: 65, v: 30 },
+  { o: -2, z: 'А2 NFT', s: 'grow', c: 'batavia', ph: 6.0, ec: 1.85, ts: 23.0, ta: 21, rh: 62, v: 60, lx: 21000, h: 16 },
+  { o: -1, z: 'А2 NFT', s: 'grow', c: 'batavia', ph: 6.0, ec: 1.95, ts: 23.5, ta: 23.5, rh: 52, v: 60, lx: 21000, h: 16 },
+  { o: -1, z: 'А1-1', s: 'grow', c: 'batavia', ph: 6.0, ec: 1.6, ts: 20.5, ta: 21, rh: 65, v: 30 },
+  { o: -1, z: 'А1-2', s: 'grow', c: 'batavia', ph: 5.9, ec: 1.5, ts: 20.0, ta: 21, rh: 66, v: 30 },
+  { o: -1, z: 'Б1-1', s: 'grow', c: 'onion', ph: 6.2, ec: 1.6, ts: 20.0, ta: 21, rh: 65, v: 30 },
+  { o: -1, z: 'А3', s: 'seed', c: 'batavia', ph: 6.0, ec: 1.0, ts: 20.0, ta: 23, rh: 75, v: 10 }
 ];
-var J = { rows: [], zone: null, msg: '' }, DG = { zone: null, sym: 'tip', many: false }, EC_WATER = 0.3, PH_K = 0.2, PH_TARGET = 6.1;
+/* примеры партий пилота: [культура, сорт, мест, [место, сколько дней назад]…, итог сбора] — по раскладке реестра */
+var BEX = [
+  ['batavia', 'Батавия', 7, [['А3', -16], ['А2-1', -6]]], ['lollo', 'Лолло росса', 8, [['А3', -24], ['А1-1', -12]]], ['romaine', 'Мини-ромэн', 8, [['А3', -20], ['А1-2', -9]]],
+  ['batavia', 'Батавия, рассада', 16, [['А3', -5]]], ['onion', 'Лук на перо', 8, [['Б1-1', -18]]], ['dill', 'Укроп', 8, [['Б1-2', -21]]], ['micro', 'Микрозелень', 4, [['Б3', -5]]],
+  ['batavia', 'Батавия', 8, [['А3', -45], ['А1-1', -33]], { end: -8, got: 7, g: 1085 }]
+];
+/* зоны пилотного стенда: ванны, общий контур труб и полки. Замеры с такой зоной относятся к пилоту, остальные — к ферме */
+var PILOT_Z = ['А1-1', 'А1-2', 'А2 NFT', 'А3', 'Б1-1', 'Б1-2', 'Б1-3', 'Б2-1', 'Б2-2', 'Б2-3', 'Б3'];
+var FARM_Z = ['Узел', 'Рассадная', 'Стеллаж 1', 'Стеллаж 2', 'Стеллаж 3', 'Стеллаж 4', 'Стеллаж 5', 'Стеллаж 6', 'Стеллаж 7', 'Стеллаж 8'];
+var zoneSite = function (z) { return PILOT_Z.indexOf(z) >= 0 ? 'cellar' : 'farm'; };
+/* в какое помещение фермы попадает отклонение: раствор и воздух — к инженеру в растворный узел, питание — к агроному в зал */
+var CASE_LOC = { ph: 'hall', ec: 'hall', ts: 'solution', air: 'solution', dli: 'solution' };
+var J = { rows: [], zone: null, msg: '', site: 'farm', zs: {} }, DG = { zone: null, sym: 'tip', many: false }, EC_WATER = 0.3, PH_K = 0.2, PH_TARGET = 6.1;
 /* коэффициент дозы pH−: стартовый 0,2, дальше — медиана по записанным коррекциям пользователя */
 var KC = [];
 function phK() {
@@ -1492,7 +1574,10 @@ function phK() {
   return Math.max(0.05, Math.min(1, m));
 }
 function phKNote() { return KC.length ? 'коэффициент ' + fmt(phK(), 2) + ' — по вашим коррекциям, их ' + KC.length : 'коэффициент 0,2 — стартовый, уточнится после первой записанной коррекции'; }
-function jZones() { var seen = {}, out = []; J.rows.forEach(function (r) { if (!seen[r.z]) { seen[r.z] = 1; out.push(r.z); } }); return out; }
+/* площадка журнала по текущему разделу; у каждой — своя выбранная зона */
+function jCtx() { var st = S.loc === 'pilot' ? 'cellar' : 'farm'; if (J.site !== st) { J.zs[J.site] = J.zone; J.site = st; J.zone = J.zs[st] || null; } return st; }
+function jRows(site) { site = site || J.site; return J.rows.filter(function (r) { return zoneSite(r.z) === site; }); }
+function jZones(site) { var seen = {}, out = []; jRows(site).forEach(function (r) { if (!seen[r.z]) { seen[r.z] = 1; out.push(r.z); } }); return out; }
 function jOf(zone) { return J.rows.filter(function (r) { return r.z === zone; }).sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; }); }
 var dm = function (d) { return d.slice(8, 10) + '.' + d.slice(5, 7); };
 /* норма для записи: этап из гайда фермы; для культур, отличных от салата, pH, EC и свет — из сверки, если подтверждены двумя источниками */
@@ -1601,10 +1686,13 @@ function cases(zone) {
   });
   return out;
 }
+/* открытые отклонения фермы и пилота. loc — помещение, чьей задачей это становится */
 function pilotOpen() {
   if (!J || !J.rows || !ACTS) return [];
   var out = [];
-  jZones().forEach(function (z) { cases(z).forEach(function (c) { if (c.st < 2) out.push(c); }); });
+  ['cellar', 'farm'].forEach(function (site) {
+    jZones(site).forEach(function (z) { cases(z).forEach(function (c) { if (c.st < 2) { c.site = site; c.loc = site === 'farm' ? CASE_LOC[c.k] : 'pilot'; out.push(c); } }); });
+  });
   return out;
 }
 var caseNote = function (c, hint) {
@@ -1627,11 +1715,11 @@ var jCard = function (t, c) {
 EXTRA.jadd = function () {
   var today = new Date(), iso = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
   var fld = function (id, label, ph, val) { return '<div class="fld"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="text" inputmode="decimal" placeholder="' + ph + '" value="' + (val || '') + '"></div>'; };
-  var exN = J.rows.filter(function (r) { return r.ex; }).length, last = J.rows.slice().reverse().slice(0, 8);
+  var st = jCtx(), mine = jRows(), exN = mine.filter(function (r) { return r.ex; }).length, last = mine.slice().reverse().slice(0, 8);
   return shBar() + head('Новый замер') + (J.msg ? '<p class="lead" role="status" style="color:var(--grow)">' + J.msg + '</p>' : '') +
     '<div class="fld"><label for="jD">Дата замера</label><input id="jD" type="date" value="' + iso + '"></div>' +
     '<div class="fld"><label for="jT">Время замера</label><input id="jT" type="time" value="' + String(today.getHours()).padStart(2, '0') + ':' + String(today.getMinutes()).padStart(2, '0') + '"></div>' +
-    '<div class="fld"><label for="jZ">Зона: ванна или труба</label><input id="jZ" type="text" list="jZl" placeholder="Б1-2" value="' + esc(J.zone || '') + '"><datalist id="jZl">' + ['А1-1', 'А1-2', 'А2 NFT', 'А3', 'Б1-1', 'Б1-2', 'Б1-3', 'Б2-1', 'Б2-2', 'Б2-3', 'Б3'].map(function (z) { return '<option value="' + z + '"></option>'; }).join('') + '</datalist></div>' +
+    '<div class="fld"><label for="jZ">' + (st === 'farm' ? 'Зона: стеллаж, узел или рассадная' : 'Зона: ванна или труба') + '</label><input id="jZ" type="text" list="jZl" placeholder="' + (st === 'farm' ? 'Стеллаж 4' : 'Б1-2') + '" value="' + esc(J.zone || '') + '"><datalist id="jZl">' + (st === 'farm' ? FARM_Z : PILOT_Z).map(function (z) { return '<option value="' + z + '"></option>'; }).join('') + '</datalist></div>' +
     '<div class="fld" style="grid-template-columns:minmax(0,1fr) 172px"><label for="jC">Культура</label><select id="jC">' + JCROPS.map(function (id) { var cc = cropById(id); return '<option value="' + id + '"' + (J.pre && J.pre.c === id ? ' selected' : '') + '>' + (cc.lettuce ? 'Салат' : cc.name) + '</option>'; }).join('') + '</select></div>' +
     '<div class="fld" style="grid-template-columns:minmax(0,1fr) 172px"><label for="jS">Этап</label><select id="jS"><option value="grow">Доращивание</option><option value="seed"' + (J.pre && J.pre.s === 'seed' ? ' selected' : '') + '>Рассада</option></select></div>' +
     fld('jPh', 'pH раствора', '6,0') + fld('jEc', 'EC, мСм/см', '1,5') + fld('jTs', 'Раствор, °C', '20') + fld('jTa', 'Воздух, °C', '21') + fld('jRh', 'Влажность, %', '65') + fld('jV', 'Объём раствора, л', '30') + fld('jLx', 'Свет у кроны, лк', 'необязательно') + fld('jH', 'Свет в сутки, ч', '16') +
@@ -1642,8 +1730,9 @@ EXTRA.jadd = function () {
     '<div class="btns">' + (exN ? '<button class="mini" type="button" data-j="noex">Убрать примеры</button>' : '') + '<button class="mini" type="button" data-j="copy">Скопировать журнал</button></div><textarea id="jCsv" class="csv" readonly hidden aria-label="Журнал текстом"></textarea>';
 };
 EXTRA.jrev = function () {
+  jCtx();
   var zones = jZones();
-  if (!zones.length) return head('Разбор замеров') + '<p class="lead">Журнал пуст. Внесите первый замер на вкладке «Ввод».</p>';
+  if (!zones.length) return head('Разбор замеров') + '<p class="lead">Журнал пуст. Внесите первый замер на вкладке «Ввод» или посмотрите, как выглядит разбор, на примерах.</p><div class="btns"><button class="btn" type="button" data-j="exadd">Добавить примеры</button></div>';
   if (zones.indexOf(J.zone) < 0) J.zone = zones[zones.length - 1];
   var rows = jOf(J.zone), r = rows[rows.length - 1], N = normFor(r), f = jFind(J.zone);
   var fact = function (k, v, n, bad) { return '<div class="fact' + (bad ? ' bad' : '') + '"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="n">' + n + '</div></div>'; };
@@ -1701,6 +1790,7 @@ function diagOut() {
     '<p class="note">Диагноз по описанию — предварительный. Правила взяты из гайда фермы для листового салата.</p>';
 }
 EXTRA.diag = function () {
+  jCtx();
   var zones = jZones();
   if (zones.indexOf(DG.zone) < 0) DG.zone = J.zone && zones.indexOf(J.zone) >= 0 ? J.zone : (zones[zones.length - 1] || null);
   var sel = function (id, label, opts, cur) { return '<div class="fld col"><label for="' + id + '">' + label + '</label><select id="' + id + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(o[0]) === String(cur) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>'; };
@@ -1738,7 +1828,9 @@ EXTRA.verify = function () {
 function jCmd(c, b) {
   var num = function (id) { var raw = ($('#' + id).value || '').replace(',', '.').trim(); if (raw === '') return null; var n = parseFloat(raw); return isNaN(n) ? null : n; };
   J.msg = '';
-  if (c === 're') { var lr = zoneLast(J.zone); J.pre = lr ? { c: lr.c, s: lr.s } : null; S.tabs.pilot = 'jadd'; renderTabs(); $('#panel').scrollTop = 0; return; }
+  jCtx();
+  if (c === 'open') { var oz = b.dataset.z, ol = zoneSite(oz) === 'cellar' ? 'pilot' : 'journal'; if (S.loc !== ol) go(ol); jCtx(); J.zone = oz; S.tabs[ol] = 'jrev'; renderTabs(); $('#panel').scrollTop = 0; return; }
+  if (c === 're') { var lr = zoneLast(J.zone); J.pre = lr ? { c: lr.c, s: lr.s } : null; S.tabs[S.loc] = 'jadd'; renderTabs(); $('#panel').scrollTop = 0; return; }
   if (c !== 'zone' && c !== 'copy' && roBlock('j')) return;
   if (c === 'act') {
     var ak = b.dataset.k, ym = todayISO().slice(0, 7);
@@ -1752,7 +1844,8 @@ function jCmd(c, b) {
     var any = ['ph', 'ec', 'ts', 'ta', 'rh', 'lx'].some(function (k) { return row[k] !== null; });
     if (!z || !row.d || !any) { J.msg = 'Укажите зону и хотя бы один показатель.'; renderTabs(); return; }
     Object.keys(row).forEach(function (k) { if (row[k] === null) delete row[k]; });
-    putIn('journal/' + row.d, row.d, 'r', uidGen(), stamp(row)); rebuild(); J.zone = z; J.pre = null; S.tabs.pilot = 'jrev'; renderTabs(); $('#panel').scrollTop = 0; return;
+    if (zoneSite(z) !== J.site) { J.msg = J.site === 'farm' ? 'Такое обозначение зоны на ферме не используется. Выберите стеллаж, узел или рассадную.' : 'Здесь зоны — ванны и трубы из списка.'; renderTabs(); return; }
+    putIn('journal/' + row.d, row.d, 'r', uidGen(), stamp(row)); rebuild(); J.zone = z; J.pre = null; S.tabs[S.loc] = 'jrev'; renderTabs(); $('#panel').scrollTop = 0; return;
   }
   if (c === 'corr') {
     var cr = jOf(J.zone), lastR = cr[cr.length - 1], mlIn = num('jCm'), after = num('jCp');
@@ -1769,10 +1862,11 @@ function jCmd(c, b) {
     renderTabs(); $('#panel').scrollTop = 0; return;
   }
   if (c === 'del') { var dr = J.rows[+b.dataset.i]; if (dr) putIn(dr._p, null, 'r', dr.id, null); }
-  else if (c === 'noex') J.rows.forEach(function (r) { if (r.ex) putIn(r._p, null, 'r', r.id, null); });
+  else if (c === 'noex') jRows().forEach(function (r) { if (r.ex) putIn(r._p, null, 'r', r.id, null); });
+  else if (c === 'exadd') exampleRows(J.site).forEach(function (x) { putIn('journal/' + x[1].d, x[1].d, 'r', x[0], x[1]); });
   else if (c === 'zone') J.zone = b.dataset.z;
   else if (c === 'copy') {
-    var txt = 'дата;время;зона;этап;pH;EC;раствор;воздух;влажность;объём;лк;часы;источник\n' + J.rows.map(function (r) { return [r.d, r.tm, r.z, r.s, r.ph, r.ec, r.ts, r.ta, r.rh, r.v, r.lx, r.h, r.ex ? 'пример' : 'вручную'].map(function (x) { return x === undefined ? '' : String(x).replace('.', ','); }).join(';'); }).join('\n');
+    var txt = 'дата;время;зона;этап;pH;EC;раствор;воздух;влажность;объём;лк;часы;источник\n' + jRows().map(function (r) { return [r.d, r.tm, r.z, r.s, r.ph, r.ec, r.ts, r.ta, r.rh, r.v, r.lx, r.h, r.ex ? 'пример' : 'вручную'].map(function (x) { return x === undefined ? '' : String(x).replace('.', ','); }).join(';'); }).join('\n');
     var ta = $('#jCsv'), done = function () { J.msg = 'Журнал скопирован.'; renderTabs(); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () { ta.hidden = false; ta.value = txt; ta.select(); });
     else { ta.hidden = false; ta.value = txt; ta.select(); }
@@ -1803,16 +1897,38 @@ function merge(dst, src) {
   });
   return dst;
 }
+/* примеры замеров: по ферме — с датами от сегодняшней, по пилоту — как в гайде. Возвращает пары [ключ, запись] */
+function exampleRows(site) {
+  var t = todayISO(), out = [];
+  if (site === 'cellar') JEX.forEach(function (r, i) { var v = merge({ d: addDays(t, r.o), t: i + 1, ex: 1 }, r); delete v.o; out.push(['c' + (i + 1), v]); });
+  else [[-2, 'Стеллаж 2', { ph: 6.0, ec: 1.5, ts: 20.5, ta: 21, rh: 65, v: 400 }], [-1, 'Стеллаж 2', { ph: 6.3, ec: 1.5, ts: 20.8, ta: 21, rh: 64, v: 400 }], [0, 'Стеллаж 2', { ph: 6.6, ec: 1.55, ts: 21.0, ta: 21, rh: 65, v: 400 }],
+    [-1, 'Стеллаж 5', { ph: 6.0, ec: 1.85, ts: 21.0, ta: 21, rh: 62, v: 400 }], [0, 'Стеллаж 5', { ph: 6.0, ec: 1.95, ts: 21.5, ta: 23.5, rh: 52, v: 400 }]]
+    .forEach(function (x, i) { out.push(['f' + (i + 1), merge({ d: addDays(t, x[0]), z: x[1], s: 'grow', c: 'batavia', t: 11 + i, ex: 1 }, x[2])]); });
+  return out;
+}
+/* примеры партий пилота: пары [путь, документ] */
+function exampleBatches() {
+  var t = todayISO(), out = [];
+  BEX.forEach(function (x, i) {
+    var st = {}, doc = { no: i + 1, crop: x[0], sort: x[1], sow: addDays(t, x[3][0][1]), n: x[2], t: i + 1, ex: 1, st: st };
+    x[3].forEach(function (p, j) { st['s' + j] = { p: p[0], d: addDays(t, p[1]), t: j + 1 }; });
+    if (x[4]) { doc.end = addDays(t, x[4].end); doc.got = x[4].got; doc.g = x[4].g; }
+    if (i === 0) doc.ev = { a: { d: addDays(t, -1), k: 'note', x: 'Воздух у труб теплее нормы, края листьев пока чистые', t: 3 } };
+    out.push(['batches/c' + (i + 1), doc]);
+  });
+  return out;
+}
 function seedDocs() {
   var t = todayISO(), ym = t.slice(0, 7), D = {}, add = function (pth, b) { D[pth] = merge(D[pth] || {}, b); };
-  JEX.forEach(function (r, i) { var e = {}; e['x' + (i + 1)] = merge({ t: i + 1 }, r); add('journal/' + r.d, { d: r.d, r: e }); });
+  ['cellar', 'farm'].forEach(function (site) { exampleRows(site).forEach(function (x) { var e = {}; e[x[0]] = x[1]; add('journal/' + x[1].d, { d: x[1].d, r: e }); }); });
+  D['meta/store'] = { farmEx: 1, pilotEx: 2 };
   [['Семена салата', 'шт', 12000, 5000], ['Кубики субстрата', 'шт', 3500, 5000], ['Концентрат A', 'л', 62, 20], ['Концентрат B', 'л', 48, 20], ['Кислота pH−', 'л', 11, 5], ['Упаковка', 'шт', 4000, 1500], ['CO₂', 'кг', 45, 20]]
     .forEach(function (x, i) { D['stock/s' + (i + 1)] = { n: x[0], u: x[1], q0: x[2], r: x[3], t: i + 1, ex: 1 }; });
   [[13, -3, 'Вода', 'после осмоса', 'исходный анализ', 1], [14, 0, 'Раствор', 'бак', 'состав по элементам', 1], [15, 2, 'Лист', 'стеллаж 6', 'нитраты', 0]]
     .forEach(function (x) { var e = {}; e['x' + x[0]] = { no: x[0], d: addDays(t, x[1]), what: x[2], from: x[3], test: x[4], st: x[5], res: '', t: x[0], ex: 1 }; add('samples/' + ym, { d: ym, s: e }); });
   D['cfg/sensors'] = { calInt: 30, cal: { ph1: addDays(t, -32), ph4: addDays(t, -12), ec: addDays(t, -12), o2: addDays(t, -20), co2: addDays(t, -45) }, ex: { ph1: 1, ph4: 1, ec: 1, o2: 1, co2: 1 } };
   var hd = addDays(t, -1), hm = hd.slice(0, 7);
-  D['batches/x1'] = { no: 1, crop: 'batavia', sort: 'Батавия', sow: '2026-11-04', n: 7, t: 1, ex: 1, st: { a: { p: 'А3', d: '2026-11-04', t: 1 }, b: { p: 'А2-1', d: '2026-11-14', t: 2 } }, ev: { a: { d: '2026-11-19', k: 'note', x: 'Воздух у труб теплее нормы, края листьев пока чистые', t: 3 } } };
+  exampleBatches().forEach(function (x) { D[x[0]] = x[1]; });
   D['harvest/' + hm] = { d: hm, h: { x1: { d: hd, z: 'стеллаж 5, ярусы 5–7', heads: 1012, kg: 163.9, planted: 1150, t: 1, ex: 1 } } };
   return D;
 }
@@ -1839,8 +1955,21 @@ function legacyDocs(D) {
 }
 function docsSave() { try { localStorage.setItem('gt-store-v1', JSON.stringify(DOCS)); } catch (e) {} }
 function boxSave() { try { localStorage.setItem('gt-outbox-v1', JSON.stringify(SH.box)); } catch (e) {} }
+/* устройства, где журнал завели до появления журнала фермы, получают её примеры один раз */
+function farmExOnce() {
+  var m = DOCS['meta/store'] || {}, rowsIn = function (site) { exampleRows(site).forEach(function (x) { var b = { d: x[1].d, r: {} }; b.r[x[0]] = x[1]; DOCS['journal/' + x[1].d] = merge(DOCS['journal/' + x[1].d] || {}, b); }); };
+  if (m.farmEx && m.pilotEx >= 2) return;
+  if (!m.farmEx) rowsIn('farm');
+  if (!(m.pilotEx >= 2)) {
+    /* прежние примеры пилота с жёсткими датами заменяются новым набором */
+    Object.keys(DOCS).forEach(function (pth) { if (pth.indexOf('journal/') === 0 && DOCS[pth] && DOCS[pth].r) Object.keys(DOCS[pth].r).forEach(function (id) { var r = DOCS[pth].r[id]; if (r && r.ex && /^x\d+$/.test(id)) DOCS[pth].r[id] = null; }); });
+    if (DOCS['batches/x1'] && DOCS['batches/x1'].ex) delete DOCS['batches/x1'];
+    rowsIn('cellar'); exampleBatches().forEach(function (x) { if (!DOCS[x[0]]) DOCS[x[0]] = x[1]; });
+  }
+  DOCS['meta/store'] = { farmEx: 1, pilotEx: 2 }; docsSave();
+}
 function docsLoad() {
-  try { var raw = localStorage.getItem('gt-store-v1'); if (raw) { var D = JSON.parse(raw); if (D && typeof D === 'object') { DOCS = D; return; } } } catch (e) {}
+  try { var raw = localStorage.getItem('gt-store-v1'); if (raw) { var D = JSON.parse(raw); if (D && typeof D === 'object') { DOCS = D; farmExOnce(); return; } } } catch (e) {}
   DOCS = seedDocs();
   try { legacyDocs(DOCS); } catch (e) {}
   docsSave();
@@ -1998,12 +2127,10 @@ function shFlush() {
   catch (e) { fin(false, { code: 'invalid_argument' }); return; }
   go.then(function () { fin(true); }, function (e) { fin(false, e); });
 }
-
+/* переключение режима: погреб, общий журнал и подписи появляются или исчезают целиком */
 function modeUi() {
-  var b = $('#tTeam'), mb = document.querySelector('#mnav [data-m="pilot"] span');
+  var b = $('#tTeam');
   if (b) { b.hidden = !CAN_TEAM; b.textContent = TEAM ? 'Вид пользователя' : 'Режим команды'; }
-  if (mb) mb.textContent = 'Журнал';
-  if (cellarG) cellarG.visible = TEAM;
 }
 function setTeam(v) {
   v = !!v && CAN_TEAM;
@@ -2054,7 +2181,7 @@ function shInit() {
     var db = r[0], user = r[1];
     if (!db) { local(); return; }
     SH.db = db;
-    
+    /* общий журнал и погреб — только тем, кто может редактировать страницу: владельцу и приглашённым редакторам */
     (user ? Promise.all([user.id(), user.can('data.write'), user.canEdit(), user.isOwner()]) : Promise.resolve([null, null, false, false])).then(function (w) {
       SH.uid = w[0] || null; SH.canW = w[1]; SH.ro = w[1] === false;
       if (w[2] !== true && w[3] !== true) { local(); return; }
@@ -2169,8 +2296,17 @@ function srSave(el) {
   putIn(smp._p, null, 's', smp.id, { res: el.value }); el.defaultValue = el.value; rebuild();
 }
 
-
-var CELLAR = [];
+/* ---------- пилот в погребе: места на стеллажах и партии. Раскладка — по реестру проекта от 19.11.2026 ---------- */
+var CELLAR = [
+  { r: 'А', dim: '1,5 × 0,6 м · две секции', tiers: [
+    { id: 'А3', mm: 1320, kind: 'tray', plan: 'рассада или микрозелень', places: [{ id: 'А3' }] },
+    { id: 'А2', mm: 760, kind: 'nft', plan: 'салаты, по сорту на трубу', places: [{ id: 'А2-1', zone: 'А2 NFT', seats: 7 }, { id: 'А2-2', zone: 'А2 NFT', seats: 7 }, { id: 'А2-3', zone: 'А2 NFT', seats: 7 }] },
+    { id: 'А1', mm: 200, kind: 'dwc', plan: 'салаты', places: [{ id: 'А1-1', seats: 8 }, { id: 'А1-2', seats: 8 }] }] },
+  { r: 'Б', dim: 'около 2,15 × 0,6 м · три секции', tiers: [
+    { id: 'Б3', mm: 1320, kind: 'tray', plan: 'микрозелень', places: [{ id: 'Б3' }] },
+    { id: 'Б2', mm: 760, kind: 'dwc', plan: 'кинза и петрушка · второй этап', places: [{ id: 'Б2-1', seats: 8 }, { id: 'Б2-2', seats: 8 }, { id: 'Б2-3', seats: 8 }] },
+    { id: 'Б1', mm: 200, kind: 'dwc', plan: 'лук и укроп', places: [{ id: 'Б1-1', seats: 8 }, { id: 'Б1-2', seats: 8 }, { id: 'Б1-3', seats: 8 }] }] }
+];
 var KIND = { dwc: ['ванна', 'Ванна с плавающим плотом: около 30 л раствора, 8 мест.'], nft: ['труба', 'Проточная труба Ø 110: 7 мест. Раствор общий на три трубы, бак 60 л — замеры ведутся по зоне «А2 NFT».'], tray: ['полка', 'Полка для рассады и микрозелени.'] };
 var PLACE = {}, PV = { place: null, batch: null, form: false, msg: '' };
 CELLAR.forEach(function (r) { r.tiers.forEach(function (t) { t.places.forEach(function (pl) { pl.kind = t.kind; pl.plan = t.plan; pl.rack = r.r; pl.mm = t.mm; pl.zone = pl.zone || pl.id; PLACE[pl.id] = pl; }); }); });
@@ -2197,6 +2333,7 @@ var ago = function (d) { var n = daysFrom(d, todayISO()); return n <= 0 ? 'се�
 var when = function (r) { return dm(r.d) + (r.tm ? ' в ' + r.tm : ''); };
 /* lvl: 0 — свежий, до суток; 1 — вчерашний; 2 — старше двух суток, свежих данных нет */
 function fresh(r) {
+  if (r.ex) return { lvl: 0, txt: 'пример' };
   var h = (Date.now() - Date.parse(r.d + 'T' + (r.tm || '12:00') + ':00')) / 36e5, days = daysFrom(r.d, todayISO());
   return { lvl: r.tm ? (h >= 48 ? 2 : h >= 24 ? 1 : 0) : (days >= 2 ? 2 : days === 1 ? 1 : 0), txt: r.tm && h < 24 ? (h < 1 ? 'только что' : Math.floor(h) + ' ч назад') : ago(r.d) };
 }
@@ -2215,6 +2352,183 @@ function placeState(id) {
   return { k: cs.length ? 1 : old ? 2 : 0, t: (wait.length ? 'ждёт действия: ' + nm(wait) : cs.length ? 'ждёт замера: ' + nm(cs) : has(r.ph) ? 'pH ' + fmt(r.ph) : 'в норме') + ' · ' + (old ? 'нет свежих данных' : fr.txt), r: r, cs: cs, old: old };
 }
 var cycDays = function (c) { var m = /(\d+)(?:–(\d+))?/.exec((c && c.cycle) || ''); return m ? [+m[1], +(m[2] || m[1])] : null; };
+/* раздел пилота: место в сцене и вкладки. Виден всем; настоящие записи команды — только в общем журнале */
+LOCS.pilot = { name: 'Пилот в погребе', who: 'Пилот · проверка на практике', lead: 'Настоящий погреб 2,95 × 2,15 м: два стеллажа, восемь ванн и три трубы. Нажмите место на схеме — откроются партия, замеры и указания.',
+  cam: [13.525, -1.05, -2.575], tgt: [15.675, -1.8, -2.575], links: ['overview'], anchor: [13.5, -0.2, -2.6], sub: 'пилот' };
+TABS.pilot = [['map', 'Погреб'], ['pass', 'Паспорт'], ['light', 'Свет'], ['fp', 'Итоги'], ['jadd', 'Ввод'], ['jrev', 'Разбор'], ['diag', 'Диагностика']];
+applyMode();
+function cellarMap() {
+  var act = BT.filter(function (b) { return !b.end; }), done = BT.filter(function (b) { return b.end; });
+  var cell = function (pl) {
+    var bs = btAt(pl.id), stt = placeState(pl.id), dot = '<span class="dotS' + (stt.k === 1 ? ' w' : stt.k === 2 ? ' n' : '') + '"></span>';
+    return '<button class="cell' + (bs.length ? ' on' : ' free') + '" type="button" data-bt="place" data-p="' + pl.id + '" aria-label="' + pl.id + ', ' + KIND[pl.kind][0] + (bs.length ? ', ' + esc(btName(bs[0])) : ', свободно') + '"><b>' + (bs.length ? dot : '') + pl.id + '</b><span>' + (bs.length ? esc(btName(bs[0])) + (bs.length > 1 ? ' и ещё ' + (bs.length - 1) : '') : 'свободно') + '</span>' + (bs.length ? '<span>' + stt.t + '</span>' : '') + '</button>';
+  };
+  return shBar() + (PV.msg ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(PV.msg) + '</p>' : '') +
+    '<p class="lead">Нажмите место — откроются партия, последние замеры и указания. Точка у места: зелёная — замер свежий и в норме, жёлтая — вне нормы, серая — свежих данных нет.</p>' +
+    CELLAR.map(function (r) {
+      return '<div class="rk"><h3>Стеллаж ' + r.r + '<span>' + r.dim + '</span></h3>' + r.tiers.map(function (t) {
+        return '<div class="tier"><div class="tl"><b>' + t.id + '</b>' + grp(t.mm) + ' мм</div><div class="cells" style="grid-template-columns:repeat(' + t.places.length + ',minmax(0,1fr))">' + t.places.map(cell).join('') + '</div></div>'; }).join('') + '</div>'; }).join('') +
+    '<p class="note">Раскладка и размеры — по реестру проекта от 19.11.2026, статус «принято». Ярус Б2 — второй этап. Ярусы считаются снизу: первый на высоте 200 мм.</p>' +
+    head('Партии в работе') + (act.length ? '<div>' + act.map(function (b) { var pl = btPlace(b);
+      return '<div class="line"><span class="g"><b>' + esc(btName(b)) + (b.ex ? ' ' + badge('ex') : '') + '</b><span>' + pl + ' · ' + daysFrom(b.sow, todayISO()) + '-й день от посева</span></span><button class="mini" type="button" data-bt="open" data-b="' + b.id + '">Открыть</button></div>'; }).join('') + '</div>' : '<p class="lead">Партий пока нет. Запишите первый посев или посмотрите, как выглядит заполненный погреб, на примерах.</p><div class="btns"><button class="btn" type="button" data-bt="bex">Добавить примеры</button></div>') +
+    '<div class="btns"><button class="btn solid" type="button" data-bt="new">Новая партия</button></div>' +
+    (done.length ? head('Завершённые партии') + '<div>' + done.slice().reverse().slice(0, 6).map(function (b) {
+      return '<div class="line"><span class="g"><b>' + esc(btName(b)) + '</b><span class="num">сбор ' + dm(b.end) + (b.got && b.g ? ' · ' + fmt(b.g / b.got, 0) + ' г с растения' : '') + '</span></span><button class="mini" type="button" data-bt="open" data-b="' + b.id + '">Открыть</button></div>'; }).join('') + '</div>' : '');
+}
+var placeOpts = function (sel) { return Object.keys(PLACE).map(function (id) { return '<option value="' + id + '"' + (id === sel ? ' selected' : '') + '>' + id + ' · ' + KIND[PLACE[id].kind][0] + '</option>'; }).join(''); };
+function batchForm() {
+  return '<div class="btns"><button class="mini" type="button" data-bt="back">← Назад</button></div>' + head('Новая партия: посев') +
+    '<div class="fld" style="grid-template-columns:minmax(0,1fr) 172px"><label for="bC">Культура</label><select id="bC">' + CROPS.map(function (c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join('') + '</select></div>' +
+    inF('bS', 'Сорт, если есть', 'необязательно', 'name') + inF('bD', 'Дата посева', '', 'date') + inF('bN', 'Сколько мест или кубиков', '8') +
+    '<div class="fld" style="grid-template-columns:minmax(0,1fr) 172px"><label for="bP">Куда посеяли</label><select id="bP">' + placeOpts(PV.place || 'А3') + '</select></div>' +
+    (PV.msg ? '<p class="lead" role="status" style="color:var(--warn)">' + esc(PV.msg) + '</p>' : '') +
+    '<div class="btns"><button class="btn solid" type="button" data-bt="create">Записать посев</button></div>' +
+    '<p class="note">Партия — одна культура, посеянная в один день. Дальше её ведут по местам: перенос, замеры, наблюдения, сбор.</p>';
+}
+function placeCard() {
+  var pl = PLACE[PV.place], bs = btAt(pl.id), stt = placeState(pl.id), r = stt.r, z = pl.zone, n = jFind(z).length;
+  var fact = function (k, v, bad) { return '<div class="fact' + (bad ? ' bad' : '') + '"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>'; };
+  var wait = BT.filter(function (b) { return !b.end && btPlace(b) !== pl.id && (PLACE[btPlace(b)] || {}).kind === 'tray'; });
+  var past = BT.filter(function (b) { return btStays(b).some(function (x) { return x.p === pl.id; }) && bs.indexOf(b) < 0; });
+  var html = '<div class="btns"><button class="mini" type="button" data-bt="back">← К схеме</button></div>' + (PV.msg ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(PV.msg) + '</p>' : '') +
+    head(pl.id + ' · ' + KIND[pl.kind][0]) + '<p class="lead">Стеллаж ' + pl.rack + ', высота ' + grp(pl.mm) + ' мм. ' + KIND[pl.kind][1] + ' По раскладке: ' + pl.plan + '.</p>' +
+    head('Партия') + (bs.length ? '<div>' + bs.map(function (b) { return '<div class="line"><span class="g"><b>' + esc(btName(b)) + (b.ex ? ' ' + badge('ex') : '') + '</b><span>посев ' + dm(b.sow) + ' · ' + daysFrom(b.sow, todayISO()) + '-й день · ' + b.n + ' мест</span></span><button class="mini" type="button" data-bt="open" data-b="' + b.id + '">Открыть</button></div>'; }).join('') + '</div>'
+      : '<p class="lead">Место свободно.</p>') +
+    '<div class="btns">' + wait.map(function (b) { return '<button class="mini" type="button" data-bt="here" data-b="' + b.id + '">Перенести сюда ' + esc('№' + b.no) + '</button>'; }).join('') + '<button class="mini" type="button" data-bt="new">Посеять сюда</button></div>' +
+    head('Раствор и воздух' + (z !== pl.id ? ' · зона ' + z : ''));
+  if (r) {
+    var zv = zoneVals(z), LB = { ph: ['pH', 1, ''], ec: ['EC', 2, ''], ts: ['Раствор', 1, ' <small>°C</small>'], ta: ['Воздух', 1, ' <small>°C</small>'], rh: ['Влажность', 0, ' <small>%</small>'] }, mixed = false;
+    html += '<div class="facts">' + Object.keys(LB).filter(function (k) { return zv[k]; }).map(function (k) {
+      var x = zv[k], N = normFor(x), f = fresh(x), bad = N[k] && (x[k] < N[k][0] || x[k] > N[k][1]);
+      if (x !== r) mixed = true;
+      return '<div class="fact' + (bad ? ' bad' : '') + (f.lvl === 2 ? ' old' : '') + '"><div class="k">' + LB[k][0] + '</div><div class="v">' + fmt(x[k], LB[k][1]) + LB[k][2] + '</div><div class="n">' + (f.lvl === 2 ? 'устарело · ' : '') + (x.tm && f.lvl === 0 ? x.tm + ' · ' : '') + f.txt + '</div></div>'; }).join('') + '</div>' +
+      '<p class="note"' + (stt.old ? ' style="color:var(--warn)"' : '') + '>' + prov(r) + (mixed ? ' Показано последнее известное значение каждого показателя: дата — под цифрой.' : '') + '</p>';
+  } else html += '<p class="lead">По этой зоне замеров ещё нет.</p>';
+  html += '<div class="btns"><button class="btn solid" type="button" data-bt="measure" data-p="' + pl.id + '">Внести замер</button>' + (r ? '<button class="btn" type="button" data-bt="review" data-p="' + pl.id + '">Разбор' + (n ? ' · указаний: ' + n : '') + '</button>' : '') + '</div>';
+  if (past.length) html += head('Кто здесь рос') + '<div>' + past.slice().reverse().slice(0, 5).map(function (b) { return '<div class="line"><span class="g"><b>' + esc(btName(b)) + '</b><span>посев ' + dm(b.sow) + (b.end ? ' · сбор ' + dm(b.end) : ' · сейчас ' + btPlace(b)) + '</span></span><button class="mini" type="button" data-bt="open" data-b="' + b.id + '">Открыть</button></div>'; }).join('') + '</div>';
+  return html;
+}
+function batchCard() {
+  var b = btById(PV.batch);
+  if (!b) { PV.batch = null; return cellarMap(); }
+  var c = cropById(b.crop) || CROPS[0], pl = btPlace(b), st = btStays(b), t = todayISO(), last = b.end || t, cyc = cycDays(c), rows = btRows(b), tl = [];
+  st.forEach(function (x, i) { tl.push({ d: x.d, t: x.t, o: i ? 2 : 1, a: i ? 'Перенос' : 'Посев', x: i ? 'в ' + x.p + ' · ' + KIND[(PLACE[x.p] || { kind: 'tray' }).kind][0] : b.n + ' мест · ' + x.p }); });
+  rows.forEach(function (r) { var bad = rowBad(r); tl.push({ d: r.d, t: r.t, o: 3, a: 'Замер' + (r.tm ? ' в ' + r.tm : '') + ' · ' + esc(r.z), x: rowText(r) + (bad.length ? ' — вне нормы: ' + bad.join(', ') : ''), w: bad.length > 0, ex: r.ex }); });
+  var inStay = function (z, d) { return st.some(function (x, i) { return zoneOf(x.p) === z && d >= x.d && d <= (st[i + 1] ? st[i + 1].d : (b.end || '9999')); }); }, zs = {};
+  st.forEach(function (x) { zs[zoneOf(x.p)] = 1; });
+  KC.forEach(function (k) { if (inStay(k.z, k.d)) tl.push({ d: k.d, t: k.t, o: 4, a: 'Коррекция pH · ' + esc(k.z), x: 'действие записано, коэффициент дозы ' + fmt(k.k, 2) }); });
+  ACTS.forEach(function (a) { if (PRM[a.k] && inStay(a.z, a.d)) tl.push({ d: a.d, t: a.t, o: 4, a: 'Действие · ' + PRM[a.k][0], x: esc(a.x) }); });
+  Object.keys(zs).forEach(function (z) { cases(z).forEach(function (c) { if (c.to && inStay(z, c.to.d)) tl.push({ d: c.to.d, t: (c.to.t || 0) + 0.5, o: 3.5, a: 'Отклонение закрыто · ' + PRM[c.k][0], x: c.v0 + ' → ' + c.v1 + ' · подтверждено замером' }); }); });
+  Object.keys(b.ev || {}).forEach(function (k) { var e = b.ev[k]; if (e) tl.push({ d: e.d, t: e.t, o: 5, a: 'Наблюдение', x: esc(e.x) }); });
+  if (b.end) tl.push({ d: b.end, o: 6, a: 'Сбор', x: b.got + ' растений · ' + grp(b.g) + ' г' });
+  tl.sort(function (x, y) { return x.d < y.d ? -1 : x.d > y.d ? 1 : x.t > 1e11 && y.t > 1e11 ? x.t - y.t : x.o - y.o; });
+  var html = '<div class="btns"><button class="mini" type="button" data-bt="back">← Назад</button></div>' + (PV.msg ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(PV.msg) + '</p>' : '') +
+    head('Партия ' + esc(btName(b)) + (b.ex ? ' ' + badge('ex') : '')) +
+    kv([['Культура', c.name + (b.sort && b.sort !== c.name ? ' · ' + esc(b.sort) : ''), 'цикл по справочнику: ' + c.cycle + (cyc ? ' дн.' : '')], ['Посев', dm(b.sow) + ' · ' + b.n + ' мест', ''],
+      [b.end ? 'Собрана' : 'Сейчас', b.end ? dm(b.end) : pl + ' · ' + KIND[(PLACE[pl] || { kind: 'tray' }).kind][0], b.end ? '' : 'на этом месте с ' + dm(st[st.length - 1].d)],
+      [b.end ? 'Цикл' : 'Возраст', daysFrom(b.sow, last) + ' дн.', b.end ? 'от посева до сбора' : cyc ? 'ориентир сбора ' + dm(addDays(b.sow, cyc[0])) + (cyc[1] !== cyc[0] ? '–' + dm(addDays(b.sow, cyc[1])) : '') : 'срок сбора для культуры не подтверждён', !b.end && cyc && daysFrom(b.sow, t) > cyc[1]]]);
+  if (b.end && b.got) {
+    var g1 = b.g / b.got, loss = b.n ? (b.n - b.got) / b.n * 100 : null;
+    html += head('Итог партии') + kv([['С одного растения', fmt(g1, 0) + ' г', c.lettuce ? 'ориентир реестра для большой фермы: 150–180 г' : 'ориентира по культуре нет', c.lettuce && (g1 < 150 || g1 > 180)], ['Собрано', b.got + ' из ' + b.n, loss !== null ? 'потери ' + fmt(Math.max(0, loss)) + ' % · план реестра 10 %' : '', loss !== null && loss > 10], ['Товарный вес', grp(b.g) + ' г', 'взвешено при сборе']]) + (function () {
+        var k = btCost(b), kgB = b.g / 1000, r2 = [];
+        r2.push(k.kwh !== null ? ['Энергия', fmt(k.kwh) + ' кВт·ч', fmt(k.kwh / kgB) + ' кВт·ч/кг при ориентире реестра 17–22 · оценка: ' + fmt(k.share * 100, 0) + ' % расхода погреба по место-дням', k.kwh / kgB > REG.kwh[1]] : ['Энергия', '—', 'нужны показания ваттметров не позже посева и не раньше сбора']);
+        r2.push(k.min ? ['Время', fmt(k.min, 0) + ' мин', fmt(k.min / b.got) + ' мин на растение · своих ' + fmt(k.own, 0) + ' мин, доля общих ' + fmt(k.com, 0) + ' мин', k.min / b.got > REG.min[1]] : ['Время', '—', 'время работы по партии не записано']);
+        return kv(r2); })() +
+      '<p class="note">Сравнение с реестром — ориентир: условия погреба и большой фермы разные.</p>';
+  }
+  if (!b.end) {
+    html += head('Действия') + '<div class="btns"><button class="btn solid" type="button" data-bt="measure" data-p="' + pl + '">Внести замер</button>' + (rows.length ? '<button class="btn" type="button" data-bt="review" data-p="' + pl + '">Разбор замеров</button>' : '') + '<button class="btn" type="button" data-bt="towork" data-b="' + b.id + '">Записать время</button></div>' +
+      '<details class="box"><summary class="t">Перенести на другое место</summary><div class="fld" style="grid-template-columns:minmax(0,1fr) 172px"><label for="bMp">Куда</label><select id="bMp">' + placeOpts(pl) + '</select></div>' + inF('bMd', 'Дата переноса', '', 'date') + '<div class="btns"><button class="btn" type="button" data-bt="move">Записать перенос</button></div></details>' +
+      '<details class="box"><summary class="t">Записать наблюдение</summary>' + inF('bNx', 'Что увидели', 'бурые края на молодых листьях', 'name') + '<div class="btns"><button class="btn" type="button" data-bt="note">Записать</button></div></details>' +
+      '<details class="box"><summary class="t">Сбор и взвешивание</summary>' + inF('bHn', 'Собрано растений', String(b.n)) + inF('bHg', 'Товарный вес, г', '1 250') + inF('bHd', 'Дата сбора', '', 'date') + '<div class="btns"><button class="btn solid" type="button" data-bt="harvest">Записать сбор</button></div></details>';
+  }
+  html += head('Лента партии') + '<div class="tml">' + tl.map(function (e) { return line(dm(e.d) + ' · ' + e.a + (e.ex ? ' ' + badge('ex') : ''), e.x, '', e.w); }).join('') + '</div>' +
+    '<p class="note">Замеры попадают в ленту сами: по зоне места за те дни, пока партия там стояла.</p>' +
+    '<div class="btns"><button class="mini" type="button" data-bt="del" data-b="' + b.id + '">Удалить партию</button></div>';
+  return html;
+}
+/* паспорт погреба: что установлено точно, что принято решением, что расчёт, что ещё вопрос. По реестру проекта и схеме сборки от 19.11.2026 */
+var PASS = [
+  ['Помещение', [['Длина × ширина × высота', '2,95 × 2,15 × 1,90 м', 'fact', 'обмер 18.11'], ['Люк и лестница', 'у торцевой стены', 'fact', 'подтверждено 19.11; точное место — по месту'],
+    ['Вытяжка', 'колено Ø 110 в торцевой стене напротив люка', 'fact', 'фото и видео 19.11'], ['Температура', 'около 16 °C', 'fact', 'один замер 18.11; минимум и влажность не сняты'], ['Электролиния', 'автомат, УЗО и сечение неизвестны', 'ask', '']]],
+  ['Стеллажи', [['Стеллаж А', '1,5 × 0,6 м, две секции по 750 мм', 'fact', 'обмер 18.11, ± 2 см'], ['Стеллаж Б', 'около 2,15 × 0,6 м, три секции', 'acc', 'решение 19.11; точная длина — по месту'],
+    ['Ярусы', '200 / 760 / 1 320 мм', 'acc', '18.11'], ['Проход', 'около 0,95 м', 'calc', ''], ['Нагрузка на полку', 'А — около 80 кг, Б — около 120 кг', 'calc', 'полки усилить до 100 и 130 кг']]],
+  ['Система', [['Ванны', '8 штук: А1 — 2, Б1 — 3, Б2 — 3; около 30 л, 8 мест', 'acc', '19.11'], ['Проточные трубы', '3 × Ø 110 × 1,40 м, по 7 мест, уклон 3 %', 'acc', '19.11'],
+    ['Насос', 'Atman AT-105S', 'ask', 'напор не ниже 1,5 м — проверить по шильдику'], ['Свет', 'линейные светильники 36 Вт', 'acc', 'сначала проверить один образец: 17–20 тыс. лк у листьев'],
+    ['Хватит ли света', 'в цель попадает только ярус А2', 'calc', 'оценка по паспортному потоку от 20.11: А3, Б1 и Б3 получают около половины нужного, А1 и Б2 — на границе; замерить до закупки остальных светильников'],
+    ['Сколько светильников до нормы', 'при 18 ч света: А1 — 5, А2 — 5, А3 — 4, Б1 — 4 ряда, Б2 — 4, Б3 — 3–4', 'calc', 'оценка от 20.11 при 80 % потока на полке; при 16 ч на ряд больше почти везде. Пересчёт по замеру — на вкладке «Свет»'],
+    ['Тепло от света', 'возможен перегрев погреба', 'ask', 'вытяжка 150 м³/ч уносит около 500 Вт на каждые 10 °C разницы, а света 0,6–1,3 кВт; проверить термогигрометром в первую неделю со светом'],
+    ['Аэрация', '5 компрессоров, 10 выходов', 'acc', ''], ['Нагрузка на линию', 'около 0,9 кВт', 'calc', '']]],
+  ['Откуда берутся цифры', [['Термогигрометр Xiaomi', 'стоит в погребе с 19.11', 'fact', 'к приложению не подключён — показания вносятся вручную'], ['Тестер pH, EC и температуры', 'в списке закупки', 'acc', 'замеры — вручную'],
+    ['Весы с шагом 1 г', 'в списке закупки', 'acc', 'вес партии при сборе'], ['Два ваттметра', 'в списке закупки', 'acc', 'свет отдельно, остальное отдельно'], ['Связь в погребе', 'не проверена', 'ask', 'от неё зависит автоматическая передача данных']]]
+];
+EXTRA.pass = function () {
+  var all = [], n = { fact: 0, acc: 0, calc: 0, ask: 0 };
+  PASS.forEach(function (g) { g[1].forEach(function (x) { all.push(x); n[x[2]]++; }); });
+  return head('Паспорт погреба') + '<p class="lead">Из ' + all.length + ' ' + plr(all.length, 'параметра', 'параметров', 'параметров') + ' фактом подтверждено ' + n.fact + ', принято решением ' + n.acc + ', расчётных ' + n.calc + ', под вопросом ' + n.ask + '.</p>' +
+    '<p class="note">' + badge('fact') + ' измерено или видно на месте · ' + badge('acc') + ' решение принято, на месте ещё не проверено · ' + badge('calc') + ' посчитано · ' + badge('ask') + ' неизвестно</p>' +
+    PASS.map(function (g) { return head(g[0]) + '<div>' + g[1].map(function (x) { return line(x[0], x[1] + (x[3] ? ' · ' + x[3] : ''), badge(x[2]), x[2] === 'ask'); }).join('') + '</div>'; }).join('') +
+    '<p class="note">Сейчас все замеры вносятся вручную: подключённых датчиков в погребе нет. Когда появится автоматический источник, у его цифр будет своя подпись и время последнего обновления.</p>' +
+    '<p class="note">Источник: реестр проекта и схема сборки от 19.11.2026. Новый обмер или решение сначала вносится в реестр, потом сюда.</p>';
+};
+/* ---------- факт пилота против допущений реестра: вес, потери, цикл, энергия, время ---------- */
+/* ориентиры — из реестра проекта для большой фермы; минуты на головку — расчёт: 8–9 человек × 8 ч ÷ 1 040 головок в сутки */
+/* опыты, о которых договорились при разборе расхождений гайда с Cornell */
+var TRY = [
+  ['Плотность: 12 мест в ванне против 8', 'Две ванны одной партии и одного сорта. Сравнить вес головки, потери и краевой ожог за один цикл. У Cornell 38 растений на м², в гайде 20–25; ванна на 12 мест — это и есть 38 на м².'],
+  ['Свет над полкой рассады А3', 'Сначала замер люксметром: норме гайда 150–200 мкмоль отвечают 11–14 тыс. лк, а два светильника по паспорту дадут не больше 8 тыс. Затем один лоток под усиленным светом: на какой день рассада готова. У Cornell — на 11-й при DLI 17–22.']
+];
+var REG = { g: [150, 180], loss: 10, cyc: [35, 42], kwh: [17, 22], min: [8 * 480 / 1040, 9 * 480 / 1040] };
+/* счётчики ваттметров на дату: между двумя показаниями — по прямой; вне показаний — неизвестно */
+function kwhAt(d) {
+  if (!EN.length || d < EN[0].d || d > EN[EN.length - 1].d) return null;
+  for (var i = 1; i < EN.length; i++) if (d <= EN[i].d) { var a = EN[i - 1], b = EN[i], sp = daysFrom(a.d, b.d), f = sp ? daysFrom(a.d, d) / sp : 1; return { l: a.l + (b.l - a.l) * f, o: a.o + (b.o - a.o) * f }; }
+  return { l: EN[0].l, o: EN[0].o };
+}
+function kwhBetween(a, z) { var x = kwhAt(a), y = kwhAt(z); return x && y && z > a ? { l: y.l - x.l, o: y.o - x.o, s: y.l + y.o - x.l - x.o } : null; }
+/* место-дни партии в периоде: число мест × дни. По ним делятся общие расходы погреба */
+function btDays(b, a, z) { var from = b.sow > a ? b.sow : a, end = b.end || todayISO(), to = end < z ? end : z, n = daysFrom(from, to); return n > 0 ? n * (b.n || 1) : 0; }
+function btShare(b) { var a = b.sow, z = b.end || todayISO(), all = BT.reduce(function (sum, x) { return sum + btDays(x, a, z); }, 0); return all ? btDays(b, a, z) / all : 1; }
+function btCost(b) {
+  var z = b.end || todayISO(), sh = btShare(b), e = kwhBetween(b.sow, z), own = 0, com = 0;
+  WK.forEach(function (w) { if (w.b === b.id) own += w.m; else if (!w.b && w.d >= b.sow && w.d <= z) com += w.m; });
+  return { share: sh, kwh: e ? e.s * sh : null, own: own, com: com * sh, min: own + com * sh };
+}
+var inRng = function (v, rg) { return v >= rg[0] && v <= rg[1]; };
+var verdict = function (v, rg) { return v < rg[0] ? 'ниже ориентира' : v > rg[1] ? 'выше ориентира' : 'в пределах ориентира'; };
+EXTRA.fp = function () {
+  var done = BT.filter(function (b) { return b.end && b.got && b.g; }), lts = done.filter(function (b) { return (cropById(b.crop) || {}).lettuce; });
+  var sum = function (a, f) { return a.reduce(function (x, b) { return x + f(b); }, 0); }, base = function (n) { return n + ' ' + plr(n, 'партии', 'партиям', 'партиям'); };
+  var few = function (n) { return n < 3 ? ' · мало данных' : ''; }, none = function (what) { return [what, '—', 'данных пока нет']; }, rows = [];
+  if (lts.length) { var g = sum(lts, function (b) { return b.g; }) / sum(lts, function (b) { return b.got; }); rows.push(['Вес головки салата', fmt(g, 0) + ' г', 'ориентир 150–180 г · ' + verdict(g, REG.g) + ' · по ' + base(lts.length) + few(lts.length), !inRng(g, REG.g)]); } else rows.push(none('Вес головки салата'));
+  if (done.length) { var ls = (1 - sum(done, function (b) { return b.got; }) / sum(done, function (b) { return Math.max(b.n, b.got); })) * 100; rows.push(['Потери от посева до сбора', fmt(ls) + ' %', 'план 10 % · по ' + base(done.length) + few(done.length), ls > REG.loss]); } else rows.push(none('Потери от посева до сбора'));
+  if (lts.length) { var cy = sum(lts, function (b) { return daysFrom(b.sow, b.end); }) / lts.length; rows.push(['Цикл салата', fmt(cy, 0) + ' дн.', 'ориентир 35–42 дня · ' + verdict(cy, REG.cyc) + ' · по ' + base(lts.length) + few(lts.length), !inRng(cy, REG.cyc)]); } else rows.push(none('Цикл салата'));
+  var e0 = EN[0], e1 = EN[EN.length - 1], eTot = EN.length > 1 ? e1.l + e1.o - e0.l - e0.o : null, eDays = EN.length > 1 ? daysFrom(e0.d, e1.d) : 0;
+  if (eTot !== null && eTot > 0 && eDays > 0) {
+    var kg = sum(done.filter(function (b) { return b.end > e0.d && b.end <= e1.d; }), function (b) { return b.g; }) / 1000;
+    if (kg > 0) rows.push(['Энергия на килограмм', fmt(eTot / kg) + ' кВт·ч', 'ориентир 17–22 кВт·ч/кг · ' + verdict(eTot / kg, REG.kwh) + ' · ' + fmt(eTot) + ' кВт·ч на ' + fmt(kg, 2) + ' кг за ' + dm(e0.d) + '–' + dm(e1.d), !inRng(eTot / kg, REG.kwh)]);
+    else rows.push(['Энергия на килограмм', '—', 'за ' + dm(e0.d) + '–' + dm(e1.d) + ' израсходовано ' + fmt(eTot) + ' кВт·ч, сбора в этот период не было']);
+    rows.push(['Средняя мощность', fmt(eTot / (eDays * 24), 2) + ' кВт', 'расчётная нагрузка линии около 0,9 кВт · свет ' + fmt((e1.l - e0.l) / eTot * 100, 0) + ' % расхода · ' + fmt(eTot / eDays) + ' кВт·ч в сутки', eTot / (eDays * 24) > 0.9]);
+  } else rows.push(['Энергия на килограмм', '—', EN.length ? 'нужно второе показание ваттметров, не в тот же день' : 'показаний ваттметров пока нет']);
+  var mins = sum(WK, function (w) { return w.m; }), got = sum(done, function (b) { return b.got; });
+  if (mins && got) rows.push(['Время на одно растение', fmt(mins / got) + ' мин', 'расчёт по реестру ' + fmt(REG.min[0]) + '–' + fmt(REG.min[1]) + ' мин · ' + verdict(mins / got, REG.min) + ' · ' + grp(mins) + ' мин на ' + got + ' ' + plr(got, 'растение', 'растения', 'растений'), mins / got > REG.min[1]]);
+  else rows.push(['Время на одно растение', '—', mins ? 'записано ' + grp(mins) + ' мин, сбора ещё не было' : 'время работы пока не записано']);
+  var bsel = '<option value="">Общие работы по погребу</option>' + BT.filter(function (b) { return !b.end; }).map(function (b) { return '<option value="' + b.id + '"' + (PV.wb === b.id ? ' selected' : '') + '>' + esc(btName(b)) + '</option>'; }).join('');
+  return shBar() + (PV.msg ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(PV.msg) + '</p>' : '') +
+    head('Факт пилота против допущений', 'reg') + '<p class="lead">Слева — что получилось в погребе, справа — на что рассчитана большая ферма. Цифры появляются по мере записей.</p>' + kv(rows) +
+    '<p class="note">Сравнение — ориентир, а не оценка: условия погреба и большой фермы разные. Ориентиры взяты из реестра проекта; время на растение — расчёт: 8–9 человек × 8 ч ÷ 1 040 головок в сутки, вся команда фермы.</p>' +
+    head('Что проверяем в погребе') + '<div>' + TRY.map(function (x) { return line(x[0], x[1], badge('ask')); }).join('') + '</div>' +
+    '<p class="note">Решения от 20.11.2026. Нормы приложения остаются по гайду, пока опыт не покажет иное. Результат сравнения виден в карточках партий: граммы с растения, потери, срок.</p>' +
+    head('Показания ваттметров') + inF('eD', 'Дата', '', 'date') + inF('eL', 'Счётчик света, кВт·ч', '12,4') + inF('eO', 'Счётчик остального, кВт·ч', '3,1') +
+    '<div class="btns"><button class="btn solid" type="button" data-bt="energy">Записать показания</button></div>' +
+    '<p class="note">Вносите число с экрана ваттметра — нарастающим итогом. Расход считается как разница между двумя показаниями.</p>' +
+    (EN.length ? '<div>' + EN.slice().reverse().slice(0, 5).map(function (x) { return '<div class="line"><span class="g"><b>' + dm(x.d) + '</b><span class="num">свет ' + fmt(x.l) + ' · остальное ' + fmt(x.o) + ' кВт·ч</span></span><button class="mini" type="button" data-bt="edel" data-i="' + EN.indexOf(x) + '" aria-label="Удалить показания ' + dm(x.d) + '">Удалить</button></div>'; }).join('') + '</div>' : '') +
+    head('Время работы') + inF('wD', 'Дата', '', 'date') + inF('wM', 'Сколько минут', '25') + inF('wX', 'Что делали', 'долив раствора и замеры', 'name') +
+    '<div class="fld" style="grid-template-columns:minmax(0,1fr) 172px"><label for="wB">К чему относится</label><select id="wB">' + bsel + '</select></div>' +
+    '<div class="btns"><button class="btn solid" type="button" data-bt="work">Записать время</button></div>' +
+    '<p class="note">Общие работы делятся между партиями по место-дням: число мест × дни в погребе.</p>' +
+    (WK.length ? '<div>' + WK.slice().reverse().slice(0, 6).map(function (w) { var wb = w.b ? btById(w.b) : null; return '<div class="line"><span class="g"><b>' + dm(w.d) + ' · ' + w.m + ' мин</b><span>' + esc(w.x || 'без описания') + ' · ' + (wb ? esc(btName(wb)) : w.b ? 'партия удалена' : 'общие работы') + '</span></span><button class="mini" type="button" data-bt="wdel" data-i="' + WK.indexOf(w) + '" aria-label="Удалить запись времени ' + dm(w.d) + '">Удалить</button></div>'; }).join('') + '</div>' : '');
+};
 EXTRA.map = function () { return PV.form ? batchForm() : PV.batch ? batchCard() : PV.place && PLACE[PV.place] ? placeCard() : cellarMap(); };
 function btCmd(c, el) {
   var t = todayISO(), b = btById(el.dataset.b || PV.batch), msg = '', e = {}, top = true;
@@ -2227,7 +2541,7 @@ function btCmd(c, el) {
   else if (c === 'measure' || c === 'review') {
     var mp = PLACE[el.dataset.p] || {}, mb = btAt(el.dataset.p)[0], mc = mb ? cropById(mb.crop) : null;
     if (S.loc !== 'pilot') go('pilot');
-    J.zone = mp.zone || el.dataset.p; J.msg = ''; J.pre = { c: mc ? (mc.lettuce ? 'batavia' : mc.id) : 'batavia', s: mp.kind === 'tray' ? 'seed' : 'grow' };
+    jCtx(); J.zone = mp.zone || el.dataset.p; J.msg = ''; J.pre = { c: mc ? (mc.lettuce ? 'batavia' : mc.id) : 'batavia', s: mp.kind === 'tray' ? 'seed' : 'grow' };
     S.tabs.pilot = c === 'measure' ? 'jadd' : 'jrev';
   } else {
     if (shared() && SH.ro) { PV.msg = 'Общий журнал открыт вам только для чтения — запись не сохранена.'; renderTabs(); return; }
@@ -2251,6 +2565,7 @@ function btCmd(c, el) {
       putIn('work/' + wd.slice(0, 7), wd.slice(0, 7), 'w', uidGen(), stamp({ d: wd, m: Math.round(wm), x: txtOf('wX'), b: wb }));
       PV.wb = wb; msg = 'Время записано: ' + Math.round(wm) + ' мин.'; top = false;
     } else if (c === 'wdel') { var wx = WK[+el.dataset.i]; if (wx) putIn(wx._p, null, 'w', wx.id, null); top = false; }
+    else if (c === 'bex') { exampleBatches().forEach(function (x) { put(x[0], x[1]); }); exampleRows('cellar').forEach(function (x) { putIn('journal/' + x[1].d, x[1].d, 'r', x[0], x[1]); }); msg = 'Примеры добавлены. Они помечены и убираются по одному: партии — кнопкой «Удалить партию», замеры — «Убрать примеры» на вкладке «Ввод».'; }
     else if (c === 'light' || c === 'lightreset') { msg = lightCmd(c); if (msg === null) { renderTabs(); return; } top = false; }
     else if (!b) { renderTabs(); return; }
     else if (c === 'here' || c === 'move') {
@@ -2277,6 +2592,76 @@ function btCmd(c, el) {
   if (top) $('#panel').scrollTop = 0;
 }
 
+/* ---------- свет по ярусам погреба: сколько рядов светильников нужно до нормы. По замеру, а пока его нет — по паспортному потоку ---------- */
+/* светильники из схемы сборки: длинный 1200 мм 36 Вт не меньше 3 600 лм, короткий 600 мм 18 Вт не меньше 1 800 лм.
+   uf — доля потока, доходящая до полки (допущение до замера); vent — вытяжка из схемы, м³/ч */
+var LAMP = { L: { lm: 3600, w: 36 }, S: { lm: 1800, w: 18 }, uf: 0.8, vent: 150 };
+/* ряд на стеллаже А — один длинный светильник, на Б — длинный и короткий. plan — рядов в схеме: первый этап и после второго */
+var LIGHT_TIERS = [
+  { id: 'А1', rack: 'А', what: 'салаты', crops: ['batavia'], plan: [4, 4] }, { id: 'А2', rack: 'А', what: 'салаты в трубах', crops: ['batavia'], plan: [5, 5] },
+  { id: 'А3', rack: 'А', what: 'рассада', seed: true, plan: [2, 2] }, { id: 'Б1', rack: 'Б', what: 'лук и укроп', crops: ['onion', 'dill'], plan: [2, 3] },
+  { id: 'Б2', rack: 'Б', what: 'кинза и петрушка', crops: ['cilantro', 'parsley'], plan: [0, 4] }, { id: 'Б3', rack: 'Б', what: 'микрозелень', crops: ['micro'], plan: [2, 2] }
+];
+var RACK_AREA = { 'А': 1.5 * 0.6, 'Б': 2.15 * 0.6 };
+/* вклад одного ряда в освещённость полки, лк: средний замер, а без него — оценка по паспорту */
+function rowLux(rack) {
+  var m = LIGHT[rack === 'А' ? 'a' : 'b'];
+  if (m > 0) return { v: m, meas: true };
+  return { v: (LAMP.L.lm + (rack === 'Б' ? LAMP.S.lm : 0)) * LAMP.uf / RACK_AREA[rack], meas: false };
+}
+/* что нужно ярусу при h часах света: коридор в люксах, число рядов до нижней границы и что получится */
+function lightNeed(tier, h) {
+  var rg, lo = 0, hi = 99;
+  if (tier.seed) rg = [150, 200];
+  else { tier.crops.forEach(function (id) { var c = cropById(id); lo = Math.max(lo, c.dliR[0]); hi = Math.min(hi, c.dliR[1]); }); rg = [lo / (h * 0.0036), hi / (h * 0.0036)]; }
+  var row = rowLux(tier.rack), lux = [rg[0] * 72, rg[1] * 72], rows = Math.ceil(lux[0] / row.v - 1e-9), got = rows * row.v;
+  return { lux: lux, rows: rows, got: got, ppfd: got / 72, dli: dli(got / 72, h), tight: got < lux[0] * 1.05, over: got > lux[1] * 1.001, row: row };
+}
+function lightPlan() {
+  var h = LIGHT.h || 16, nL = 0, nS = 0;
+  var rows = LIGHT_TIERS.map(function (t) { var n = lightNeed(t, h); nL += n.rows; if (t.rack === 'Б') nS += n.rows; return { t: t, n: n }; });
+  var w = nL * LAMP.L.w + nS * LAMP.S.w;
+  /* dT — на сколько градусов воздух в погребе должен быть теплее приточного, чтобы вытяжка унесла всё тепло света: 0,335 Вт на м³/ч и градус */
+  return { h: h, rows: rows, long: nL, short: nS, w: w, kwh: w * h / 1000, dT: w / (0.335 * LAMP.vent) };
+}
+EXTRA.light = function () {
+  var P = lightPlan(), ra = rowLux('А'), rb = rowLux('Б'), k = function (v) { return fmt(v / 1000, 1); };
+  var src = function (r, n) { return k(r.v) + ' тыс. лк — ' + (r.meas ? 'замер' + (LIGHT.d ? ' ' + dm(LIGHT.d) : '') + (n ? ', среднее по ' + n + ' ' + plr(n, 'точке', 'точкам', 'точкам') : '') : 'оценка по паспорту, 80 % потока'); };
+  var p1 = 0, p2 = 0; LIGHT_TIERS.forEach(function (t) { p1 += t.plan[0]; p2 += t.plan[1]; });
+  var planS = function (i) { return LIGHT_TIERS.filter(function (t) { return t.rack === 'Б'; }).reduce(function (s, t) { return s + t.plan[i]; }, 0); };
+  return shBar() + (PV.msg ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(PV.msg) + '</p>' : '') +
+    head('Свет по ярусам', ra.meas && rb.meas ? 'fact' : 'calc') + '<p class="lead">Сколько рядов светильников нужно каждому ярусу, чтобы выйти на нижнюю границу нормы своей культуры. Пока замера нет, расчёт идёт по паспортному потоку — это оценка.</p>' +
+    '<div class="scroll"><table class="scn"><thead><tr><th>Ярус</th><th>Нужно, тыс. лк</th><th>Рядов нужно</th><th>В схеме</th><th>Получится</th></tr></thead><tbody>' +
+    P.rows.map(function (x) { var t = x.t, n = x.n, lack = n.rows > t.plan[1];
+      return '<tr><td><b>' + t.id + '</b><br>' + t.what + '</td><td>' + k(n.lux[0]) + '–' + k(n.lux[1]) + '</td><td style="' + (lack ? 'color:var(--warn);font-weight:600' : '') + '">' + n.rows + '</td><td>' + t.plan[0] + (t.plan[1] !== t.plan[0] ? ' → ' + t.plan[1] : '') + '</td><td>' + k(n.got) + ' тыс. лк<br>DLI ' + fmt(n.dli) + (n.over ? ' — выше нормы' : n.tight ? ' — впритык' : '') + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+    '<p class="note">«В схеме» — рядов по схеме сборки: первый этап → после второго. Ряд на стеллаже А — один длинный светильник, на стеллаже Б — длинный и короткий.</p>' +
+    kv([['Всего светильников', P.long + ' длинных + ' + P.short + ' коротких', 'в схеме: ' + p1 + ' + ' + planS(0) + ', после второго этапа ' + p2 + ' + ' + planS(1), P.long > p2],
+      ['Мощность света', fmt(P.w / 1000, 2) + ' кВт', fmt(P.kwh) + ' кВт·ч в сутки при ' + P.h + ' ч', P.w > 900],
+      ['Тепло', 'разница около ' + fmt(P.dT, 0) + ' °C', 'настолько воздух должен быть теплее приточного, чтобы вытяжка ' + LAMP.vent + ' м³/ч унесла всё тепло света; грубо, без стен и испарения', P.dT > 8]]) +
+    head('Замер') + '<div class="fld"><label for="lH">Часов света в сутки</label><input id="lH" type="text" inputmode="decimal" value="' + P.h + '"></div>' +
+    inF('lA', 'Стеллаж А: один длинный светильник, люксы в 6–9 точках полки', '3100 3400 2900 3300 3000 3200', 'name') +
+    inF('lB', 'Стеллаж Б: длинный и короткий в ряд, люксы в 6–9 точках полки', '3200 3500 3000 3400 3100 3300', 'name') +
+    '<div class="btns"><button class="btn solid" type="button" data-bt="light">Пересчитать и сохранить</button>' + (ra.meas || rb.meas ? '<button class="mini" type="button" data-bt="lightreset">Вернуть оценку по паспорту</button>' : '') + '</div>' +
+    '<div>' + line('Вклад ряда, стеллаж А', src(ra, LIGHT.an), badge(ra.meas ? 'fact' : 'calc')) + line('Вклад ряда, стеллаж Б', src(rb, LIGHT.bn), badge(rb.meas ? 'fact' : 'calc')) + '</div>' +
+    '<p class="note">Как мерить: повесьте один ряд на рабочей высоте над пустой полкой, остальной свет выключите, обойдите люксметром 6–9 точек по всей полке — и края тоже. Числа впишите через пробел; пустое поле оставляет прежнее значение.</p>' +
+    '<div class="frm">нужные люксы = DLI ÷ (часы × 0,0036) × 72 · для рассады гайд задаёт 150–200 мкмоль напрямую<br>рядов = нужные люксы ÷ вклад одного ряда, с округлением вверх · DLI = люксы ÷ 72 × часы × 0,0036<br>люксметр даёт грубую оценку: по Cornell он завышает свет для растений примерно на четверть</div>';
+};
+/* сохранить часы света и замеры; возвращает сообщение или null при ошибке ввода */
+function lightCmd(c) {
+  if (c === 'lightreset') { put('cfg/light', { a: null, b: null, an: null, bn: null }); return 'Замеры сброшены: расчёт снова по паспортному потоку.'; }
+  var h = numOf('lH'), body = { d: todayISO() }, said = [];
+  /* числа меньше 100 считаются тысячами люкс: «3,2» значит 3 200 */
+  var parse = function (id) { return (txtOf(id).replace(/(\d),(\d)/g, '$1.$2').match(/\d+(\.\d+)?/g) || []).map(Number).filter(function (v) { return v > 0; }).map(function (v) { return v < 100 ? v * 1000 : v; }); };
+  if (!h || h < 8 || h > 24) { PV.msg = 'Часов света — от 8 до 24.'; return null; }
+  body.h = h;
+  [['lA', 'a', 'an', 'А'], ['lB', 'b', 'bn', 'Б']].forEach(function (f) {
+    var m = parse(f[0]); if (!m.length) return;
+    var avg = Math.round(m.reduce(function (s, v) { return s + v; }, 0) / m.length);
+    body[f[1]] = avg; body[f[2]] = m.length; said.push('стеллаж ' + f[3] + ' — среднее ' + grp(avg) + ' лк по ' + m.length + ' ' + plr(m.length, 'точке', 'точкам', 'точкам'));
+  });
+  put('cfg/light', body);
+  return 'Сохранено: ' + h + ' ч света' + (said.length ? '; ' + said.join('; ') : '') + '.';
+}
 /* ---------- рецептура раствора: граммы солей из целей по элементам, баки A и B ---------- */
 var AM = { H: 1.008, N: 14.007, O: 15.999, Mg: 24.305, P: 30.974, S: 32.06, K: 39.098, Ca: 40.078 };
 var M_KNO3 = AM.K + AM.N + 3 * AM.O, M_MKP = AM.K + 2 * AM.H + AM.P + 4 * AM.O, M_MGS = AM.Mg + AM.S + 4 * AM.O + 7 * (2 * AM.H + AM.O), M_K2S = 2 * AM.K + AM.S + 4 * AM.O, M_CAN = AM.Ca + 2 * (AM.N + 3 * AM.O) + 4 * (2 * AM.H + AM.O);
@@ -2375,37 +2760,40 @@ function renderAll() { renderWhere(); renderWays(); renderCrops(); renderTasks()
 /* ---------- показ за две минуты: одна история по шагам ---------- */
 var show = null, showTimer = null;
 var at = function (ev, done, loc, tab) { S.ev = ev; S.done = done; S.tabs[loc] = tab; go(loc); };
+/* экскурсия идёт за одной партией батавии: посев → стеллаж → отклонение и как его закрыли → сбор → упаковка → пилот */
 var STORY = [
-  { sec: 12, t: 'Ферма в цоколе', x: function () { return 'Гидроферма под домом: 29 × 20 м, 8 стеллажей по 7 ярусов, 1 176 м² посадки. План — 1 040 головок салата в сутки.'; },
+  { sec: 12, t: 'Ферма под домом', x: function () { return 'Гидроферма в цоколе: 29 × 20 м, 8 стеллажей по 7 ярусов, 1 176 м² посадки. Проследим одну партию батавии — от семени до упаковки.'; },
     run: function () { at({}, {}, 'overview', 'facts'); } },
-  { sec: 12, t: 'Каждый ярус под контролем', x: function () { return 'Воздух, раствор и свет измеряются постоянно. Система сравнивает показания с нормой для каждого этапа роста.'; },
-    run: function () { at({}, {}, 'hall', 'facts'); } },
-  { sec: 14, t: 'Авария: перегрелся раствор', x: function () { return 'Раствор нагрелся до 25,8 °C при норме 18–22. Кислорода осталось ' + fmt(6.1 / doSat(25.8) * 100, 0) + ' % от насыщения — корням нечем дышать.'; },
+  { sec: 12, t: 'Посев', x: function () { return 'Путь партии начинается в рассадной. Каждый день сеется одинаковая партия, 1 200–1 300 ячеек: так урожай идёт ровным потоком. Рассада растёт 10–14 дней под своим режимом.'; },
+    run: function () { at({}, {}, 'seedling', 'sowing'); } },
+  { sec: 12, t: 'На стеллаже', x: function () { return 'Рассаду пересаживают на стеллаж: сначала плотно, потом раздвигают. Партия привязана к стеллажу и ярусу — по ней видны возраст и срок сбора.'; },
+    run: function () { at({}, {}, 'hall', 'batches'); } },
+  { sec: 12, t: 'Ярус под контролем', x: function () { return 'Наша батавия — на стеллаже 4, ярус 2. Воздух, раствор и свет измеряются постоянно и сравниваются с нормой этапа роста.'; },
+    run: function () { at({}, {}, 'shelf', 'charts'); } },
+  { sec: 14, t: 'Отклонение: перегрелся раствор', x: function () { return 'Раствор нагрелся до 25,8 °C при норме 18–22. Кислорода осталось ' + fmt(6.1 / doSat(25.8) * 100, 0) + ' % от насыщения — корням нечем дышать. Система заметила это в растворном узле.'; },
     run: function () { at({ heat: true }, {}, 'solution', 'facts'); } },
-  { sec: 15, t: 'Не сигнал, а указание', x: function () { return 'Система говорит, что сделать, кому и к какому сроку, и показывает расчёт. Указание без расчёта или основания она не выдаёт.'; },
+  { sec: 15, t: 'Кому и что делать', x: function () { return 'Задача пришла инженеру: что сделать, к какому сроку и с каким расчётом. Раствор общий для всех стеллажей, поэтому агроном получил свою задачу — осмотреть корни.'; },
     run: function () { at({ heat: true }, {}, 'solution', 'tasks'); var d = $('#pTasks .task details'); if (d) d.open = true; } },
-  { sec: 12, t: 'У каждого специалиста своя задача', x: function () { return 'Раствор общий для всех стеллажей, поэтому агроном сразу получает свою задачу: осмотреть корни. Индекс фермы упал с 82 до ' + farmIndex() + '.'; },
-    run: function () { at({ heat: true }, {}, 'hall', 'tasks'); } },
-  { sec: 12, t: 'Задача закрыта', x: function () { return 'Инженер включил резервное охлаждение и нажал «Сделано». Раствор остывает, индекс фермы вернулся к ' + farmIndex() + '.'; },
-    run: function () { at({}, { temp: true }, 'overview', 'facts'); } },
-  { sec: 13, t: 'Свои замеры вместо условных', x: function () { return 'В журнал вносятся настоящие замеры. Система разбирает их по нормам гайда и выдаёт указание с дозой, сроком и расчётом.'; },
-    run: function () { at({}, { temp: true }, 'pilot', 'jrev'); } },
-  { sec: 13, t: 'Диагностика по симптому', x: function () { return 'Выберите, что видно на растениях. Система назовёт вероятные причины, сверит их с журналом и скажет, что сделать сегодня.'; },
-    run: function () { at({}, { temp: true }, 'pilot', 'diag'); } },
-  { sec: 14, t: 'Каждому специалисту — свой раздел', x: function () { return 'Агроном, инженер, лаборант, кладовщик и оператор смены видят свои задачи и свои инструменты. Начать можно с раздела «' + LOCS.pilot.name + '».'; },
-    run: function () { at({}, { temp: true }, 'overview', 'tasks'); } }
+  { sec: 13, t: 'Повторный замер подтвердил', x: function () { return 'Инженер включил резервное охлаждение. Повторный замер показал ' + fmt(live().ts) + ' °C — раствор снова в норме, отклонение закрыто. Индекс фермы вернулся к ' + farmIndex() + '.'; },
+    run: function () { at({}, { temp: true }, 'solution', 'facts'); } },
+  { sec: 12, t: 'Сбор и взвешивание', x: function () { return 'Через 35–42 дня партию собирают. Число головок, масса, средняя головка и отход считаются сами; по номеру партии находятся стеллаж, ярус и проба.'; },
+    run: function () { at({}, { temp: true }, 'prep', 'intake'); } },
+  { sec: 12, t: 'Упаковка и маркировка', x: function () { return 'Фасовка, этикетка с датой сбора и номером партии, затем холодильная камера и отгрузка. Так помещения связаны в один цикл — от семени до покупателя.'; },
+    run: function () { at({}, { temp: true }, 'prep', 'label'); } },
+  { sec: 14, t: 'А теперь — в наш пилот', x: function () { return 'Всё это проверяется на практике: погреб 2,95 × 2,15 м, два стеллажа, восемь ванн и три трубы. Здесь условные цифры по мере работы заменяются настоящими.'; },
+    run: function () { if (LOCS.pilot) at({}, { temp: true }, 'pilot', 'map'); else at({}, { temp: true }, 'journal', 'jrev'); } }
 ];
 function storyRender() {
   var el = $('#pStory'); if (!el) return;
   if (!show) {
-    el.innerHTML = S.loc === 'overview' && !tour ? '<button class="btn solid start" type="button" data-st="start">Показ за 2 минуты</button><p class="note">Облёт, авария, указание, закрытая задача, журнал и диагностика — девять шагов, идут сами.</p>' : '';
+    el.innerHTML = S.loc === 'overview' && !tour ? '<button class="btn solid start" type="button" data-st="start">Проследить путь салата</button><div class="btns"><button class="btn" type="button" data-st="explore">Исследовать ферму</button></div><p class="note">Одна партия батавии от семени до упаковки; посередине — перегрев раствора и как его закрыли, в конце — наш пилот. ' + STORY.length + ' шагов, около двух минут; идут сами, можно листать вручную.</p>' : '';
     return;
   }
   var st = STORY[show.i], last = show.i === STORY.length - 1;
-  el.innerHTML = '<div class="story"><div class="story-n">Показ · шаг ' + (show.i + 1) + ' из ' + STORY.length + (show.paused ? ' · пауза' : '') + '</div><div class="story-t">' + st.t + '</div><div class="story-x">' + st.x() + '</div>' +
+  el.innerHTML = '<div class="story"><div class="story-n">Путь салата · шаг ' + (show.i + 1) + ' из ' + STORY.length + (show.paused ? ' · пауза' : '') + '</div><div class="story-t">' + st.t + '</div><div class="story-x">' + st.x() + '</div>' +
     '<div class="story-p"><i id="stP" style="width:' + Math.min(100, show.elapsed / (st.sec * 10)).toFixed(0) + '%"></i></div><div class="btns">' +
     (last && !show.paused && show.elapsed >= st.sec * 1000
-      ? '<button class="btn solid" type="button" data-st="again">Смотреть ещё раз</button><button class="btn" type="button" data-st="exit">Пройтись самому</button><button class="btn" type="button" data-st="how">Как это работает</button>'
+      ? '<button class="btn solid" type="button" data-st="stay">' + (LOCS.pilot ? 'Остаться в пилоте' : 'Открыть журнал') + '</button><button class="btn" type="button" data-st="again">Смотреть ещё раз</button><button class="btn" type="button" data-st="exit">Исследовать ферму</button><button class="btn" type="button" data-st="how">Как это работает</button>'
       : '<button class="mini" type="button" data-st="prev"' + (show.i === 0 ? ' disabled' : '') + '>Назад</button><button class="mini" type="button" data-st="pause">' + (show.paused ? 'Продолжить' : 'Пауза') + '</button>' +
         '<button class="mini" type="button" data-st="next"' + (last ? ' disabled' : '') + '>Дальше</button><button class="mini" type="button" data-st="exit">Закончить</button>') + '</div></div>';
 }
@@ -2434,17 +2822,19 @@ function storyStart() {
   }, 200);
   storyGo(0);
 }
-function storyExit(openTab) {
+function storyExit(openTab, stay) {
   if (!show) return;
-  var sn = show.snap; clearInterval(showTimer); show = null;
+  var sn = show.snap, here = S.loc; clearInterval(showTimer); show = null;
   S.ev = sn.ev; S.done = sn.done; S.ahead = sn.ahead; S.tabs = sn.tabs;
   if (openTab) S.tabs.overview = openTab;
   $('#panel').classList.remove('showing'); $('.app').classList.remove('showing');
-  go('overview'); tickClock(); $('#panel').scrollTop = 0;
+  go(stay ? here : 'overview'); tickClock(); $('#panel').scrollTop = 0;
 }
 function storyCmd(c) {
   if (c === 'start' || c === 'again') storyStart();
   else if (c === 'exit') storyExit();
+  else if (c === 'stay') storyExit(null, true);
+  else if (c === 'explore') startTour();
   else if (c === 'how') storyExit('how');
   else if (!show) return;
   else if (c === 'prev') storyGo(show.i - 1);
@@ -2597,14 +2987,14 @@ function tickClock() {
 }
 function setNight(v) { if (!!S.night !== !!v) $('#tNight').click(); }
 function updateMnav() {
-  var tab = curTab(), cur = S.loc === 'pilot' ? 'pilot' : S.loc !== 'overview' ? '' : tab === 'tasks' ? 'tasks' : tab === 'shift' ? 'shift' : 'farm';
+  var tab = curTab(), cur = S.loc === 'journal' ? 'journal' : S.loc !== 'overview' ? '' : tab === 'tasks' ? 'tasks' : tab === 'shift' ? 'shift' : 'farm';
   document.querySelectorAll('#mnav [data-m]').forEach(function (b) { if (b.dataset.m !== 'scene') b.setAttribute('aria-current', b.dataset.m === cur ? 'page' : 'false'); });
 }
 $('#mnav').addEventListener('click', function (e) {
   var b = e.target.closest('button'); if (!b) return;
   var m = b.dataset.m, app = $('.app');
   if (m === 'scene') { var off = app.classList.toggle('m-noscene'); b.setAttribute('aria-pressed', !off); b.querySelector('span').textContent = off ? 'Показать 3D' : 'Скрыть 3D'; return; }
-  if (m === 'pilot') go('pilot');
+  if (m === 'journal') go('journal');
   else { S.tabs.overview = m === 'farm' ? 'facts' : m; go('overview'); }
   $('#panel').scrollTop = 0;
 });
