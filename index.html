@@ -563,7 +563,7 @@ function allTasks() {
   });
   return out;
 }
-var openIn = function (loc) { return allTasks().filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id]; }).length + pilotOpen().filter(function (c) { return !loc || c.loc === loc || (loc === 'journal' && c.site === 'farm'); }).length + fmTasks().filter(function (x) { return !loc || x.loc === loc; }).length; };
+var openIn = function (loc) { return allTasks().filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id]; }).length + pilotOpen().filter(function (c) { return !loc || c.loc === loc || (loc === 'journal' && c.site === 'farm'); }).length + recTasks().filter(function (x) { return !loc || x.loc === loc; }).length; };
 var word = function (n) { return n === 0 ? 'задач нет' : n === 1 ? '1 задача' : n < 5 ? n + ' задачи' : n + ' задач'; };
 
 /* ---------- места ---------- */
@@ -1106,7 +1106,7 @@ function renderTasks() {
   el.hidden = false;
   var html = '<h2>' + (all ? 'Задачи по всей ферме' : 'Задачи здесь') + '</h2>';
   var pc = pilotOpen().filter(function (c) { return all || c.loc === here; });
-  var ft = fmTasks().filter(function (x) { return all || x.loc === here; });
+  var ft = recTasks().filter(function (x) { return all || x.loc === here; });
   if (!list.length && !pc.length && !ft.length) html += '<p class="lead">Открытых задач в этом помещении нет.</p>';
   html += pc.map(function (c) { var la = c.acts[c.acts.length - 1];
     return '<article class="task"><div class="top"><span class="lvl ' + (c.st ? 'plan' : 'warn') + '">' + (c.site === 'cellar' ? 'Погреб' : 'Журнал') + ' · ' + (c.st ? 'ждёт повторного замера' : 'ждёт действия') + '</span><span class="who">' + PRM[c.k][1] + '</span></div>' +
@@ -1114,9 +1114,9 @@ function renderTasks() {
       '<div class="act">' + (c.st ? 'Действие записано ' + dm(la.d) + '. Нужен повторный замер.' : 'Откройте разбор: там указание с расчётом.') + (fresh(c.last).lvl === 2 ? ' Замер устарел (' + fresh(c.last).txt + ') — сначала перемерьте.' : '') + ' Задача закроется замером в норме, а не отметкой.</div>' +
       '<div class="btns"><button class="btn solid" type="button" data-j="open" data-z="' + esc(c.z) + '">Открыть разбор</button></div></article>'; }).join('');
   html += ft.map(function (x) {
-    return '<article class="task"><div class="top"><span class="lvl ' + x.lvl + '">Партии · ' + x.when + '</span><span class="who">' + x.who + '</span></div>' +
+    return '<article class="task"><div class="top"><span class="lvl ' + x.lvl + '">' + (x.tag || 'Партии') + ' · ' + x.when + '</span><span class="who">' + x.who + '</span></div>' +
       '<div class="what"><b>' + x.place + '</b> · ' + x.what + '</div><div class="act">' + x.act + ' Задача закроется записью, а не отметкой.</div>' +
-      '<div class="btns"><button class="btn solid" type="button" data-fm="' + x.cmd + '"' + (x.b ? ' data-b="' + x.b + '"' : '') + '>' + x.btn + '</button></div></article>'; }).join('');
+      '<div class="btns"><button class="btn solid" type="button" ' + (x.op ? 'data-op="' + x.op + '"' : 'data-fm="' + x.cmd + '"') + (x.b ? ' data-b="' + x.b + '"' : '') + '>' + x.btn + '</button></div></article>'; }).join('');
   html += list.map(function (t) {
     var done = !!S.done[t.id], away = t.loc !== here, off = !done && !!snz[t.id], fid = 't:' + t.id;
     return '<article class="task ' + (t.lvl === 'urgent' && !done && !off ? 'urgent' : '') + (done ? ' done' : '') + (off ? ' snz' : '') + '">' +
@@ -1199,8 +1199,8 @@ var TABS = {
   solution: [['tasks', 'Задачи'], ['facts', 'Раствор'], ['unit', 'Узел'], ['equip', 'Оборудование'], ['power', 'Электрика'], ['climate', 'Климат'], ['sensors', 'Датчики'], ['service', 'ТО']],
   seedling: [['facts', 'Режим'], ['tasks', 'Задачи'], ['sowing', 'Посев']],
   lab: [['tasks', 'Задачи'], ['samples', 'Журнал проб'], ['elements', 'Раствор'], ['norms', 'Нормативы'], ['ready', 'Готовность'], ['journals', 'Журналы']],
-  prep: [['intake', 'Приёмка'], ['packing', 'Фасовка'], ['label', 'Этикетка'], ['facts', 'Показатели']],
-  store: [['stock', 'Остатки'], ['forecast', 'Прогноз'], ['orders', 'Отгрузка'], ['cold', 'Камера'], ['facts', 'Сводка']],
+  prep: [['intake', 'Приёмка'], ['packing', 'Фасовка'], ['label', 'Этикетка'], ['clean', 'Уборка'], ['facts', 'Показатели']],
+  store: [['stock', 'Остатки'], ['tasks', 'Задачи'], ['forecast', 'Прогноз'], ['orders', 'Отгрузка'], ['cold', 'Камера'], ['facts', 'Сводка']],
   showcase: [['crops', 'Культуры']]
 };
 applyMode();
@@ -1328,7 +1328,7 @@ var EXTRA = {
   },
   unit: function () {
     return head('Состав узла', 'cond') + '<div>' + line('Обратный осмос', 'подготовка воды', 'работает') + line('Концентрат A', 'кальциевая селитра, железо', '62 %') + line('Концентрат B', 'фосфаты, сульфаты, калий, микроэлементы', '48 %') +
-      line('Дозатор кислоты', 'pH яруса 4-2 выше нормы', 'проверить', !S.done.ph) + line('УФ на возврате', 'обеззараживание раствора', 'работает') + line('Насосы циркуляции', 'подача на 8 стеллажей', S.ev.pump && !S.done.pump ? 'не отвечает' : 'работают', S.ev.pump && !S.done.pump) + line('Чиллер', 'раствор 23,5 °C при норме 18–22', 'проверить', !S.done.temp) + line('Смена раствора', 'раз в 3–4 недели', 'через 9 дн.') + '</div>' +
+      line('Дозатор кислоты', 'pH яруса 4-2 выше нормы', 'проверить', !S.done.ph) + line('УФ на возврате', 'обеззараживание раствора', 'работает') + line('Насосы циркуляции', 'подача на 8 стеллажей', S.ev.pump && !S.done.pump ? 'не отвечает' : 'работают', S.ev.pump && !S.done.pump) + line('Чиллер', 'раствор 23,5 °C при норме 18–22', 'проверить', !S.done.temp) + line('Смена раствора', 'раз в 3–4 недели', svcText('sol')[0], svcText('sol')[1]) + '</div>' +
       '<p class="note">Концентраты A и B хранятся и подаются раздельно: кальций нельзя смешивать с сульфатами и фосфатами.</p>';
   },
   power: function () {
@@ -1344,10 +1344,6 @@ var EXTRA = {
     return head('Климат зала') + kv([['Воздух', fmt(L.t) + ' °C', 'день 20–22, ночь 17–18'], ['Влажность', fmt(L.rh, 0) + ' %', 'норма 60–70'], ['VPD', fmt(L.vpd, 2) + ' кПа', 'норма 0,8–1,0'], ['CO₂', '900 ppm', 'норма 800–1 200'], ['Обдув кроны', '0,5 м/с', 'норма 0,3–0,7']]) +
       head('Осушение', 'reg') + kv([['Испарение', '2–3,5 л/м²·сут', 'оценка'], ['На всю ферму', '2,5–4 т воды в сутки', 'уточнить проектом ОВ']]) +
       head('Тревоги') + '<div>' + line('CO₂ выше 5 000 ppm', 'опасно для людей: подача отключается, включается приток', 'нет') + line('Раствор теплее 22 °C', 'задача инженеру, риск корневой гнили', S.done.temp ? 'нет' : 'есть', !S.done.temp) + '</div>';
-  },
-  service: function () {
-    return head('Регламент обслуживания') + '<div>' + line('Калибровка датчиков pH и EC', 'стеллаж 1 — 32 дня назад', S.done.cal ? 'сделано' : 'просрочено', !S.done.cal) + line('Смена раствора', 'раз в 3–4 недели', 'через 9 дн.') + line('УФ-лампа', 'ресурс лампы', 'уточнить', true) + line('Мембраны осмоса', 'интервал замены', 'уточнить', true) + line('Фильтры вентиляции', 'интервал замены', 'уточнить', true) + '</div>' +
-      head('Аварийные сценарии') + '<div>' + line('Отключение питания', 'ИБП держит насосы и автоматику', 'уточнить состав', true) + line('Перегрев раствора', 'выше 22 °C — задача инженеру') + line('Протечка', 'датчики воды на полу', 'уточнить', true) + '</div>';
   },
   samples: function () {
     return samplesTab();
@@ -1373,9 +1369,6 @@ var EXTRA = {
   stock: function () {
     return stockTab();
   },
-  cold: function () {
-    return head('Холодильная камера', 'cond') + kv([['Сейчас', '4,1 °C', ''], ['Режим хранения', 'уточнить', 'норма не задана', true]]) + '<div>' + [['08:00', '4,1'], ['10:00', '3,9'], ['12:00', '4,2'], ['14:00', '4,0']].map(function (x) { return line(x[0], 'запись в журнал температуры', x[1] + ' °C'); }).join('') + '</div>';
-  }
 };
 /* ---------- графики и расчёты для вкладок разделов ---------- */
 function seeded(seed) { var s = seed; return function () { s = (s * 16807) % 2147483647; return s / 2147483647; }; }
@@ -1424,7 +1417,7 @@ function scaleOut() {
   [['kR', SC.racks, ''], ['kT', SC.tiers, ''], ['kY', SC.yld, ' кг/м²·год'], ['kW', SC.wm2, ' Вт/м²']].forEach(function (a) { var o = $('#' + a[0] + 'o'); if (o) o.textContent = a[1] + a[2]; });
 }
 var READY = [
-  ['Санитария', [['san1', 'Санитарные правила проверены', 1], ['san2', 'Журнал уборки и дезинфекции ведётся', 1], ['san3', 'Смывы с поверхностей по графику', 0]]],
+  ['Санитария', [['san1', 'Санитарные правила проверены', 1], ['auto_clean', 'Журнал уборки и дезинфекции ведётся', 0], ['san3', 'Смывы с поверхностей по графику', 0]]],
   ['Продукция', [['prd1', 'ТР ТС 021/2011 проверен', 1], ['prd2', 'Значение ПДК нитратов проверено', 0], ['auto_lab', 'Анализ партии перед отгрузкой', 0]]],
   ['Маркировка', [['mrk1', 'ТР ТС 022/2011 проверен', 0], ['mrk2', 'Макет этикетки утверждён', 0]]],
   ['Персонал', [['prs1', 'Медосмотры в срок', 0], ['prs2', 'Обучение по санитарии пройдено', 0]]],
@@ -1432,7 +1425,7 @@ var READY = [
 ];
 S.ready = {};
 READY.forEach(function (sec) { sec[1].forEach(function (it) { S.ready[it[0]] = !!it[2]; }); });
-function isReady(id) { return id === 'auto_lab' ? !!S.done.lab : id === 'auto_cal' ? !!S.done.cal : !!S.ready[id]; }
+function isReady(id) { return id === 'auto_lab' ? !!S.done.lab : id === 'auto_cal' ? !!S.done.cal : id === 'auto_clean' ? cleanKept() : !!S.ready[id]; }
 function readyPct(sec) { var n = sec[1].filter(function (it) { return isReady(it[0]); }).length; return n / sec[1].length * 100; }
 function readyAll() { var a = 0, n = 0; READY.forEach(function (sec) { sec[1].forEach(function (it) { n++; if (isReady(it[0])) a++; }); }); return a / n * 100; }
 var EQUIP = [['Светильники LED, 56 линий', 3420, 135], ['Осушители', 3100, 28], ['Чиллер раствора', 2900, 12], ['Приточная установка', 5100, 10], ['Насосы циркуляции', 5100, 3], ['Обратный осмос', 1200, 2]];
@@ -1505,24 +1498,11 @@ EXTRA.sensors = function () {
   return sensorsTab();
 };
 EXTRA.ready = function () {
-  return head('Готовность к проверке', 'cond') + '<p class="lead">Отмечайте выполненное. Общая готовность: ' + fmt(readyAll(), 0) + ' %.</p>' + bar(readyAll(), readyAll() < 100) + READY.map(function (sec) {
+  return shBar() + head('Готовность к проверке', LG.readySet ? '' : 'ex') + '<p class="lead">Отмечайте выполненное — отметки сохраняются. Общая готовность: ' + fmt(readyAll(), 0) + ' %.</p>' + bar(readyAll(), readyAll() < 100) + READY.map(function (sec) {
     return '<div class="box"><span class="t">' + sec[0] + ' <span class="num" style="font-weight:500;color:var(--muted)">' + fmt(readyPct(sec), 0) + ' %</span></span>' + sec[1].map(function (it) {
       var auto = it[0].indexOf('auto_') === 0;
-      return '<div class="line"><button class="chk" type="button" ' + (auto ? 'disabled' : 'data-ready="' + it[0] + '"') + ' aria-pressed="' + isReady(it[0]) + '" aria-label="' + it[1] + '">' + CHECK + '</button><span class="g"><b>' + it[1] + '</b>' + (auto ? '<span>отмечается сам, когда закрыта задача</span>' : '') + '</span></div>'; }).join('') + '</div>'; }).join('');
+      return '<div class="line"><button class="chk" type="button" ' + (auto ? 'disabled' : 'data-ready="' + it[0] + '"') + ' aria-pressed="' + isReady(it[0]) + '" aria-label="' + it[1] + '">' + CHECK + '</button><span class="g"><b>' + it[1] + '</b>' + (auto ? '<span>' + (it[0] === 'auto_clean' ? 'отмечается сам, пока в журнале уборки есть запись за сегодня или вчера' : 'отмечается сам, когда закрыта задача') + '</span>' : '') + '</span></div>'; }).join('') + '</div>'; }).join('');
 };
-EXTRA.journals = function () {
-  return head('Журналы для проверки', 'cond') + '<div>' + line('Производственный контроль', 'последняя запись сегодня, 08:10', 'ведётся') + line('Уборка и дезинфекция', 'последняя запись сегодня, 07:30', 'ведётся') + line('Температура хранения', 'последняя запись 14:00 — 4,0 °C', 'ведётся') +
-    line('Медосмотры персонала', 'сроки не заданы', 'уточнить', true) + line('Поверка приборов', 'весы, термометры, pH-метр', 'уточнить', true) + '</div>' +
-    head('Уборка и дезинфекция, последние записи', 'cond') + '<div>' + line('19.11 · 07:30', 'заготовочный цех: столы, мойка, пол', 'оператор') + line('18.11 · 19:40', 'стеллаж 5: лотки после сбора', 'оператор') + line('18.11 · 07:25', 'заготовочный цех: столы, мойка, пол', 'оператор') + '</div>' +
-    '<p class="note">Состав журналов — по перечню из ТЗ. Формы и периодичность сверить с санитарными правилами.</p>';
-};
-EXTRA.forecast = function () {
-  var day = PROD.headsDay * PROD.headKg, d = [['пт 20', 0], ['сб 21', 0], ['вс 22', 0], ['пн 23', 0], ['вт 24', 160], ['ср 25', 25], ['чт 26', 0]], res = 185, tot = day * 7;
-  return head('Сбор на неделю вперёд', 'reg') + '<div class="bars">' + d.map(function (x) { return '<span><i style="height:' + ((day - x[1]) / day * 100).toFixed(0) + '%"></i><i class="r" style="height:' + (x[1] / day * 100).toFixed(0) + '%"></i><b>' + x[0] + '</b></span>'; }).join('') + '</div>' +
-    '<p class="note">Зелёное — свободно к продаже, оранжевое — уже под заказами.</p>' +
-    kv([['Сбор в сутки', fmt(day, 0) + ' кг', '1 040 головок × 165 г'], ['За 7 дней', grp(tot) + ' кг', fmt(day, 0) + ' × 7'], ['Под заказами', res + ' кг', '40 + 120 + 25'], ['Можно продать', grp(tot - res) + ' кг', grp(tot) + ' − ' + res]]);
-};
-
 /* ---------- журнал пилота: настоящие замеры, разбор по нормам гайда фермы, диагностика ---------- */
 var NORM = {
   grow: { name: 'доращивание', ph: [5.8, 6.2], ec: [1.2, 1.8], ts: [18, 22], ta: [20, 22], rh: [60, 70], vpd: [0.8, 1.0], dli: [14, 17], ecT: 1.6 },
@@ -1881,7 +1861,7 @@ var addDays = function (iso, k) { var dt = new Date(iso + 'T12:00:00'); dt.setDa
 var daysFrom = function (a, b) { return Math.round((Date.parse(b + 'T12:00:00') - Date.parse(a + 'T12:00:00')) / 864e5); };
 var LG = null, LGmsg = '', LGlast = '', BT = [], FBT = [], ACTS = [], EN = [], WK = [], LIGHT = {}, FB = [];
 var SENS = [['ph1', 'pH · стеллаж 1'], ['ph4', 'pH · стеллаж 4'], ['ec', 'EC · бак'], ['o2', 'Кислород · бак'], ['co2', 'CO₂ · зал']];
-var MAPS = [['journal', 'r'], ['phk', 'k'], ['moves', 'm'], ['samples', 's'], ['harvest', 'h'], ['acts', 'a'], ['energy', 'e'], ['work', 'w'], ['fb', 'f']];
+var MAPS = [['journal', 'r'], ['phk', 'k'], ['moves', 'm'], ['samples', 's'], ['harvest', 'h'], ['acts', 'a'], ['energy', 'e'], ['work', 'w'], ['fb', 'f'], ['orders', 'o'], ['cold', 'c'], ['clean', 'n']];
 /* DOCS — записи этого устройства. SH — общий журнал: rem — что пришло из базы, box — очередь неотправленных записей */
 var DOCS = {}, SH = { on: false, ro: false, st: 'local', db: null, uid: null, rem: {}, box: [], cut: {}, busy: false, wait: 2000, err: '', sig: '', tm: 0 };
 var stampN = 0, uidGen = function () { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); };
@@ -1928,10 +1908,21 @@ function exampleFarm() {
   var hd = addDays(t, -1);
   return { docs: docs, hd: hd, harvest: { d: hd, z: 'Стеллаж 5, ярусы 5–7', heads: 1012, kg: 163.9, planted: 1150, b: 'f1', t: 1, ex: 1 } };
 }
+/* примеры рабочих журналов: заказы, температура камеры, уборка, регламент ТО. Возвращает пары [путь, документ] */
+function exampleOps() {
+  var t = todayISO(), out = [], one = function (coll, d, key, id, val) { var b = { d: d.slice(0, 7) }, e = {}; e[id] = val; b[key] = e; out.push([coll + '/' + d.slice(0, 7), b]); };
+  [[4, 'Кафе', 40], [4, 'Магазин', 120], [5, 'Ресторан', 25]].forEach(function (x, i) { var d = addDays(t, x[0]); one('orders', d, 'o', 'x' + (i + 1), { d: d, to: x[1], kg: x[2], t: i + 1, ex: 1 }); });
+  [[-1, '08:00', 4.1], [-1, '10:00', 3.9], [-1, '12:00', 4.2], [-1, '14:00', 4.0], [0, '08:00', 4.1]].forEach(function (x, i) { var d = addDays(t, x[0]); one('cold', d, 'c', 'x' + (i + 1), { d: d, tm: x[1], v: x[2], t: i + 1, ex: 1 }); });
+  [[-2, '07:25', 'Заготовочный цех', 'столы, мойка, пол'], [-2, '19:40', 'Зал, стеллаж 5', 'лотки после сбора'], [-1, '07:30', 'Заготовочный цех', 'столы, мойка, пол']]
+    .forEach(function (x, i) { var d = addDays(t, x[0]); one('clean', d, 'n', 'x' + (i + 1), { d: d, tm: x[1], z: x[2], x: x[3], t: i + 1, ex: 1 }); });
+  out.push(['cfg/service', { done: { sol: addDays(t, -19) }, ex: { sol: 1 } }]);
+  return out;
+}
 function seedDocs() {
   var t = todayISO(), ym = t.slice(0, 7), D = {}, add = function (pth, b) { D[pth] = merge(D[pth] || {}, b); };
   ['cellar', 'farm'].forEach(function (site) { exampleRows(site).forEach(function (x) { var e = {}; e[x[0]] = x[1]; add('journal/' + x[1].d, { d: x[1].d, r: e }); }); });
-  D['meta/store'] = { farmEx: 1, pilotEx: 2, farmBt: 1 };
+  D['meta/store'] = { farmEx: 1, pilotEx: 2, farmBt: 1, ops: 1 };
+  exampleOps().forEach(function (x) { add(x[0], x[1]); });
   [['Семена салата', 'шт', 12000, 5000], ['Кубики субстрата', 'шт', 3500, 5000], ['Концентрат A', 'л', 62, 20], ['Концентрат B', 'л', 48, 20], ['Кислота pH−', 'л', 11, 5], ['Упаковка', 'шт', 4000, 1500], ['CO₂', 'кг', 45, 20]]
     .forEach(function (x, i) { D['stock/s' + (i + 1)] = { n: x[0], u: x[1], q0: x[2], r: x[3], t: i + 1, ex: 1 }; });
   [[13, -3, 'Вода', 'после осмоса', 'исходный анализ', 1], [14, 0, 'Раствор', 'бак', 'состав по элементам', 1], [15, 2, 'Лист', 'стеллаж 6', 'нитраты', 0]]
@@ -1969,7 +1960,7 @@ function boxSave() { try { localStorage.setItem('gt-outbox-v1', JSON.stringify(S
 /* устройства, где журнал завели до появления журнала фермы, получают её примеры один раз */
 function farmExOnce() {
   var m = DOCS['meta/store'] || {}, rowsIn = function (site) { exampleRows(site).forEach(function (x) { var b = { d: x[1].d, r: {} }; b.r[x[0]] = x[1]; DOCS['journal/' + x[1].d] = merge(DOCS['journal/' + x[1].d] || {}, b); }); };
-  if (m.farmEx && m.pilotEx >= 2 && m.farmBt) return;
+  if (m.farmEx && m.pilotEx >= 2 && m.farmBt && m.ops) return;
   if (!m.farmEx) rowsIn('farm');
   if (!(m.pilotEx >= 2)) {
     /* прежние примеры пилота с жёсткими датами заменяются новым набором */
@@ -1984,7 +1975,8 @@ function farmExOnce() {
     if (old && !old.b && old.d >= addDays(todayISO(), -8)) old.b = 'f1';
     fx.docs.forEach(function (x) { if (!DOCS[x[0]] && (x[0] !== 'batches/f1' || (old && old.b === 'f1'))) DOCS[x[0]] = x[1]; });
   }
-  DOCS['meta/store'] = { farmEx: 1, pilotEx: 2, farmBt: 1 }; docsSave();
+  if (!m.ops) exampleOps().forEach(function (x) { DOCS[x[0]] = merge(DOCS[x[0]] || {}, x[1]); });
+  DOCS['meta/store'] = { farmEx: 1, pilotEx: 2, farmBt: 1, ops: 1 }; docsSave();
 }
 function docsLoad() {
   try { var raw = localStorage.getItem('gt-store-v1'); if (raw) { var D = JSON.parse(raw); if (D && typeof D === 'object') { DOCS = D; farmExOnce(); return; } } } catch (e) {}
@@ -2022,7 +2014,12 @@ function rebuild() {
   eachDoc(D, 'stock', function (doc, pth, id) { if (doc.n) stock.push({ id: id, n: doc.n, u: doc.u, r: doc.r || 0, t: doc.t || 0, ex: doc.ex, q: Math.round(((doc.q0 || 0) + (sum[id] || 0)) * 100) / 100 }); });
   stock.sort(function (a, b) { return a.t - b.t; });
   eachDoc(D, 'shift', function (doc, pth, id) { shift[id] = doc.k || {}; });
+  var byDay = function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : (a.tm || '') < (b.tm || '') ? -1 : (a.tm || '') > (b.tm || '') ? 1 : (a.t || 0) - (b.t || 0); };
+  var svc = D['cfg/service'] || {}, cr = D['cfg/cold'] || {}, rd = (D['cfg/ready'] || {}).k || {};
+  if (typeof READY !== 'undefined') { READY.forEach(function (sec) { sec[1].forEach(function (it) { S.ready[it[0]] = !!it[2]; }); }); Object.keys(rd).forEach(function (k) { if (rd[k] !== null) S.ready[k] = !!rd[k]; }); }
   LG = { shift: shift, calInt: cfg.calInt || 30, moves: moves, stock: stock, samples: entries(D, 'samples', 's'), harvest: entries(D, 'harvest', 'h'),
+    orders: entries(D, 'orders', 'o').sort(byDay), cold: entries(D, 'cold', 'c').sort(byDay), clean: entries(D, 'clean', 'n').sort(byDay),
+    svc: { done: svc.done || {}, int: svc.int || {}, ex: svc.ex || {} }, coldR: { lo: cr.lo === undefined ? 2 : cr.lo, hi: cr.hi === undefined ? 6 : cr.hi, set: cr.lo !== undefined || cr.hi !== undefined }, readySet: Object.keys(rd).length > 0,
     sensors: SENS.map(function (x) { return { id: x[0], n: x[1], last: cal[x[0]] || null, ex: cex[x[0]] }; }) };
   S.shift = shift[t] || {};
   BT = []; FBT = [];
@@ -2169,7 +2166,7 @@ function setEligible(v) {
 function shSubscribe(slow) {
   try { SH.box = JSON.parse(localStorage.getItem('gt-outbox-v1') || '[]') || []; } catch (e) { SH.box = []; }
   var t = todayISO(), n = 0, dead = false;
-  var subs = [['journal', addDays(t, -120)], ['phk'], ['shift', addDays(t, -7)], ['stock'], ['moves'], ['samples', addDays(t, -200).slice(0, 7)], ['cfg'], ['harvest', addDays(t, -120).slice(0, 7)], ['batches'], ['acts', addDays(t, -120).slice(0, 7)], ['energy', addDays(t, -400).slice(0, 7)], ['work', addDays(t, -200).slice(0, 7)], ['fb', addDays(t, -200).slice(0, 7)]];
+  var subs = [['journal', addDays(t, -120)], ['phk'], ['shift', addDays(t, -7)], ['stock'], ['moves'], ['samples', addDays(t, -200).slice(0, 7)], ['cfg'], ['harvest', addDays(t, -120).slice(0, 7)], ['batches'], ['acts', addDays(t, -120).slice(0, 7)], ['energy', addDays(t, -400).slice(0, 7)], ['work', addDays(t, -200).slice(0, 7)], ['fb', addDays(t, -200).slice(0, 7)], ['orders', addDays(t, -120).slice(0, 7)], ['cold', addDays(t, -60).slice(0, 7)], ['clean', addDays(t, -120).slice(0, 7)]];
   subs.forEach(function (x) { if (x[1]) SH.cut[x[0]] = x[1]; });
   subs.forEach(function (x) {
     var first = true, open = function (flt) {
@@ -2694,7 +2691,7 @@ function lightCmd(c) {
 /* этап: [название, дней от, дней до, пояснение] */
 var FM_ST = { seed: ['Рассада', 12, 17, 'проращивание 2–3 дня и рассада 10–14 дней'], a: ['Этап A', 7, 10, 'этап A 7–10 дней, 45 раст./м²'], b: ['Этап B', 14, 18, 'этап B 14–18 дней, 22 раст./м²'] };
 var FM_NEXT = { seed: 'a', a: 'b' }, FM_DENS = { a: 45, b: 22 }, FM_TIER = 21, FM_SOW = [1200, 1300], FM_HEADS = 1040;
-var FV = { batch: null, msg: '', pick: '', ship: '', smp: '' };
+var FV = { batch: null, msg: '', pick: '', ship: '', smp: '', ord: '' };
 var fmById = function (id) { return FBT.filter(function (b) { return b.id === id; })[0] || null; };
 var fmCode = function (b) { return 'Ф-' + String(b.no).padStart(3, '0'); };
 var fmName = function (b) { var c = cropById(b.crop); return fmCode(b) + ' · ' + (b.sort || (c ? c.name : b.crop)); };
@@ -2828,14 +2825,13 @@ EXTRA.orders = function () {
   FBT.forEach(function (b) { fmShips(b).forEach(function (x) { all.push({ b: b, x: x }); }); });
   all.sort(function (p, q) { return p.x.d < q.x.d ? 1 : p.x.d > q.x.d ? -1 : (q.x.t || 0) - (p.x.t || 0); });
   var sum = ready.reduce(function (a, b) { return a + fmLeft(b); }, 0);
-  return shBar() + fmMsg() + head('Готово к отгрузке') + (ready.length ? '<div>' + ready.map(function (b) { var h = fmHarv(b); return fmRow(b, 'сбор ' + dm(h.d) + ' · собрано ' + fmt(h.kg) + ' кг · остаток ' + fmt(fmLeft(b)) + ' кг'); }).join('') + '</div><div class="frm">всего к отгрузке: ' + fmt(sum) + ' кг</div>' : '<p class="lead">Собранных партий с остатком нет. Партия появляется здесь после приёмки урожая.</p>') +
-    head('Записать отгрузку') + (ready.length ? fmSel('oB', 'Партия', ready, FV.ship, '', function (b) { return fmName(b) + ' · остаток ' + fmt(fmLeft(b)) + ' кг'; }) + inF('oT', 'Покупатель', 'Кафе на Сарыарке', 'name') + inF('oK', 'Масса, кг', '40') + inF('oD', 'Дата отгрузки', '', 'date') +
+  return shBar() + fmMsg() + opMsg() + head('Готово к отгрузке') + (ready.length ? '<div>' + ready.map(function (b) { var h = fmHarv(b); return fmRow(b, 'сбор ' + dm(h.d) + ' · собрано ' + fmt(h.kg) + ' кг · остаток ' + fmt(fmLeft(b)) + ' кг'); }).join('') + '</div><div class="frm">всего к отгрузке: ' + fmt(sum) + ' кг</div>' : '<p class="lead">Собранных партий с остатком нет. Партия появляется здесь после приёмки урожая.</p>') +
+    head('Записать отгрузку') + (ready.length ? fmSel('oB', 'Партия', ready, FV.ship, '', function (b) { return fmName(b) + ' · остаток ' + fmt(fmLeft(b)) + ' кг'; }) + fmSel('oO', 'По заказу', ordOpen(), FV.ord, 'без заказа', function (o) { return dm(o.d) + ' · ' + o.to + ' · осталось ' + fmt(ordLeft(o)) + ' кг'; }) + inF('oT', 'Покупатель', 'возьмётся из заказа', 'name') + inF('oK', 'Масса, кг', '40') + inF('oD', 'Дата отгрузки', '', 'date') +
       '<div class="btns"><button class="btn solid" type="button" data-fm="ship">Записать отгрузку</button></div>' : '<p class="lead">Отгружать пока нечего.</p>') +
     head('Журнал отгрузок') + (all.length ? '<div>' + all.slice(0, 10).map(function (p) { var b = p.b, st = btStays(b), lp = st[st.length - 1];
       return '<div class="line"><span class="g"><b>' + dm(p.x.d) + ' · ' + esc(p.x.to) + (p.x.ex ? ' ' + badge('ex') : '') + '</b><span class="num">' + fmt(p.x.kg) + ' кг · партия ' + esc(fmName(b)) + ' · ' + esc(lp ? lp.p + (lp.tr ? ', ' + lp.tr : '') : '') + ' · посев ' + dm(b.sow) + '</span></span><button class="mini" type="button" data-fm="open" data-b="' + b.id + '" aria-label="Открыть партию ' + fmCode(b) + '">Партия</button></div>'; }).join('') + '</div>' : '<p class="lead">Отгрузок пока нет.</p>') +
     '<p class="note">Каждая отгрузка привязана к партии: если у покупателя вопрос, по записи видно, где салат рос, какие были замеры и пробы и кому ещё ушла эта партия.</p>' +
-    head('Заказы на неделю', 'cond') + '<div>' + line('Кафе, заказ 1', 'отгрузка 24.11', '40 кг') + line('Магазин, заказ 2', 'отгрузка 24.11', '120 кг') + line('Ресторан, заказ 3', 'отгрузка 25.11', '25 кг') + '</div>' +
-    '<div class="frm">резерв под заказы: 40 + 120 + 25 = 185 кг<br>суточный сбор по плану: 156–187 кг</div>';
+    ordersBlock();
 };
 
 EXTRA.label = function () {
@@ -2885,13 +2881,15 @@ function fmCmd(c, el) {
       FBT.forEach(function (x) { if (x.ex) put(x._p, { del: 1 }); });
       FV.batch = null; msg = 'Примеры партий убраны.';
     } else if (c === 'ship') {
-      var sb = fmById(($('#oB') || {}).value), to = txtOf('oT'), kg = numOf('oK'), sd = $('#oD').value;
+      var sb = fmById(($('#oB') || {}).value), to = txtOf('oT'), kg = numOf('oK'), sd = $('#oD').value, so = ordById(($('#oO') || {}).value);
+      if (so && !to) to = so.to;
+      if (so && !kg && sb) kg = Math.min(ordLeft(so), fmLeft(sb));
       if (!sb || !to || !kg || kg <= 0 || !sd) { fail('Укажите партию, покупателя, массу и дату.'); return; }
       var left = fmLeft(sb);
       if (kg > left + 1e-9) { fail('Отгрузка ' + fmt(kg) + ' кг больше остатка партии: ' + fmt(left) + ' кг.'); return; }
       if (sd < fmHarv(sb).d) { fail('Дата отгрузки раньше сбора партии.'); return; }
-      e[uidGen()] = { d: sd, to: to, kg: Math.round(kg * 10) / 10, t: Date.now() }; put(sb._p, { sh: e }); FV.ship = '';
-      msg = 'Отгрузка записана: ' + to + ', ' + fmt(kg) + ' кг из партии ' + fmCode(sb) + '. Остаток партии ' + fmt(Math.round((left - kg) * 10) / 10) + ' кг.'; top = false;
+      e[uidGen()] = merge({ d: sd, to: to, kg: Math.round(kg * 10) / 10, t: Date.now() }, so ? { o: so.id } : {}); put(sb._p, { sh: e }); FV.ship = ''; FV.ord = '';
+      msg = 'Отгрузка записана: ' + to + ', ' + fmt(kg) + ' кг из партии ' + fmCode(sb) + '. Остаток партии ' + fmt(Math.round((left - kg) * 10) / 10) + ' кг.' + (so ? ' По заказу осталось ' + fmt(Math.max(0, Math.round((ordLeft(so) - kg) * 10) / 10)) + ' кг.' : ''); top = false;
     } else if (!b) { renderTabs(); return; }
     else if (c === 'shdel') { e[el.dataset.id] = null; put(b._p, { sh: e }); msg = 'Отгрузка удалена.'; top = false; }
     else if (c === 'move') {
@@ -2913,6 +2911,178 @@ function fmCmd(c, el) {
     rebuild();
   }
   FV.msg = msg;
+  renderWays(); renderTasks(); renderTabs(); buildTags();
+  if (top) $('#panel').scrollTop = 0;
+}
+/* ---------- рабочие журналы: заказы, температура камеры, уборка и дезинфекция, регламент ТО, готовность к проверке ---------- */
+var OV = { msg: '' };
+var opMsg = function () { var m = OV.msg; OV.msg = ''; return m ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(m) + '</p>' : ''; };
+var nowHM = function () { var n = new Date(); return String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); };
+var timeF = function (id, label) { return '<div class="fld"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="time" value="' + nowHM() + '"></div>'; };
+var WD = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+
+/* ---------- заказы: сколько отгружено по заказу, считается по отгрузкам партий ---------- */
+var ordById = function (id) { return (id && LG.orders.filter(function (o) { return o.id === id; })[0]) || null; };
+function ordShipped(o) { var s = 0; FBT.forEach(function (b) { fmShips(b).forEach(function (x) { if (x.o === o.id) s += x.kg; }); }); return Math.round(s * 10) / 10; }
+function ordLeft(o) { return Math.max(0, Math.round((o.kg - ordShipped(o)) * 10) / 10); }
+function ordOpen() { return LG.orders.filter(function (o) { return ordLeft(o) > 0; }); }
+/* резерв под заказы на ближайшие days дней, включая просроченные */
+function ordReserve(days) { var lim = addDays(todayISO(), days - 1); return Math.round(ordOpen().filter(function (o) { return o.d <= lim; }).reduce(function (a, o) { return a + ordLeft(o); }, 0) * 10) / 10; }
+function ordersBlock() {
+  var t = todayISO(), open = ordOpen(), done = LG.orders.filter(function (o) { return ordLeft(o) <= 0; }).slice(-4).reverse(), stock = Math.round(FBT.reduce(function (a, b) { return a + fmLeft(b); }, 0) * 10) / 10, res = ordReserve(7);
+  var row = function (o) { var sh = ordShipped(o), late = o.d < t && ordLeft(o) > 0;
+    return '<div class="line"><span class="dotS' + (late ? ' w' : '') + '"></span><span class="g"><b>' + dm(o.d) + ' · ' + esc(o.to) + (o.ex ? ' ' + badge('ex') : '') + '</b><span class="num">' + fmt(o.kg) + ' кг · ' + (ordLeft(o) <= 0 ? 'отгружен полностью' : sh > 0 ? 'отгружено ' + fmt(sh) + ', осталось ' + fmt(ordLeft(o)) + ' кг' : late ? 'срок прошёл, не отгружен' : daysFrom(t, o.d) === 0 ? 'отгрузка сегодня' : 'до отгрузки ' + daysFrom(t, o.d) + ' дн.') + '</span></span>' +
+      '<button class="mini" type="button" data-op="odel" data-id="' + o.id + '" aria-label="Удалить заказ ' + esc(o.to) + '">Удалить</button></div>'; };
+  return head('Заказы') + (open.length ? '<div>' + open.map(row).join('') + '</div>' : '<p class="lead">Открытых заказов нет.</p>') +
+    '<div class="frm">под заказами на 7 дней: ' + fmt(res) + ' кг · в камере сейчас: ' + fmt(stock) + ' кг · суточный сбор по плану: 156–187 кг</div>' +
+    head('Новый заказ') + inF('rT', 'Покупатель', 'Кафе', 'name') + inF('rK', 'Масса, кг', '40') + inF('rD', 'Дата отгрузки', '', 'date') +
+    '<div class="btns"><button class="btn" type="button" data-op="order">Записать заказ</button></div>' +
+    (done.length ? head('Закрытые заказы') + '<div>' + done.map(row).join('') + '</div>' : '') +
+    '<p class="note">Заказ закрывается отгрузкой: в форме отгрузки выберите заказ — масса спишется с него и с партии.</p>' +
+    (LG.orders.some(function (o) { return o.ex; }) ? '<div class="btns"><button class="mini" type="button" data-op="noex" data-k="orders">Убрать примеры заказов</button></div>' : '');
+}
+EXTRA.forecast = function () {
+  var t = todayISO(), day = PROD.headsDay * PROD.headKg, tot = day * 7, res = ordReserve(7), open = ordOpen(), stock = Math.round(FBT.reduce(function (a, b) { return a + fmLeft(b); }, 0) * 10) / 10;
+  var d = [0, 1, 2, 3, 4, 5, 6].map(function (k) { var iso = addDays(t, k), kg = open.filter(function (o) { return o.d === iso || (k === 0 && o.d < iso); }).reduce(function (a, o) { return a + ordLeft(o); }, 0); return [WD[new Date(iso + 'T12:00:00').getDay()] + ' ' + iso.slice(8, 10), Math.min(kg, day)]; });
+  return head('Сбор на неделю вперёд', 'reg') + '<div class="bars">' + d.map(function (x) { return '<span><i style="height:' + ((day - x[1]) / day * 100).toFixed(0) + '%"></i><i class="r" style="height:' + (x[1] / day * 100).toFixed(0) + '%"></i><b>' + x[0] + '</b></span>'; }).join('') + '</div>' +
+    '<p class="note">Зелёное — свободно к продаже, оранжевое — уже под заказами. Заказы берутся из вкладки «Отгрузка».</p>' +
+    kv([['Сбор в сутки', fmt(day, 0) + ' кг', '1 040 головок × 165 г'], ['За 7 дней', grp(tot) + ' кг', fmt(day, 0) + ' × 7'], ['В камере сейчас', fmt(stock) + ' кг', 'остаток собранных партий'], ['Под заказами', fmt(res) + ' кг', open.length ? open.length + ' ' + plr(open.length, 'открытый заказ', 'открытых заказа', 'открытых заказов') : 'открытых заказов нет'],
+      ['Можно продать', grp(Math.max(0, tot + stock - res)) + ' кг', grp(tot) + ' + ' + fmt(stock) + ' − ' + fmt(res), tot + stock - res < 0]]);
+};
+
+/* ---------- холодильная камера: журнал температуры. Диапазон стартовый — его задаёт регламент хранения ---------- */
+function coldBad(r) { return r.v < LG.coldR.lo || r.v > LG.coldR.hi; }
+var coldLast = function () { return LG.cold[LG.cold.length - 1] || null; };
+EXTRA.cold = function () {
+  var t = todayISO(), R = LG.coldR, last = coldLast(), td = LG.cold.filter(function (r) { return r.d === t; }), wk = LG.cold.filter(function (r) { return r.d >= addDays(t, -6); }), out = wk.filter(coldBad);
+  var rng = qf(R.lo) + '–' + qf(R.hi) + ' °C';
+  return shBar() + opMsg() + head('Холодильная камера') + kv([['Последний замер', last ? fmt(last.v) + ' °C' : '—', last ? dm(last.d) + ' в ' + (last.tm || '—') + (last.ex ? ' · пример' : '') : 'записей нет', !!last && coldBad(last)],
+    ['Допустимый диапазон', rng, R.set ? 'задан вами' : 'стартовое значение — уточнить по регламенту хранения', !R.set], ['Сегодня замеров', String(td.length), ''], ['За 7 дней вне диапазона', out.length + ' из ' + wk.length, '', out.length > 0]]) +
+    head('Записать температуру') + inF('kV', 'Температура, °C', '4,0') + timeF('kT', 'Время замера') + '<div class="btns"><button class="btn solid" type="button" data-op="cold">Записать</button></div>' +
+    head('Журнал температуры') + (LG.cold.length ? '<div>' + LG.cold.slice().reverse().slice(0, 10).map(function (r) { var bad = coldBad(r);
+      return '<div class="line"><span class="dotS' + (bad ? ' w' : '') + '"></span><span class="g"><b>' + dm(r.d) + ' · ' + (r.tm || '—') + (r.ex ? ' ' + badge('ex') : '') + '</b><span class="num">' + fmt(r.v) + ' °C' + (bad ? ' — вне диапазона ' + rng : '') + '</span></span><button class="mini" type="button" data-op="cdel" data-id="' + r.id + '" aria-label="Удалить замер ' + dm(r.d) + ' ' + (r.tm || '') + '">Удалить</button></div>'; }).join('') + '</div>' : '<p class="lead">Записей пока нет.</p>') +
+    (LG.cold.some(function (r) { return r.ex; }) ? '<div class="btns"><button class="mini" type="button" data-op="noex" data-k="cold">Убрать примеры</button></div>' : '') +
+    head('Допустимый диапазон', 'ask') + inF('kLo', 'От, °C', qf(R.lo)) + inF('kHi', 'До, °C', qf(R.hi)) + '<div class="btns"><button class="btn" type="button" data-op="crange">Сохранить диапазон</button></div>' +
+    '<p class="note">Диапазон 2–6 °C — стартовый, не норма. Впишите значения из вашего регламента хранения: замеры вне диапазона станут задачей кладовщику.</p>';
+};
+
+/* ---------- уборка и дезинфекция ---------- */
+var CLEAN_Z = ['Заготовочный цех', 'Склад и холодильная камера', 'Рассадная', 'Зал, стеллажи', 'Растворный узел', 'Лаборатория'];
+function cleanKept() { var y = addDays(todayISO(), -1); return LG.clean.some(function (r) { return r.d >= y; }); }
+var cleanRow = function (r, del) { return '<div class="line"><span class="g"><b>' + dm(r.d) + ' · ' + (r.tm || '—') + ' · ' + esc(r.z) + (r.ex ? ' ' + badge('ex') : '') + '</b><span>' + esc(r.x) + (r.m ? ' · средство: ' + esc(r.m) : '') + '</span></span>' + (del ? '<button class="mini" type="button" data-op="ndel" data-id="' + r.id + '" aria-label="Удалить запись уборки ' + dm(r.d) + '">Удалить</button>' : '') + '</div>'; };
+EXTRA.clean = function () {
+  var t = todayISO(), td = LG.clean.filter(function (r) { return r.d === t; });
+  return shBar() + opMsg() + head('Уборка и дезинфекция') + '<p class="lead">' + (td.length ? 'Сегодня записей: ' + td.length + '.' : 'Сегодня записей ещё нет.') + ' Журнал нужен для санитарной проверки — он виден в лаборатории на вкладке «Журналы».</p>' +
+    '<div class="fld col"><label for="nZ">Где убирали</label><select id="nZ">' + CLEAN_Z.map(function (z) { return '<option>' + z + '</option>'; }).join('') + '</select></div>' +
+    inF('nX', 'Что сделано', 'столы, мойка, пол', 'name') + inF('nM', 'Средство и концентрация', 'необязательно', 'name') + timeF('nT', 'Время') +
+    '<div class="btns"><button class="btn solid" type="button" data-op="clean">Записать уборку</button></div>' +
+    head('Журнал уборки') + (LG.clean.length ? '<div>' + LG.clean.slice().reverse().slice(0, 10).map(function (r) { return cleanRow(r, true); }).join('') + '</div>' : '<p class="lead">Записей пока нет.</p>') +
+    (LG.clean.some(function (r) { return r.ex; }) ? '<div class="btns"><button class="mini" type="button" data-op="noex" data-k="clean">Убрать примеры</button></div>' : '') +
+    '<p class="note">Перечень средств, концентрации и периодичность нужно сверить с санитарными правилами — в реестре нормативов этот документ отмечен как проверенный, но регламент уборки фермы ещё не утверждён.</p>';
+};
+EXTRA.journals = function () {
+  var t = todayISO(), farm = jRows('farm'), lj = farm[farm.length - 1], lc = LG.clean[LG.clean.length - 1], lk = coldLast(), late = LG.sensors.filter(function (x) { return !x.last || daysFrom(x.last, t) > LG.calInt; }).length;
+  var st = function (r) { return !r ? ['записей нет', true] : r.d === t ? ['ведётся', false] : [daysFrom(r.d, t) === 1 ? 'вчера' : daysFrom(r.d, t) + ' дн. назад', daysFrom(r.d, t) > 1]; };
+  var row = function (n, r, sub) { var s = st(r); return line(n, r ? 'последняя запись ' + dm(r.d) + (r.tm ? ' в ' + r.tm : '') + (sub ? ' — ' + sub : '') + (r.ex ? ' · пример' : '') : 'журнал пуст', s[0], s[1]); };
+  return shBar() + head('Журналы для проверки') + '<div>' + row('Производственный контроль', lj, lj ? esc(lj.z) : '') + row('Уборка и дезинфекция', lc, lc ? esc(lc.z) : '') + row('Температура хранения', lk, lk ? fmt(lk.v) + ' °C' : '') +
+    line('Калибровка датчиков', late ? 'просрочено: ' + late + ' из ' + LG.sensors.length : 'все в срок', late ? 'проверить' : 'ведётся', late > 0) + line('Журнал проб', 'записей: ' + LG.samples.length, LG.samples.length ? 'ведётся' : 'пуст', !LG.samples.length) +
+    line('Медосмотры персонала', 'сроки не заданы', 'уточнить', true) + line('Поверка приборов', 'весы, термометры, pH-метр', 'уточнить', true) + '</div>' +
+    '<p class="note">Статус считается по настоящим записям: «ведётся» — есть запись за сегодня. Записи с пометкой «пример» показывают, как выглядит журнал.</p>' +
+    head('Уборка и дезинфекция, последние записи') + (LG.clean.length ? '<div>' + LG.clean.slice().reverse().slice(0, 3).map(function (r) { return cleanRow(r, false); }).join('') + '</div>' : '<p class="lead">Записей пока нет.</p>') +
+    '<div class="btns"><button class="mini" type="button" data-op="toclean">Записать уборку</button><button class="mini" type="button" data-op="tocold">Журнал температуры камеры</button></div>' +
+    '<p class="note">Состав журналов — по перечню из ТЗ. Формы и периодичность сверить с санитарными правилами.</p>';
+};
+
+/* ---------- регламент ТО: что сделано и когда следующий раз. Интервал без паспорта не выдумывается — его вписывает инженер ---------- */
+var SVC = [['sol', 'Полная смена раствора', 'гайд фермы: раз в 3–4 недели', 28], ['uv', 'УФ-лампа на возврате', 'ресурс лампы — по паспорту', null], ['ro', 'Мембраны обратного осмоса', 'интервал замены — по паспорту', null], ['filt', 'Фильтры вентиляции', 'интервал замены — по паспорту', null]];
+/* состояние пункта: int — интервал в днях или null, last — дата, left — дней до срока (меньше нуля — просрочено) */
+function svcState(id) {
+  var it = SVC.filter(function (x) { return x[0] === id; })[0], iv = LG.svc.int[id] || (it && it[3]) || null, last = LG.svc.done[id] || null;
+  return { int: iv, last: last, left: iv && last ? iv - daysFrom(last, todayISO()) : null, ex: !!LG.svc.ex[id] };
+}
+function svcText(id) { var s = svcState(id); return !s.last ? ['не отмечено', true] : s.left === null ? ['сделано ' + dm(s.last), false] : s.left < 0 ? ['просрочено на ' + (-s.left) + ' дн.', true] : s.left === 0 ? ['сегодня', true] : ['через ' + s.left + ' дн.', false]; }
+EXTRA.service = function () {
+  var t = todayISO(), late = LG.sensors.filter(function (x) { return !x.last || daysFrom(x.last, t) > LG.calInt; }).length;
+  return shBar() + opMsg() + head('Регламент обслуживания') + '<p class="lead">Отметьте сделанное — срок следующего раза посчитается сам. Просроченное становится задачей инженеру.</p><div class="sec">' + SVC.map(function (it) {
+    var s = svcState(it[0]), tx = svcText(it[0]);
+    return '<div class="box"><span class="t sp"><span>' + it[1] + (s.ex ? ' ' + badge('ex') : '') + '</span><span class="num" style="font-weight:500' + (tx[1] ? ';color:var(--warn)' : '') + '">' + tx[0] + '</span></span>' +
+      '<span class="s num">' + it[2] + (s.last ? ' · сделано ' + dm(s.last) + ', ' + ago(s.last) : '') + (s.int ? ' · интервал ' + s.int + ' дн.' : ' · интервал не задан') + '</span>' +
+      '<div class="mv"><input id="vI_' + it[0] + '" type="text" inputmode="numeric" placeholder="интервал, дней" value="' + (LG.svc.int[it[0]] || '') + '" aria-label="' + it[1] + ': интервал, дней"><button class="mini" type="button" data-op="svcint" data-id="' + it[0] + '">Сохранить</button><button class="mini" type="button" data-op="svc" data-id="' + it[0] + '">Сделано сегодня</button></div></div>'; }).join('') + '</div>' +
+    '<div>' + line('Калибровка датчиков pH и EC', late ? 'просрочено: ' + late + ' из ' + LG.sensors.length + ' — вкладка «Датчики»' : 'все датчики в срок — вкладка «Датчики»', late ? 'просрочено' : 'в срок', late > 0) + '</div>' +
+    '<p class="note">Для смены раствора взят верхний срок гайда — 4 недели. Где интервал не задан, впишите его из паспорта оборудования: без него срок не считается и задача не появляется.</p>' +
+    head('Аварийные сценарии') + '<div>' + line('Отключение питания', 'ИБП держит насосы и автоматику', 'уточнить состав', true) + line('Перегрев раствора', 'выше 22 °C — задача инженеру') + line('Протечка', 'датчики воды на полу', 'уточнить', true) + '</div>';
+};
+
+/* ---------- задачи по журналам: закрываются записью ---------- */
+function opTasks() {
+  var t = todayISO(), out = [], last = coldLast();
+  ordOpen().forEach(function (o) {
+    if (o.d > t) return;
+    var late = daysFrom(o.d, t);
+    out.push({ id: 'o' + o.id, tag: 'Заказы', loc: 'store', who: 'кладовщик', lvl: late ? 'warn' : 'plan', when: late ? 'срок прошёл ' + late + ' дн. назад' : 'сегодня', place: esc(o.to) + (o.ex ? ' ' + badge('ex') : ''), what: 'заказ на ' + dm(o.d) + ', осталось отгрузить ' + fmt(ordLeft(o)) + ' из ' + fmt(o.kg) + ' кг',
+      act: 'Отгрузить из собранных партий и записать отгрузку с привязкой к заказу.', op: 'toorder', b: o.id, btn: 'Открыть отгрузку' });
+  });
+  if (last && coldBad(last)) out.push({ id: 'cold', tag: 'Камера', loc: 'store', who: 'кладовщик', lvl: 'warn', when: 'сейчас', place: 'Холодильная камера' + (last.ex ? ' ' + badge('ex') : ''), what: fmt(last.v) + ' °C при диапазоне ' + qf(LG.coldR.lo) + '–' + qf(LG.coldR.hi) + ' · замер ' + dm(last.d) + ' в ' + (last.tm || '—'),
+    act: 'Проверить дверь, загрузку и агрегат камеры, затем перемерить.', op: 'tocold', btn: 'Открыть журнал камеры' });
+  SVC.forEach(function (it) {
+    var s = svcState(it[0]);
+    if (s.left === null || s.left > 0) return;
+    out.push({ id: 'v' + it[0], tag: 'ТО', loc: 'solution', who: 'инженер', lvl: s.left < 0 ? 'warn' : 'plan', when: s.left < 0 ? 'просрочено на ' + (-s.left) + ' дн.' : 'сегодня', place: it[1], what: 'сделано ' + dm(s.last) + ', интервал ' + s.int + ' дн.',
+      act: 'Выполнить и отметить в регламенте ТО. Основание — ' + it[2] + '.', op: 'tosvc', btn: 'Открыть регламент' });
+  });
+  return out;
+}
+function recTasks() { return fmTasks().concat(opTasks()); }
+
+function opCmd(c, el) {
+  var t = todayISO(), ym = t.slice(0, 7), id = el.dataset.id, top = false, e = {};
+  var fail = function (m) { OV.msg = m; renderTabs(); };
+  var open = function (loc, tab) { S.tabs[loc] = tab; if (S.loc !== loc) go(loc); top = true; };
+  OV.msg = '';
+  if (c === 'toclean') open('prep', 'clean');
+  else if (c === 'tocold') open('store', 'cold');
+  else if (c === 'tosvc') open('solution', 'service');
+  else if (c === 'toorder') { FV.ord = el.dataset.b || ''; open('store', 'orders'); }
+  else {
+    if (shared() && SH.ro) { fail('Общий журнал открыт вам только для чтения — запись не сохранена.'); return; }
+    if (c === 'ready') { e[el.dataset.ready] = !S.ready[el.dataset.ready]; put('cfg/ready', { k: e }); }
+    else if (c === 'order') {
+      var to = txtOf('rT'), kg = numOf('rK'), d = ($('#rD') || {}).value;
+      if (!to || !kg || kg <= 0 || !d) { fail('Укажите покупателя, массу и дату отгрузки.'); return; }
+      putIn('orders/' + d.slice(0, 7), d.slice(0, 7), 'o', uidGen(), stamp({ d: d, to: to, kg: Math.round(kg * 10) / 10 }));
+      OV.msg = 'Заказ записан: ' + to + ', ' + fmt(kg) + ' кг на ' + dm(d) + '.' + (d < t ? ' Дата уже прошла — заказ сразу попадёт в задачи.' : '');
+    } else if (c === 'odel') { var od = ordById(id); if (od) putIn(od._p, null, 'o', od.id, null); }
+    else if (c === 'cold') {
+      var v = numOf('kV'), tm = ($('#kT') || {}).value || nowHM();
+      if (v === null || v < -30 || v > 40) { fail('Введите температуру камеры в градусах.'); return; }
+      putIn('cold/' + ym, ym, 'c', uidGen(), stamp({ d: t, tm: tm, v: Math.round(v * 10) / 10 }));
+      var bad = v < LG.coldR.lo || v > LG.coldR.hi;
+      OV.msg = 'Записано: ' + fmt(v) + ' °C в ' + tm + '.' + (bad ? ' Это вне диапазона ' + qf(LG.coldR.lo) + '–' + qf(LG.coldR.hi) + ' °C — задача кладовщику закроется замером в диапазоне.' : '');
+    } else if (c === 'cdel') { var cr = LG.cold.filter(function (r) { return r.id === id; })[0]; if (cr) putIn(cr._p, null, 'c', cr.id, null); }
+    else if (c === 'crange') {
+      var lo = numOf('kLo'), hi = numOf('kHi');
+      if (lo === null || hi === null || lo >= hi) { fail('Укажите оба значения: «от» меньше «до».'); return; }
+      put('cfg/cold', { lo: lo, hi: hi }); OV.msg = 'Диапазон сохранён: ' + qf(lo) + '–' + qf(hi) + ' °C.';
+    } else if (c === 'clean') {
+      var x = txtOf('nX'), z = ($('#nZ') || {}).value, m = txtOf('nM'), ct = ($('#nT') || {}).value || nowHM();
+      if (!x || !z) { fail('Напишите, что сделано.'); return; }
+      putIn('clean/' + ym, ym, 'n', uidGen(), stamp(merge({ d: t, tm: ct, z: z, x: x }, m ? { m: m } : {}))); OV.msg = 'Уборка записана: ' + z + ', ' + ct + '.';
+    } else if (c === 'ndel') { var nr = LG.clean.filter(function (r) { return r.id === id; })[0]; if (nr) putIn(nr._p, null, 'n', nr.id, null); }
+    else if (c === 'svc' || c === 'svcint') {
+      var it = SVC.filter(function (s) { return s[0] === id; })[0], iv = numOf('vI_' + id), b = {};
+      if (!it) return;
+      if (iv !== null && (iv < 1 || iv > 3650)) { fail('Интервал — число дней от 1 до 3650.'); return; }
+      if (c === 'svcint' && iv === null) { fail('Впишите интервал в днях.'); return; }
+      if (iv !== null) { b.int = {}; b.int[id] = Math.round(iv); }
+      if (c === 'svc') { b.done = {}; b.done[id] = t; b.ex = {}; b.ex[id] = null; }
+      put('cfg/service', b);
+      OV.msg = c === 'svc' ? it[1] + ': отмечено сегодня.' + ((iv || svcState(id).int) ? ' Следующий раз через ' + Math.round(iv || svcState(id).int) + ' дн.' : ' Интервал не задан — срок следующего раза не считается.') : it[1] + ': интервал ' + Math.round(iv) + ' дн.';
+    } else if (c === 'noex') {
+      var k = el.dataset.k, key = { orders: 'o', cold: 'c', clean: 'n' }[k];
+      if (key) LG[k].forEach(function (r) { if (r.ex) putIn(r._p, null, key, r.id, null); });
+    }
+    rebuild();
+  }
   renderWays(); renderTasks(); renderTabs(); buildTags();
   if (top) $('#panel').scrollTop = 0;
 }
@@ -3103,13 +3273,14 @@ $('#panel').addEventListener('click', function (e) {
   if (b.dataset.j) { jCmd(b.dataset.j, b); return; }
   if (b.dataset.bt) { btCmd(b.dataset.bt, b); return; }
   if (b.dataset.fm) { fmCmd(b.dataset.fm, b); return; }
+  if (b.dataset.op) { opCmd(b.dataset.op, b); return; }
   if (b.dataset.rc && RC_SETS[b.dataset.rc]) { var rs = RC_SETS[b.dataset.rc][1]; Object.keys(rs).forEach(function (k) { RC.t[k] = rs[k]; }); renderTabs(); return; }
   if (show) storyPause();
   if (b.dataset.ev || b.dataset.evreset) {
     if (b.dataset.evreset) { S.ev = {}; S.ahead = 0; setNight(false); } else S.ev[b.dataset.ev] = !S.ev[b.dataset.ev];
     renderWays(); renderTasks(); renderFacts(); renderTabs(); buildTags(); tickClock();
   }
-  else if (b.dataset.ready) { S.ready[b.dataset.ready] = !S.ready[b.dataset.ready]; renderTabs(); }
+  else if (b.dataset.ready) opCmd('ready', b);
   else if (b.dataset.tab) { S.tabs[S.loc] = b.dataset.tab; renderTabs(true); }
   else if (b.dataset.check) { if (roBlock('lg')) return; var ck = {}; ck[b.dataset.check] = !S.shift[b.dataset.check]; put('shift/' + todayISO(), { d: todayISO(), k: ck }); rebuild(); renderTabs(); }
   else if (b.dataset.lg) lgCmd(b.dataset.lg, b);
