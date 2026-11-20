@@ -2978,9 +2978,14 @@ if (!ok) { renderer = null; canvas.hidden = true; var sp0 = $('#splash'); if (sp
 renderAll(); resize(); modeUi();
 if (window.ResizeObserver) new ResizeObserver(resize).observe(stage); else window.addEventListener('resize', resize);
 requestAnimationFrame(frame);
-/* ссылка с #show в конце сразу запускает показ */
-if (location.hash === '#show') setTimeout(storyStart, 1500);
-window.addEventListener('hashchange', function () { if (location.hash === '#show' && !show) storyStart(); });
+/* ссылка с #show в конце сразу запускает показ, с #pilot — открывает пилот в погребе */
+function hashGo() {
+  if (show) return;
+  if (location.hash === '#show') storyStart();
+  else if (location.hash === '#pilot' && LOCS.pilot) go('pilot');
+}
+if (location.hash === '#show') setTimeout(storyStart, 1500); else if (location.hash === '#pilot') setTimeout(hashGo, 600);
+window.addEventListener('hashchange', hashGo);
 function tickClock() {
   var total = 14 * 3600 + 32 * 60 + S.tick * 2 + (S.ahead || 0) * 3600, p = function (n) { return String(n).padStart(2, '0'); };
   $('#clock').textContent = p(Math.floor(total / 3600) % 24) + ':' + p(Math.floor(total / 60) % 60) + ':' + p(total % 60);
