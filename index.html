@@ -400,6 +400,72 @@ kbd{font-family:var(--font-num);font-size:11px;border:1px solid var(--line);bord
   .kbar{padding-top:max(12px,env(safe-area-inset-top,0px))}
 }
 @media (prefers-reduced-motion:reduce){.rcard,.kbox{animation:none}.rcard{transition:none}}
+
+/* ---------- «Наблюдение»: окно камер и датчиков ---------- */
+.eyeopen .n{background:var(--warn);color:#2B1600;border-radius:10px;padding:0 7px;font-size:12px;font-family:var(--font-num);font-weight:600}
+.eyeopen{color:var(--fg)}
+.eyebtn{width:100%;margin-top:10px;display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:linear-gradient(120deg,rgba(95,211,141,.12),transparent 60%),var(--surface-2);cursor:pointer}
+.eyebtn:hover{border-color:var(--grow)}
+.eyebtn .g{flex:1;min-width:0;display:flex;flex-direction:column}
+.eyebtn .g span{color:var(--muted);font-size:12.5px}
+.eyebtn svg.ic{width:22px;height:22px;color:var(--grow)}
+.eyes{position:fixed;inset:0;z-index:55;overflow:auto;background:radial-gradient(1100px 520px at 50% -10%,rgba(95,211,141,.14),transparent 62%),rgba(7,12,10,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.eyes-in{width:min(1180px,100%);margin:0 auto;padding:max(22px,env(safe-area-inset-top,0px)) 16px 48px;display:flex;flex-direction:column;gap:14px}
+.eyes-h{position:relative;display:flex;justify-content:space-between;gap:16px}
+.eyes-h h1{font-size:clamp(26px,4.4vw,40px);line-height:1.05;letter-spacing:-.03em;font-weight:800;margin:6px 0}
+.eyes-h .launch-x{position:static;flex:none}
+.eyes-sum{display:flex;flex-wrap:wrap;gap:6px}
+.eyes .tabs{margin-inline:0;padding-inline:0}
+.eyes-b{display:flex;flex-direction:column;gap:12px}
+.eyes-b h2{font-size:16px;margin-top:6px}
+.lv{display:inline-flex;align-items:center;font-size:11px;font-weight:700;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.lv.crit{background:var(--bad);color:#2B0A05}
+.lv.rec{background:var(--warn);color:#2B1600}
+.lv.note,.lv.src-demo,.lv.src-calc,.lv.src-man,.lv.src-off{border:1px solid var(--line);color:var(--muted);font-weight:600}
+.lv.src-man{border-color:var(--grow);color:var(--grow)}
+.lv.src-off{border-style:dashed}
+.camg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.cam{padding:0;text-align:left;display:flex;flex-direction:column;border-radius:16px;border:1px solid var(--line);background:var(--surface);overflow:hidden;cursor:pointer;transition:transform .18s ease,border-color .18s ease}
+.cam:hover{transform:translateY(-2px);border-color:var(--grow)}
+.cam.rec{border-color:rgba(255,177,74,.55)}
+.cam.crit{border-color:var(--bad)}
+.camf{display:block;width:100%;height:auto}
+.ci{padding:10px 12px 12px;display:flex;flex-direction:column;gap:5px}
+.ci-h{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 8px}
+.ci-t{color:var(--muted);font-size:12.5px;line-height:1.35}
+.camd{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.camd .camf{border-radius:16px;border:1px solid var(--line)}
+.camd-f{display:flex;flex-direction:column;gap:10px}
+.feed{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fd{display:flex;flex-direction:column;gap:5px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+.fd-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fd-h .who{margin-left:auto;color:var(--muted);font-size:12px}
+.fd-h .src{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+.fd-a{color:var(--fg)}
+.fd-c,.fd span{font-size:13px}
+.fd-c{color:var(--muted)}
+.fd-ok{color:var(--grow)}
+.seng{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.sen{display:flex;flex-direction:column;gap:3px;align-items:flex-start;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+.sen.bad{border-color:var(--warn)}
+.sen.bad .sen-v{color:var(--warn)}
+.sen.off{background:transparent;border-style:dashed}
+.sen-n{color:var(--muted);font-size:12.5px}
+.sen-v{font-size:20px;font-weight:600}
+.sen-r{color:var(--muted);font-size:12px;margin-bottom:4px}
+.how{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.how-s{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface)}
+.how-s span{color:var(--muted);font-size:13px}
+.app.showing .eyeopen{display:none}
+.launch-b{grid-template-columns:1.2fr 1fr 1fr}
+@media (max-width:980px){.camg,.seng{grid-template-columns:repeat(2,minmax(0,1fr))}.how{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:760px){
+  .eyeopen{display:none}
+  .camd,.feed{grid-template-columns:1fr}
+  .launch-b{grid-template-columns:1fr}
+  .eyes .tabs{margin-inline:-16px;padding-inline:16px}
+}
+@media (prefers-reduced-motion:reduce){.cam{transition:none}}
 </style>
 
 <div class="app">
@@ -408,6 +474,7 @@ kbd{font-family:var(--font-num);font-size:11px;border:1px solid var(--line);bord
     <div class="crumb num" id="crumb">Ферма</div>
     <button class="rolechip none" id="roleChip" type="button" aria-label="Выбрать роль"></button>
     <button class="kopen" id="kOpen" type="button" aria-label="Быстрый поиск"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg><span>Поиск</span><kbd>Ctrl K</kbd></button>
+    <button class="kopen eyeopen" id="eyeOpen" type="button" aria-label="Наблюдение: камеры и датчики"></button>
     <span class="demo">Демо<span class="dl">-версия. Данные условные</span></span>
     <span class="clock"><span class="live"></span><span class="num" id="clock">14:32:00</span></span>
   </header>
@@ -444,6 +511,7 @@ kbd{font-family:var(--font-num);font-size:11px;border:1px solid var(--line);bord
     <section class="sec" id="pExtra"></section>
   </aside>
 
+  <div class="eyes" id="eyes" hidden></div>
   <div class="launch" id="launch" hidden></div>
   <div class="kbar" id="kbar" hidden></div>
 
@@ -2112,7 +2180,7 @@ function rebuild() {
   if (typeof READY !== 'undefined') { READY.forEach(function (sec) { sec[1].forEach(function (it) { S.ready[it[0]] = !!it[2]; }); }); Object.keys(rd).forEach(function (k) { if (rd[k] !== null) S.ready[k] = !!rd[k]; }); }
   LG = { shift: shift, calInt: cfg.calInt || 30, moves: moves, stock: stock, samples: entries(D, 'samples', 's'), harvest: entries(D, 'harvest', 'h'),
     orders: entries(D, 'orders', 'o').sort(byDay), cold: entries(D, 'cold', 'c').sort(byDay), clean: entries(D, 'clean', 'n').sort(byDay),
-    svc: { done: svc.done || {}, int: svc.int || {}, ex: svc.ex || {} }, coldR: { lo: cr.lo === undefined ? 2 : cr.lo, hi: cr.hi === undefined ? 6 : cr.hi, set: cr.lo !== undefined || cr.hi !== undefined }, readySet: Object.keys(rd).length > 0,
+    svc: { done: svc.done || {}, int: svc.int || {}, ex: svc.ex || {} }, coldR: { lo: cr.lo === undefined ? 2 : cr.lo, hi: cr.hi === undefined ? 6 : cr.hi, set: cr.lo !== undefined || cr.hi !== undefined }, readySet: Object.keys(rd).length > 0, eyes: (D['cfg/eyes'] || {}).chk || {},
     sensors: SENS.map(function (x) { return { id: x[0], n: x[1], last: cal[x[0]] || null, ex: cex[x[0]] }; }) };
   S.shift = shift[t] || {};
   BT = []; FBT = [];
@@ -3153,13 +3221,14 @@ function opTasks() {
   });
   return out;
 }
-function recTasks() { return fmTasks().concat(opTasks()); }
+function recTasks() { return fmTasks().concat(opTasks(), typeof eyeTasks === 'function' ? eyeTasks() : []); }
 
 function opCmd(c, el) {
   var t = todayISO(), ym = t.slice(0, 7), id = el.dataset.id, top = false, e = {};
   var fail = function (m) { OV.msg = m; renderTabs(); };
   var open = function (loc, tab) { S.tabs[loc] = tab; if (S.loc !== loc) go(loc); top = true; };
   OV.msg = '';
+  if (c === 'eye') { eyeOpen('cams', el.dataset.b); return; }
   if (c === 'toclean') open('prep', 'clean');
   else if (c === 'tocold') open('store', 'cold');
   else if (c === 'tosvc') open('solution', 'service');
@@ -3236,7 +3305,7 @@ function setRole(r) {
 }
 /* блок роли на общем виде. С ролью — только её разделы плитками; без роли — одна строка с кнопкой выбора */
 function renderRole() {
-  renderChip();
+  renderChip(); eyeBtn();
   var el = $('#pRole'); if (!el) return;
   if (S.loc !== 'overview' || show) { el.hidden = true; return; }
   el.hidden = false;
@@ -3244,6 +3313,7 @@ function renderRole() {
     ? '<h2>Мои разделы</h2><div class="tiles">' + ROLES[ROLE][2].map(function (x) { return '<button class="tile" type="button" data-rgo="' + x[0] + '|' + x[1] + '"><span>' + x[2] + '</span></button>'; }).join('') + '</div>' +
       '<div class="btns" style="margin-top:10px"><button class="mini" type="button" data-role="launch">Сменить роль</button><button class="mini" type="button" data-role="wide" aria-pressed="' + !!S.wide + '">' + (S.wide ? 'Скрыть помещения' : 'Все помещения') + '</button></div>'
     : '<div class="rolebar"><span>Вы смотрите всю ферму целиком.</span><button class="btn" type="button" data-role="launch">Выбрать роль</button></div>';
+  el.innerHTML += '<button class="eyebtn" type="button" data-role="eyes">' + icon(IC_EYE) + '<span class="g"><b>Наблюдение</b><span>камеры и датчики · ждут действия: ' + eyeCount() + '</span></span><span class="bdg w">демо</span></button>';
 }
 function roleGo(v) {
   var p = v.split('|');
@@ -3362,6 +3432,7 @@ function launchOpen() {
       return '<button class="rcard" type="button" data-l="role" data-r="' + k + '"' + (ROLE === k ? ' aria-current="true"' : '') + ' style="animation-delay:' + (i++ * 45) + 'ms"><span class="ric">' + roleIcon(k) + '</span><span class="rn' + (n ? '' : ' z') + '">' + (n ? word(n) : 'задач нет') + '</span><b>' + ROLES[k][0] + '</b><span class="rd">' + RUI[k][1] + '</span></button>'; }).join('') +
       '<button class="rcard all" type="button" data-l="all"' + (ROLE ? '' : ' aria-current="true"') + ' style="animation-delay:' + (i * 45) + 'ms"><span class="ric">' + icon(IC_ALL) + '</span><span class="rn' + (openIn() ? '' : ' z') + '">' + word(openIn()) + '</span><b>Вся ферма</b><span class="rd">все помещения и все задачи, без роли</span></button></div>' +
     '<div class="launch-b"><button class="lbig acc" type="button" data-l="story"><b>Проследить путь салата</b><span>одна партия от семени до упаковки · около двух минут</span></button>' +
+    '<button class="lbig" type="button" data-l="eyes"><b>' + icon(IC_EYE) + ' Наблюдение</b><span>камеры и датчики · демо</span></button>' +
     '<button class="lbig find" type="button" data-l="find"><b>' + icon(IC_FIND) + ' Быстрый поиск</b><span>раздел, партия или действие · Ctrl K</span></button></div></div>';
   el.hidden = false;
 }
@@ -3380,6 +3451,7 @@ $('#launch').addEventListener('click', function (e) {
   else if (c === 'all') pickRole('');
   else if (c === 'story') { launchClose(); storyStart(); }
   else if (c === 'find') { launchClose(); kOpen(); }
+  else if (c === 'eyes') { launchClose(); eyeOpen('cams'); }
   else launchClose();
 });
 $('#roleChip').addEventListener('click', launchOpen);
@@ -3401,11 +3473,13 @@ function kIndex() {
     if (loc !== 'overview') add('помещение', LOCS[loc].name, LOCS[loc].who, function () { if (S.loc !== loc) go(loc); $('#panel').scrollTop = 0; });
     TABS[loc].forEach(function (tb) { add('раздел', tb[1], LOCS[loc].name, function () { roleGo(loc + '|' + tb[0]); }); });
   });
+  add('действие', 'Открыть наблюдение', 'камеры и датчики · демо', function () { eyeOpen('cams'); }, 'глаза видео камера датчики лента');
+  CAMS.forEach(function (c) { if (c.loc !== 'pilot' || LOCS.pilot) add('камера', 'Камера: ' + c.n, c.site, function () { eyeOpen('cams', c.id); }); });
   add('показ', 'Проследить путь салата', 'экскурсия за одной партией', function () { storyStart(); }, 'тур показ экскурсия');
   add('вид', 'Вся ферма', 'все помещения и задачи, без роли', function () { pickRole(''); }, 'общий вид');
   return out;
 }
-var KORD = { 'действие': 0, 'роль': 1, 'партия': 2, 'помещение': 3, 'раздел': 4, 'показ': 5, 'вид': 6 };
+var KORD = { 'действие': 0, 'роль': 1, 'партия': 2, 'помещение': 3, 'раздел': 4, 'камера': 5, 'показ': 6, 'вид': 7 };
 function kFilter(q) {
   var words = q.toLowerCase().split(/\s+/).filter(Boolean), ql = q.toLowerCase().trim();
   if (!words.length) {
@@ -3547,6 +3621,156 @@ function renderTabs(keepFocus) {
 }
 function renderAll() { renderWhere(); renderRole(); renderWays(); renderCrops(); renderTasks(); renderFacts(); renderTabs(); buildTags(); storyRender(); }
 
+/* ---------- «Наблюдение»: глаза фермы. Демо: камеры и датчики ещё не подключены, кадры нарисованы, показания условные.
+   Показывает, как из того, что видят камеры и датчики, получаются комментарии, рекомендации и критические задачи ---------- */
+var IC_EYE = '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle>';
+var EY = { tab: 'cams', cam: null, msg: '' };
+/* уровень находки: crit — критическая задача, rec — рекомендация, note — комментарий */
+var EY_LV = { crit: 'Критично', rec: 'Рекомендация', note: 'Комментарий' };
+/* камера: место, вид кадра, кому идут находки. Находка: [уровень, что видит система, что сделать, уверенность] */
+var CAMS = [
+  { id: 'k1', n: 'Стеллаж 4 · ярус 2', site: 'Зал', kind: 'tray', loc: 'shelf', who: 'агроном', t: '14:00', marks: { 2: 'бурый край', 5: 'отстаёт' },
+    find: [['rec', 'Бурый край листа у 2 растений из 8', 'Проверить обдув кроны, VPD и DLI не выше 17. Кальций в раствор не добавлять.', 'низкая — только фото'],
+      ['note', 'Одно растение отстаёт: площадь листа на 22 % меньше кривой роста', 'Сравнить со следующим снимком и с соседними ярусами.', 'средняя — площадь листа по снимку']] },
+  { id: 'k2', n: 'Стеллаж 6 · ярус 1', site: 'Зал', kind: 'tray', loc: 'hall', who: 'агроном', t: '14:00', marks: {},
+    find: [['note', 'Лист ровный, цвет в норме, лоток закрыт листом на 86 %', 'Партия идёт по кривой роста — сбор по плану.', 'средняя — площадь листа по снимку']] },
+  { id: 'k3', n: 'Рассадная · стол 1', site: 'Рассадная', kind: 'seed', loc: 'seedling', who: 'агроном', t: '13:00',
+    find: [['rec', 'Пустые ячейки: 6 из 50 в кадре, 12 % без всходов', 'Проверить увлажнение кубиков и партию семян; в следующий посев заложить запас.', 'средняя — счёт ячеек по снимку']] },
+  { id: 'k4', n: 'Растворный узел', site: 'Узел', kind: 'tank', loc: 'solution', who: 'инженер', t: '14:10',
+    find: function () { return S.ev.pump && !S.done.pump
+      ? [['crit', 'В лотках не видно плёнки раствора: подача остановлена', 'Перейти на резервный насос и проверить автомат питания.', 'высокая — совпадает с датчиком потока']]
+      : [['note', 'Пол сухой, протечек не видно, уровень бака у метки 74 %', 'Замечаний нет.', 'средняя']]; } },
+  { id: 'k5', n: 'Заготовочный цех', site: 'Цех', kind: 'room', loc: 'prep', who: 'упаковщик', t: '14:05',
+    find: [['note', 'Столы свободны, посторонних предметов нет', 'Замечаний нет.', 'средняя']] },
+  { id: 'k6', n: 'Холодильная камера', site: 'Склад', kind: 'room', loc: 'store', who: 'кладовщик', t: '14:05',
+    find: [['note', 'Дверь закрыта, ящики стоят в один ряд', 'Замечаний нет.', 'средняя']] },
+  { id: 'k7', n: 'Погреб · стеллаж А', site: 'Пилот', kind: 'tray', loc: 'pilot', who: 'инженер', t: '12:30', marks: {},
+    find: [['rec', 'Конденсат на стене у вентиляции', 'Влажность в погребе пока не измеряется: подключить датчик и снять суточный ход.', 'низкая — только фото']] },
+  { id: 'k8', n: 'Погреб · стеллаж Б', site: 'Пилот', kind: 'tray', loc: 'pilot', who: 'агроном', t: '12:30', marks: {},
+    find: [['note', 'Лук и укроп растут ровно, полегания нет', 'Замечаний нет.', 'средняя']] }
+];
+var camById = function (id) { return CAMS.filter(function (c) { return c.id === id; })[0] || null; };
+/* проверка находки человеком действует до конца дня: завтра камера смотрит заново */
+function eyeChk(id) { var x = (LG.eyes || {})[id]; return x && x.d === todayISO() ? x : null; }
+function camFinds(c) {
+  return (typeof c.find === 'function' ? c.find() : c.find).map(function (f, i) { return { id: c.id + '_' + i, cam: c, lvl: f[0], text: f[1], act: f[2], conf: f[3], chk: eyeChk(c.id + '_' + i) }; });
+}
+function eyeFinds() { var out = []; CAMS.forEach(function (c) { if (LOCS[c.loc] || c.loc !== 'pilot') out = out.concat(camFinds(c)); }); return out; }
+/* хуже всего, что камера сейчас видит и что ещё не проверено человеком */
+function camLevel(c) { var f = camFinds(c).filter(function (x) { return !x.chk; }); return f.some(function (x) { return x.lvl === 'crit'; }) ? 'crit' : f.some(function (x) { return x.lvl === 'rec'; }) ? 'rec' : 'note'; }
+/* находки камер, которые требуют действия, становятся задачами; закрываются проверкой на месте */
+function eyeTasks() {
+  return eyeFinds().filter(function (f) { return f.lvl !== 'note' && !f.chk; }).map(function (f) {
+    return { id: 'e' + f.id, tag: 'Камера', loc: f.cam.loc, who: f.cam.who, lvl: f.lvl === 'crit' ? 'urgent' : 'plan', when: 'снимок ' + f.cam.t, place: f.cam.n + ' ' + badge('cond'), what: f.text.charAt(0).toLowerCase() + f.text.slice(1),
+      act: f.act + ' Камера видит только картинку — подтвердите осмотром на месте.', op: 'eye', b: f.cam.id, btn: 'Открыть кадр' };
+  });
+}
+
+/* ---------- кадр камеры: схема вместо снимка ---------- */
+function camFrame(c, n) {
+  var s = '<svg class="camf" viewBox="0 0 320 180" role="img" aria-label="Кадр камеры: ' + c.n + '. Схема вместо снимка"><rect width="320" height="180" style="fill:#0E1714"></rect>', i, x, y, box = function (bx, by, bw, bh, t) { return '<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" rx="3" style="fill:none;stroke:#FFB14A;stroke-width:2"></rect><text x="' + (bx + 2) + '" y="' + (by < 70 ? by - 4 : by + bh + 11) + '" style="fill:#FFB14A;font:700 9px sans-serif">' + t + '</text>'; }, over = '';
+  if (c.kind === 'tray') {
+    s += '<rect x="14" y="26" width="292" height="132" rx="8" style="fill:#D9E0DA"></rect>';
+    for (i = 0; i < 8; i++) { x = 54 + (i % 4) * 71; y = 62 + Math.floor(i / 4) * 60; var m = (c.marks || {})[i];
+      s += '<circle cx="' + x + '" cy="' + y + '" r="' + (m === 'отстаёт' ? 17 : 25) + '" style="fill:' + (m === 'бурый край' ? '#7A9A3A' : c.site === 'Пилот' ? '#5BAE4A' : '#4FA436') + '"></circle>';
+      if (m) over += box(x - 30, y - 30, 60, 60, m); }
+    s += over;
+  } else if (c.kind === 'seed') {
+    s += '<rect x="14" y="26" width="292" height="132" rx="6" style="fill:#2A332E"></rect>';
+    var empty = { 3: 1, 17: 1, 18: 1, 29: 1, 36: 1, 44: 1 };
+    for (i = 0; i < 50; i++) { x = 34 + (i % 10) * 28; y = 44 + Math.floor(i / 10) * 24; s += '<circle cx="' + x + '" cy="' + y + '" r="' + (empty[i] ? 4 : 8) + '" style="fill:' + (empty[i] ? '#56605A' : '#6FC25A') + '"></circle>'; }
+    s += box(34 + 7 * 28 - 13, 44 + 24 - 13, 54, 26, 'пусто');
+  } else if (c.kind === 'tank') {
+    var stop = S.ev.pump && !S.done.pump;
+    s += '<rect x="0" y="126" width="320" height="54" style="fill:#1B2622"></rect><rect x="40" y="48" width="78" height="92" rx="10" style="fill:#C9D3CC"></rect><rect x="40" y="' + (48 + 24) + '" width="78" height="68" rx="8" style="fill:#7FB7C9"></rect>' +
+      '<rect x="150" y="70" width="56" height="70" rx="8" style="fill:#B8C2BB"></rect><path d="M118 96h32M206 104h70v-56" style="fill:none;stroke:' + (stop ? '#FF7F6E' : '#8FA39A') + ';stroke-width:6"></path><circle cx="244" cy="104" r="12" style="fill:' + (stop ? '#FF7F6E' : '#5FD38D') + '"></circle>';
+    if (stop) s += box(226, 86, 36, 36, 'насос стоит');
+  } else {
+    s += '<path d="M0 132L70 96h180l70 36v48H0z" style="fill:#1B2622"></path><rect x="70" y="40" width="180" height="56" style="fill:#18221E"></rect>' +
+      (c.loc === 'store' ? '<rect x="132" y="48" width="56" height="48" rx="2" style="fill:#3B4A44"></rect><rect x="92" y="104" width="44" height="30" style="fill:#8FA39A"></rect><rect x="142" y="104" width="44" height="30" style="fill:#9DB1A5"></rect><rect x="192" y="104" width="44" height="30" style="fill:#8FA39A"></rect>'
+        : '<rect x="84" y="102" width="150" height="16" rx="3" style="fill:#C9D3CC"></rect><path d="M92 118v30M226 118v30" style="stroke:#8FA39A;stroke-width:5"></path><rect x="246" y="96" width="34" height="46" rx="3" style="fill:#3B4A44"></rect>');
+  }
+  return s + '<rect x="8" y="6" width="112" height="16" rx="4" style="fill:rgba(0,0,0,.55)"></rect><text x="13" y="18" style="fill:#E8F0EA;font:600 10px monospace">КАМ-0' + n + ' · ' + c.t + '</text><circle cx="304" cy="14" r="4" style="fill:#FF7F6E"></circle></svg>';
+}
+
+/* ---------- датчики: что измеряется и откуда берётся цифра ---------- */
+var EY_SRC = { demo: 'демо', man: 'вручную', calc: 'расчёт', off: 'не подключён' };
+function eyeSensors() {
+  var L = live(), pump = S.ev.pump && !S.done.pump, cl = coldLast(), R = LG.coldR;
+  return [
+    ['Воздух в зале', [['Температура', fmt(L.t) + ' °C', '20–22', L.t < 20 || L.t > 22, 'demo'], ['Влажность', fmt(L.rh, 0) + ' %', '60–70', L.rh < 60 || L.rh > 70, 'demo'], ['VPD', fmt(L.vpd, 2) + ' кПа', '0,8–1,0', L.vpd < 0.8 || L.vpd > 1.0, 'calc'], ['CO₂', '900 ppm', '800–1 200', false, 'demo'], ['Обдув кроны', '0,5 м/с', '0,3–0,7', false, 'demo']]],
+    ['Раствор', [['Температура', fmt(L.ts) + ' °C', '18–22', L.ts > 22, 'demo'], ['pH · стеллаж 4', S.done.ph ? '6,0' : '6,6', '5,8–6,2', !S.done.ph, 'demo'], ['EC · бак', '1,6 мСм/см', '1,2–1,8', false, 'demo'], ['Кислород', fmt(L.o2) + ' мг/л', 'от 7', L.o2 < 7, 'demo'], ['Расход в линии', pump ? '0 л/мин' : 'подача есть', 'подача есть', pump, 'demo'], ['Уровень бака', '74 %', '—', false, 'demo']]],
+    ['Свет', [['PPFD на ярусе', '270 мкмоль', '240–295', false, 'demo'], ['DLI за сутки', fmt(dli(270, 16)) + ' моль/м²', '14–17', false, 'calc']]],
+    ['Хранение', [['Холодильная камера', cl ? fmt(cl.v) + ' °C' : 'замеров нет', qf(R.lo) + '–' + qf(R.hi) + ' °C', !!cl && coldBad(cl), 'man'], ['Дверь камеры', '—', 'закрыта', false, 'off']]],
+    ['Питание и безопасность', [['Нагрузка', '190 кВт', 'до 350', false, 'demo'], ['Протечка на полу', '—', 'сухо', false, 'off'], ['Резервное питание', '—', 'в работе', false, 'off']]],
+    ['Пилот в погребе', [['Воздух: температура и влажность', '—', 'термогигрометр стоит в погребе', false, 'off'], ['Раствор: pH, EC, температура', 'по журналу', 'нормы культуры', false, 'man']]]
+  ];
+}
+
+/* ---------- лента: всё, что система заметила, — камеры, датчики и журналы в одном списке ---------- */
+function eyeFeed() {
+  var out = [], rank = { crit: 0, rec: 1, note: 2 };
+  eyeFinds().forEach(function (f) { out.push({ t: f.cam.t, src: 'камера', lvl: f.chk ? 'note' : f.lvl, who: f.cam.who, title: f.cam.n, text: f.text + (f.chk ? ' — проверено на месте: ' + (f.chk.ok ? 'подтвердилось' : 'не подтвердилось') : ''), act: f.act, cam: f.cam.id }); });
+  allTasks().forEach(function (t) { if (!S.done[t.id]) out.push({ t: t.when, src: 'датчик', lvl: t.lvl === 'urgent' ? 'crit' : 'rec', who: t.who, title: t.place, text: t.what, act: t.act, go: t.loc }); });
+  pilotOpen().forEach(function (c) { out.push({ t: dm(c.last.d), src: 'журнал', lvl: 'rec', who: PRM[c.k][1], title: esc(c.z), text: c.v + ' вне нормы', act: c.st ? 'Действие записано — нужен повторный замер.' : 'Открыть разбор: там указание с расчётом.', go: c.loc }); });
+  fmTasks().concat(opTasks()).forEach(function (x) { out.push({ t: x.when, src: 'журнал', lvl: x.lvl === 'urgent' ? 'crit' : 'rec', who: x.who, title: x.place, text: x.what, act: x.act, go: x.loc }); });
+  return out.sort(function (a, b) { return rank[a.lvl] - rank[b.lvl]; });
+}
+var eyeLv = function (l) { return '<span class="lv ' + l + '">' + EY_LV[l] + '</span>'; };
+
+function eyeBody() {
+  var finds = eyeFinds(), feed = eyeFeed(), sens = eyeSensors();
+  if (EY.tab === 'cams') {
+    var c = EY.cam && camById(EY.cam);
+    if (c) return '<div class="btns"><button class="mini" type="button" data-ey="cam" data-c="">← Все камеры</button><button class="mini" type="button" data-ey="go" data-loc="' + c.loc + '">Пройти к месту</button></div>' +
+      '<div class="camd"><div>' + camFrame(c, CAMS.indexOf(c) + 1) + '<p class="note">Схема вместо снимка. В рабочей версии здесь кадр с камеры: 4 снимка в сутки и снимок по запросу.</p></div><div class="camd-f"><h2>' + c.n + ' · что видит система</h2>' +
+      camFinds(c).map(function (f) { return '<div class="fd"><div class="fd-h">' + eyeLv(f.chk ? 'note' : f.lvl) + '<span class="who">' + c.who + '</span></div><b>' + f.text + '</b>' + (f.act ? '<span class="fd-a">' + f.act + '</span>' : '') + '<span class="fd-c">Уверенность: ' + f.conf + '</span>' +
+        (f.chk ? '<span class="fd-ok">Проверено на месте сегодня: ' + (f.chk.ok ? 'подтвердилось' : 'не подтвердилось — системе это учтётся как ошибка распознавания') + '.</span>'
+          : f.lvl === 'note' ? '' : '<div class="btns"><button class="btn solid" type="button" data-ey="chk" data-f="' + f.id + '" data-ok="1">Подтвердилось</button><button class="btn" type="button" data-ey="chk" data-f="' + f.id + '" data-ok="0">Не подтвердилось</button></div>') + '</div>'; }).join('') + '</div></div>';
+    return '<div class="camg">' + CAMS.filter(function (x) { return x.loc !== 'pilot' || LOCS.pilot; }).map(function (x) { var lv = camLevel(x), f = camFinds(x), top = f.filter(function (q) { return !q.chk && q.lvl === lv; })[0] || f[0];
+      return '<button class="cam ' + lv + '" type="button" data-ey="cam" data-c="' + x.id + '">' + camFrame(x, CAMS.indexOf(x) + 1) + '<span class="ci"><span class="ci-h"><b>' + x.n + '</b>' + eyeLv(lv) + '</span><span class="ci-t">' + top.text + '</span></span></button>'; }).join('') + '</div>';
+  }
+  if (EY.tab === 'feed') return '<div class="feed">' + feed.map(function (x) {
+    return '<div class="fd"><div class="fd-h">' + eyeLv(x.lvl) + '<span class="src">' + x.src + '</span><span class="who">' + x.who + ' · ' + x.t + '</span></div><b>' + x.title + '</b><span>' + x.text + '</span>' + (x.act ? '<span class="fd-a">' + x.act + '</span>' : '') +
+      '<div class="btns">' + (x.cam ? '<button class="mini" type="button" data-ey="cam" data-c="' + x.cam + '">Открыть кадр</button>' : '<button class="mini" type="button" data-ey="go" data-loc="' + x.go + '">Пройти к задаче</button>') + '</div></div>'; }).join('') + '</div>';
+  if (EY.tab === 'sens') return sens.map(function (g) { return '<h2>' + g[0] + '</h2><div class="seng">' + g[1].map(function (r) {
+    return '<div class="sen' + (r[3] ? ' bad' : '') + (r[4] === 'off' ? ' off' : '') + '"><span class="sen-n">' + r[0] + '</span><span class="sen-v num">' + r[1] + '</span><span class="sen-r">норма: ' + r[2] + '</span><span class="lv src-' + r[4] + '">' + EY_SRC[r[4]] + '</span></div>'; }).join('') + '</div>'; }).join('') +
+    '<p class="note">«Демо» — показание условное, датчик ещё не подключён. «Вручную» — настоящая запись из журнала. «Не подключён» — место под датчик есть, цифры нет. Подключать можно по одному: каждое подключение заменяет условную цифру настоящей.</p>';
+  return '<div class="how"><div class="how-s"><b>1. Смотрит</b><span>Камера на ярусе делает 4 снимка в сутки, датчики передают показания раз в минуту.</span></div><div class="how-s"><b>2. Замечает</b><span>По снимку: цвет и край листа, площадь листа против кривой роста, пустые ячейки, протечка. По датчику: выход за норму и тренд.</span></div>' +
+    '<div class="how-s"><b>3. Объясняет</b><span>К каждой находке — что сделать, расчёт, основание и уверенность. Только фото даёт низкую уверенность.</span></div><div class="how-s"><b>4. Отдаёт человеку</b><span>Комментарий остаётся в ленте, рекомендация и критичное становятся задачей нужному специалисту. Человек подтверждает или отклоняет — так система учится.</span></div></div>' +
+    '<h2>Что сейчас демо</h2><p class="lead">Камеры и датчики к приложению ещё не подключены. Кадры нарисованы, показания условные, находки — примеры того, что система будет замечать. Настоящие здесь только записи журналов. Эту часть мы разработаем дальше: начнём с камеры и термогигрометра в погребе.</p>';
+}
+function eyeRender() {
+  var el = $('#eyes'), finds = eyeFinds(), open = finds.filter(function (f) { return !f.chk && f.lvl !== 'note'; }), feed = eyeFeed(), ns = eyeSensors().reduce(function (a, g) { return a + g[1].length; }, 0), nc = CAMS.filter(function (x) { return x.loc !== 'pilot' || LOCS.pilot; }).length;
+  var crit = feed.filter(function (x) { return x.lvl === 'crit'; }).length, rec = feed.filter(function (x) { return x.lvl === 'rec'; }).length;
+  var tabs = [['cams', 'Камеры · ' + nc], ['feed', 'Лента · ' + feed.length], ['sens', 'Датчики · ' + ns], ['how', 'Как это работает']];
+  el.innerHTML = '<div class="eyes-in" role="dialog" aria-modal="true" aria-label="Наблюдение"><div class="eyes-h"><div><div class="launch-k">Глаза фермы · демо</div><h1>Наблюдение</h1>' +
+    '<p class="launch-s">Камеры и датчики смотрят за фермой постоянно. Из того, что они видят, получаются комментарии, рекомендации и критические задачи.</p></div><button class="launch-x" type="button" data-ey="close" aria-label="Закрыть">✕</button></div>' +
+    '<div class="eyes-sum"><span class="lv crit">Критично · ' + crit + '</span><span class="lv rec">Рекомендации · ' + rec + '</span><span class="lv note">Камеры ждут проверки · ' + open.length + '</span><span class="lv src-off">демо: камеры и датчики ещё не подключены</span></div>' +
+    (EY.msg ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(EY.msg) + '</p>' : '') +
+    '<div class="tabs" role="tablist">' + tabs.map(function (t) { return '<button class="tab" type="button" role="tab" data-ey="tab" data-t="' + t[0] + '" aria-selected="' + (EY.tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div><div class="eyes-b">' + eyeBody() + '</div></div>';
+  EY.msg = '';
+}
+function eyeOpen(tab, cam) { if (show) storyExit(); launchClose(); EY.tab = tab || 'cams'; EY.cam = cam || null; $('#eyes').hidden = false; eyeRender(); $('#eyes').scrollTop = 0; }
+function eyeClose() { $('#eyes').hidden = true; }
+/* счётчик на кнопке входа: сколько находок ждёт действия */
+function eyeCount() { return eyeFeed().filter(function (x) { return x.lvl !== 'note'; }).length; }
+function eyeBtn() { var b = $('#eyeOpen'); if (b) b.innerHTML = icon(IC_EYE) + '<span>Наблюдение</span><span class="n">' + eyeCount() + '</span>'; }
+$('#eyes').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  var c = b.dataset.ey;
+  if (c === 'close') { eyeClose(); return; }
+  if (c === 'tab') { EY.tab = b.dataset.t; EY.cam = null; }
+  else if (c === 'cam') { EY.tab = 'cams'; EY.cam = b.dataset.c || null; }
+  else if (c === 'go') { var loc = b.dataset.loc; eyeClose(); if (LOCS[loc]) { S.tabs[loc] = 'tasks'; if (S.loc !== loc) go(loc); else renderAll(); } $('#panel').scrollTop = 0; return; }
+  else if (c === 'chk') {
+    if (shared() && SH.ro) EY.msg = 'Общий журнал открыт вам только для чтения — отметка не сохранена.';
+    else { var e2 = {}; e2[b.dataset.f] = { d: todayISO(), ok: +b.dataset.ok }; put('cfg/eyes', { chk: e2 }); rebuild(); renderWays(); renderTasks(); renderRole(); renderTabs(); buildTags(); EY.msg = 'Проверка записана. Задача по этой находке закрыта, результат учтётся в оценке камеры.'; }
+  }
+  eyeRender(); this.scrollTop = 0;
+});
+$('#eyeOpen').addEventListener('click', function () { eyeOpen('cams'); });
+window.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#eyes').hidden && $('#kbar').hidden && $('#launch').hidden) eyeClose(); });
 /* ---------- показ за две минуты: одна история по шагам ---------- */
 var show = null, showTimer = null;
 var at = function (ev, done, loc, tab) { S.ev = ev; S.done = done; S.tabs[loc] = tab; go(loc); };
@@ -3644,6 +3868,7 @@ $('#panel').addEventListener('click', function (e) {
   if (b.dataset.rgo) { roleGo(b.dataset.rgo); return; }
   if (b.dataset.role === 'others') { S.others = !S.others; renderTasks(); return; }
   if (b.dataset.role === 'launch') { launchOpen(); return; }
+  if (b.dataset.role === 'eyes') { eyeOpen('cams'); return; }
   if (b.dataset.role === 'wide') { S.wide = !S.wide; renderRole(); renderWays(); return; }
   if (b.dataset.rc && RC_SETS[b.dataset.rc]) { var rs = RC_SETS[b.dataset.rc][1]; Object.keys(rs).forEach(function (k) { RC.t[k] = rs[k]; }); renderTabs(); return; }
   if (show) storyPause();
