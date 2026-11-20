@@ -98,7 +98,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 .story .mini[disabled]{opacity:.4;cursor:default}
 .panel.showing #pStory{position:sticky;top:0;z-index:4;background:var(--surface);padding-bottom:6px}
 .panel.showing #pWays,.panel.showing #pRole{display:none}
-.app.showing .hud.bottom,.app.showing #back{display:none}
+.app.showing .hud.bottom,.app.showing #back,.app.showing #backPrev{display:none}
 .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 56%,rgba(0,0,0,.4) 100%);transition:box-shadow .5s ease}
 .app.touring .vig{box-shadow:inset 0 44px 0 #000,inset 0 -44px 0 #000}
 .app.touring #tags,.app.touring .hint,.app.touring #tSensors,.app.touring #tEvents,.app.touring #tHow,.app.touring #tShow,.app.touring #tTeam{display:none}
@@ -340,7 +340,7 @@ div.bar{display:block;padding:0;min-height:0;border:0;flex:none}
     <div class="vig"></div>
     <div id="tags"></div>
     <div class="cap" id="cap" hidden></div>
-    <div class="hud top"><button class="hbtn back" id="back" type="button" hidden>Общий вид</button></div>
+    <div class="hud top"><button class="hbtn back" id="backPrev" type="button" hidden>← Назад</button><button class="hbtn back" id="back" type="button" hidden>Общий вид</button></div>
     <div class="hud bottom">
       <button class="hbtn show" id="tShow" type="button">Путь салата</button>
       <button class="hbtn tour" id="tTour" type="button" aria-pressed="false">Облёт</button>
@@ -523,7 +523,7 @@ var TASKS = [
   { id: 'temp', loc: 'solution', who: 'инженер', lvl: 'warn', when: 'до 18:00', place: 'Бак раствора', what: '23,5 °C при норме 18–22, O₂ 6,8 мг/л',
     act: 'Проверить чиллер и циркуляцию, через 30 мин перемерить кислород',
     calc: 'DOₛ(23,5 °C) = 8,4 мг/л → 6,8 / 8,4 = 81 % насыщения', basis: 'гайд фермы: раствор 18–22 °C, O₂ от 7 мг/л', conf: 'высокая — прямое измерение', risk: 'выше 22 °C растёт риск корневой гнили' },
-  { id: 'ec', loc: 'hall', who: 'агроном', lvl: 'plan', when: 'сегодня', place: 'Стеллаж 6', what: 'до сбора 4 дня',
+  { id: 'ec', loc: 'hall', who: 'агроном', lvl: 'plan', when: 'сегодня', place: 'Стеллаж 6', what: 'до сбора 3 дня',
     act: 'Снизить EC с 1,6 до 1,2 мСм/см',
     calc: '1,6 × (1 − 0,25) = 1,2 · правило: −20…30 % за 3–5 дней до сбора', basis: 'гайд фермы: предуборочное снижение нитратов', conf: 'средняя — по плану партии', risk: 'нитраты в листе могут выйти за норму; норму проверить по ТР ТС 021/2011' },
   { id: 'cal', loc: 'hall', who: 'инженер', lvl: 'plan', when: 'сегодня', place: 'Датчик pH, стеллаж 1', what: 'калибровка 32 дня назад при норме 30',
@@ -541,6 +541,10 @@ function allTasks() {
     if (t.id === 'temp' && S.ev.heat) return Object.assign({}, t, { lvl: 'urgent', when: 'сейчас', what: '25,8 °C при норме 18–22, O₂ 6,1 мг/л',
       act: 'Включить резервное охлаждение бака и проверить чиллер, через 15 мин перемерить',
       calc: 'DOₛ(25,8 °C) = ' + fmt(hot) + ' мг/л → 6,1 / ' + fmt(hot) + ' = ' + fmt(6.1 / hot * 100, 0) + ' % насыщения', risk: 'корневая гниль развивается быстрее, под угрозой все 8 стеллажей' });
+    /* сроки демо-задач идут от сегодняшнего дня: сбор партии стеллажа 6 — через 3 дня, проба — за день до него */
+    if (t.id === 'lab') { var hd = dm(addDays(todayISO(), 3)), sd = dm(addDays(todayISO(), 2)); return Object.assign({}, t, { when: 'до ' + sd, what: 'сбор ' + hd, calc: 'сбор ' + hd + ' − 1 день на анализ = ' + sd }); }
+    if (t.id === 'cal') { var p1 = LG.sensors.filter(function (x) { return x.id === 'ph1'; })[0], cd = p1 && p1.last ? daysFrom(p1.last, todayISO()) : 0;
+      if (cd > LG.calInt) return Object.assign({}, t, { what: 'калибровка ' + cd + ' ' + plr(cd, 'день', 'дня', 'дней') + ' назад при норме ' + LG.calInt, calc: cd + ' − ' + LG.calInt + ' = ' + (cd - LG.calInt) + ' дн. просрочки' }); }
     return t;
   });
   if (S.ev.heat) out.push({ id: 'roots', loc: 'hall', who: 'агроном', lvl: 'warn', when: 'сегодня', place: 'Стеллажи 1–8', what: 'раствор перегрет до 25,8 °C',
@@ -624,8 +628,9 @@ function factsFor(loc) {
     F('План сбора', '1 040', 'гол./сут', 'расчёт'), F('Отход по плану', '10', '%', '1 150 до отхода'),
     F('Масса головки', '150–180', 'г', 'ориентир'), F('Маркировка', 'проверить', '', 'ТР ТС 022/2011', true)] };
   if (loc === 'store') return { title: 'Хранение и отгрузка', rows: [
-    F('Заказов на неделю', '3', '', 'условно'), F('Ближайший сбор', '23.11', '', 'стеллаж 6'),
-    F('Камера', 'уточнить', '', 'режим хранения', true), F('Расходники', 'уточнить', '', 'точки заказа', true)] };
+    F('Открытых заказов', String(ordOpen().length), '', 'под заказами ' + fmt(ordReserve(7)) + ' кг на 7 дней'), (function () { var nh = fmNextHarv(); return F('Ближайший сбор', nh ? dm(nh.d) : '—', '', nh ? esc(fmWhere(nh.b)) : 'партий на этапе B нет'); })(),
+    (function () { var cl = coldLast(); return F('Камера', cl ? fmt(cl.v) : '—', cl ? '°C' : '', 'диапазон ' + qf(LG.coldR.lo) + '–' + qf(LG.coldR.hi) + ' °C' + (LG.coldR.set ? '' : ' — уточнить'), !cl || coldBad(cl)); })(),
+    (function () { var low = LG.stock.filter(function (x) { return x.q <= x.r; }).length; return F('Пора заказать', String(low), 'поз.', 'из ' + LG.stock.length + ' на складе', low > 0); })()] };
   return null;
 }
 
@@ -982,6 +987,7 @@ var LEVEL = { hall: 1, shelf: 1, solution: 1 };
 function go(id, cropId, fromView) {
   if (show && !show.internal) storyPause();
   var from = S.loc, L = LOCS[id];
+  navPush(from, id, cropId);
   var wasTour = !!tour;
   if (tour) stopTour(true);
   var start = fromView || (!renderer ? null : wasTour ? { p: base.p.clone(), t: base.t.clone() } : actualView());
@@ -1076,9 +1082,9 @@ function placeTags(w, h) {
 /* ---------- панель ---------- */
 function renderWhere() {
   var L = LOCS[S.loc], c = S.crop && cropById(S.crop);
-  $('#pWhere').innerHTML = '<div class="kicker">' + L.who + '</div><h1>' + (c ? c.name : L.name) + '</h1><p class="lead">' + L.lead + '</p>';
+  $('#pWhere').innerHTML = (navCan() ? '<div class="btns" style="margin:0 0 10px"><button class="mini" type="button" data-nav="back">← Назад</button>' + (S.loc !== 'overview' ? '<button class="mini" type="button" data-go="overview">Общий вид</button>' : '') + '</div>' : '') + '<div class="kicker">' + L.who + '</div><h1>' + (c ? c.name : L.name) + '</h1><p class="lead">' + L.lead + '</p>';
   $('#crumb').textContent = S.loc === 'overview' ? 'Ферма' : 'Ферма › ' + (S.loc === 'shelf' ? 'Проход между стеллажами › ' : '') + L.name + (c ? ' › ' + c.name : '');
-  $('#back').hidden = S.loc === 'overview';
+  $('#back').hidden = S.loc === 'overview'; navUi();
 }
 function renderWays() {
   var L = LOCS[S.loc];
@@ -1201,7 +1207,7 @@ function applyMode() {
 var TABS = {
   overview: [['tasks', 'Задачи'], ['facts', 'Ферма'], ['shift', 'Смена'], ['events', 'Сценарии и время'], ['how', 'Как это работает']],
   journal: [['jadd', 'Ввод'], ['jrev', 'Разбор'], ['diag', 'Диагностика'], ['recipe', 'Рецептура'], ['verify', 'Сверка норм']],
-  owner: [['summary', 'Сводка'], ['econ', 'Экономика'], ['scen', 'Три сценария'], ['payback', 'Окупаемость'], ['scale', 'Масштаб'], ['ramp', 'Ввод и штат'], ['risk', 'Риски']],
+  owner: [['summary', 'Сводка'], ['econ', 'Экономика'], ['scen', 'Три сценария'], ['payback', 'Окупаемость'], ['scale', 'Масштаб'], ['ramp', 'Ввод и штат'], ['risk', 'Риски'], ['ask', 'Уточнить']],
   hall: [['tasks', 'Задачи'], ['facts', 'Воздух'], ['batches', 'Партии'], ['week', 'Неделя'], ['modes', 'Режимы']],
   shelf: [['tasks', 'Задачи'], ['facts', 'Ярус'], ['charts', 'Графики'], ['growth', 'Рост'], ['photo', 'Фото']],
   solution: [['tasks', 'Задачи'], ['facts', 'Раствор'], ['unit', 'Узел'], ['equip', 'Оборудование'], ['power', 'Электрика'], ['climate', 'Климат'], ['sensors', 'Датчики'], ['service', 'ТО']],
@@ -1309,7 +1315,7 @@ var EXTRA = {
       head('Штат при полной загрузке', 'reg') + kv([['Агроном', '1'], ['Техник', '1'], ['Операторы', '3–4'], ['Упаковщик', '1'], ['Менеджер продаж', '1'], ['Водитель', '1'], ['Бухгалтер', 'на аутсорсе'], ['Всего', '8–9 человек']]);
   },
   risk: function () {
-    return head('Открытые риски проекта') + '<div>' + line('6 ярусов вместо 7', 'при балках под плитой или высоте 4,2 м площадь ≈ 1 010 м²', 'в «Экономике»', true) + line('Колонны и балки', 'колонны 400 × 400 с шагом 6 м в раскладке не учтены', 'уточнить', true) +
+    return head('Открытые риски проекта') + '<div>' + line('Контур и высота цоколя', '29 × 20 м и 4,5 м в чистоте приняты по эскизному проекту', 'уточнить у заказчика', true) + line('6 ярусов вместо 7', 'при балках под плитой или высоте 4,2 м площадь ≈ 1 010 м²', 'в «Экономике»', true) + line('Колонны и балки', 'колонны 400 × 400 с шагом 6 м в раскладке не учтены', 'уточнить', true) +
       line('Электрическая мощность', 'техусловия ≈ 350 кВт — оценка до проекта ОВ', 'уточнить', true) + line('Нормативы', 'проверено 2 документа из 8', 'лаборатория', true) + line('Субсидии', 'не подтверждены, в расчёт не включены', '', false) +
       line('Открытые задачи', word(openIn()), '', openIn() > 0) + '</div>';
   },
@@ -1317,7 +1323,7 @@ var EXTRA = {
     var m = function (n, r) { return '<div class="box"><span class="t">' + n + '</span>' + kv(r) + '</div>'; };
     return head('Режим по этапам', 'guide') + m('Рассада', [['PPFD', '150–200'], ['EC', '0,8–1,2'], ['Воздух день / ночь', '22–24 / 20 °C'], ['Влажность', '70–80 %'], ['DLI', '10–12']]) +
       m('Этап A', [['PPFD', '220–280'], ['EC', '1,2–1,5'], ['Воздух день / ночь', '20–22 / 17–18 °C'], ['Влажность', '60–70 %'], ['DLI', '14–17']]) +
-      m('Этап B', [['PPFD', '240–295 при 16 ч'], ['EC', '1,4–1,8'], ['Воздух день / ночь', '20–22 / 17–18 °C'], ['Влажность', '60–70 %'], ['DLI', '14–17']]) +
+      m('Этап B', [['PPFD', '240–295 при 16 ч · 210–260 при 18 ч'], ['EC', '1,4–1,8'], ['Воздух день / ночь', '20–22 / 17–18 °C'], ['Влажность', '60–70 %'], ['DLI', '14–17']]) +
       head('Проверка перед сменой света') + '<div class="sl"><label for="dP">Свет, PPFD</label><output id="dPo" for="dP">' + M.ppfd + ' мкмоль</output><input id="dP" type="range" min="150" max="350" step="5" value="' + M.ppfd + '"></div>' +
       '<div class="sl"><label for="dH">Свет в сутки</label><output id="dHo" for="dH">' + M.h + ' ч</output><input id="dH" type="range" min="14" max="20" step="1" value="' + M.h + '"></div><div id="dOut"></div>' +
       head('Правила', 'guide') + '<div>' + line('Перед сбором', 'за 3–5 дней снизить EC на 20–30 %, собирать утром') + line('CO₂ и обдув', '800–1 200 ppm, над кроной 0,3–0,7 м/с') + line('Раствор', 'полная смена раз в 3–4 недели') + '</div>';
@@ -1456,8 +1462,8 @@ EXTRA.summary = function () {
     '<div class="fact"><div class="k">Сделано персоналом</div><div class="v">' + fmt((doneT + doneS) / all * 100, 0) + ' <small>%</small></div><div class="n">' + (doneT + doneS) + ' из ' + all + ' задач и пунктов смены</div></div></div>' +
     head('Готовность к проверке', 'cond') + '<div>' + READY.map(function (sec) { var p = readyPct(sec), st = statusDot(p); return '<div class="line"><span class="dotS' + st[1] + '"></span><span class="g"><b>' + sec[0] + '</b>' + bar(p, p < 100) + '</span><span class="r">' + st[0] + '<br>' + fmt(p, 0) + ' %</span></div>'; }).join('') + '</div>' +
     '<div class="btns"><button class="mini" type="button" data-go="lab">К чек-листу в лаборатории</button></div>' +
-    head('Ближайшие сроки', 'cond') + '<div>' + line('Калибровка датчика pH, стеллаж 1', 'инженер', S.done.cal ? 'сделано' : 'просрочено 2 дня', !S.done.cal) + line('Проба на нитраты', 'лаборант · партия стеллажа 6', S.done.lab ? 'отобрана' : 'до 22.11', !S.done.lab) +
-    line('Смена раствора', 'инженер · раз в 3–4 недели', '28.11') + line('Медосмотр персонала', 'срок не задан', 'уточнить', true) + line('Поверка приборов', 'весы, термометры', 'уточнить', true) + '</div>';
+    head('Ближайшие сроки', 'cond') + '<div>' + line('Калибровка датчика pH, стеллаж 1', 'инженер', S.done.cal ? 'сделано' : 'просрочено', !S.done.cal) + line('Проба на нитраты', 'лаборант · партия стеллажа 6', S.done.lab ? 'отобрана' : 'до ' + dm(addDays(todayISO(), 2)), !S.done.lab) +
+    line('Смена раствора', 'инженер · раз в 3–4 недели', svcText('sol')[0], svcText('sol')[1]) + line('Медосмотр персонала', 'срок не задан', 'уточнить', true) + line('Поверка приборов', 'весы, термометры', 'уточнить', true) + '</div>';
 };
 EXTRA.payback = function () {
   var c = cashflow(), mn = Math.min.apply(null, c.pts), mx = Math.max.apply(null, c.pts);
@@ -1474,12 +1480,6 @@ EXTRA.scale = function () {
     sl('kY', 'Урожайность', 40, 60, 1, SC.yld) + sl('kW', 'Мощность света', 100, 200, 5, SC.wm2) + '<div id="kOut"></div>' +
     '<p class="note">Урожайность по реестру: 47–57 кг с м² в год. Свет: 100–130 Вт/м², худший случай — 200. Пилот — 60–100 м² посадки.</p>';
 };
-EXTRA.week = function () {
-  var d = [['пт 20.11', 'стеллаж 5, ярусы 5–7'], ['сб 21.11', 'стеллаж 3, ярусы 1–3'], ['вс 22.11', 'стеллаж 3, ярусы 4–6 · проба на нитраты'], ['пн 23.11', 'стеллаж 6, ярусы 1–3 · стеллаж 4, ярус 2 · партия С6-2311'], ['вт 24.11', 'стеллаж 6, ярусы 4–6'], ['ср 25.11', 'стеллаж 7, ярусы 1–3'], ['чт 26.11', 'стеллаж 7, ярусы 4–6']];
-  return head('План на неделю', 'cond') + '<p class="lead">Каждый день: посев 1 250 ячеек, пересадка рассады на этап A, раздвижка на этап B, сбор около 1 040 головок.</p><div>' +
-    d.map(function (x) { return line(x[0], 'сбор: ' + x[1], '≈ 172 кг'); }).join('') + '</div>' +
-    head('Работы по раствору', 'guide') + '<div>' + line('Стеллаж 6', 'за 4 дня до сбора EC с 1,6 до 1,2', S.done.ec ? 'сделано' : 'сегодня', !S.done.ec) + line('Полная смена раствора', 'раз в 3–4 недели', '28.11') + '</div>';
-};
 EXTRA.charts = function () {
   var d = S.done.ph, ph = week(6.0, 0.03, 0.04, 11, function (i) { return i > 44 ? (i - 44) / 12 * 0.6 * (d && i > 54 ? 0 : 1) : 0; });
   var ch = function (title, unit, pts, lo, hi, min, max, dec) { return '<div class="box"><span class="t">' + title + ' <span class="num" style="font-weight:500;color:var(--muted)">сейчас ' + fmt(pts[pts.length - 1], dec) + ' ' + unit + '</span></span>' +
@@ -1494,7 +1494,7 @@ EXTRA.growth = function () {
   var lag = (fact[36] / norm[36] - 1) * 100, fin = M(40, 30.6);
   return head('Кривая роста партии', 'cond') + lineChart({ title: 'Масса головки, граммы', series: [{ pts: norm, color: 'var(--muted)', dash: true }, { pts: fact, color: 'var(--grow)' }], min: 0, max: 180, ticks: [0, 90, 180], dec: 0, xl: ['посев', 'сбор, день 40'], h: 140 }) +
     '<p class="note">Пунктир — норма сорта, линия — факт по площади листа с фото.</p>' +
-    kv([['Сегодня', 'день 36 из 40', 'этап B, день 12 из 16'], ['Масса сейчас', fmt(fact[36], 0) + ' г', 'норма ' + fmt(norm[36], 0) + ' г'], ['Отклонение', fmt(lag, 1) + ' %', 'от нормы сорта', lag < -10], ['Прогноз сбора', '23.11 ± 1 день', 'через 4 дня'], ['Прогноз массы', fmt(fin, 0) + ' г', 'цель 150–180 г']]) +
+    kv([['Сегодня', 'день 36 из 40', 'этап B, день 12 из 16'], ['Масса сейчас', fmt(fact[36], 0) + ' г', 'норма ' + fmt(norm[36], 0) + ' г'], ['Отклонение', fmt(lag, 1) + ' %', 'от нормы сорта', lag < -10], ['Прогноз сбора', dm(addDays(todayISO(), 4)) + ' ± 1 день', 'через 4 дня'], ['Прогноз массы', fmt(fin, 0) + ' г', 'цель 150–180 г']]) +
     '<div class="frm">M(t) = 180 / (1 + e^(−0,22 · (t − t₀)))<br>норма t₀ = 30,0 · факт t₀ = 30,6 по подгонке</div>';
 };
 EXTRA.equip = function () {
@@ -1533,7 +1533,7 @@ var JEX = [
 var FEX = [
   ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -40], ['a', 'Стеллаж 1', -26, 'ярусы 1–2', 1200], ['b', 'Стеллаж 5', -17, 'ярусы 5–7', 1150]], [[-1, 'Кафе', 40], [0, 'Магазин', 100]]],
   ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -35], ['a', 'Стеллаж 1', -21, 'ярусы 3–4', 1210], ['b', 'Стеллаж 6', -11, 'ярусы 1–3', 1160]]],
-  ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -32], ['a', 'Стеллаж 1', -19, 'ярусы 5–6', 1195], ['b', 'Стеллаж 4', -10, 'ярусы 1–3', 1150]]],
+  ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -36], ['a', 'Стеллаж 1', -22, 'ярусы 5–6', 1195], ['b', 'Стеллаж 4', -12, 'ярусы 1–3', 1150]]],
   ['lollo', 'Лолло росса', 1250, [['seed', 'Рассадная', -27], ['a', 'Стеллаж 2', -14, 'ярусы 1–2', 1205], ['b', 'Стеллаж 7', -6, 'ярусы 1–3', 1170]]],
   ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -22], ['a', 'Стеллаж 2', -9, 'ярусы 3–4', 1215]]],
   ['romaine', 'Мини-ромэн', 1250, [['seed', 'Рассадная', -17], ['a', 'Стеллаж 1', -4, 'ярусы 1–2', 1220]]],
@@ -2697,7 +2697,7 @@ function lightCmd(c) {
 }
 /* ---------- партия фермы: одна запись ведёт салат от посева до отгрузки. Сроки этапов и плотность — по гайду фермы ---------- */
 /* этап: [название, дней от, дней до, пояснение] */
-var FM_ST = { seed: ['Рассада', 12, 17, 'проращивание 2–3 дня и рассада 10–14 дней'], a: ['Этап A', 7, 10, 'этап A 7–10 дней, 45 раст./м²'], b: ['Этап B', 14, 18, 'этап B 14–18 дней, 22 раст./м²'] };
+var FM_ST = { seed: ['Проращивание и рассада', 12, 17, 'проращивание 2–3 дня и рассада 10–14 дней'], a: ['Этап A', 7, 10, 'этап A 7–10 дней, 45 раст./м²'], b: ['Этап B', 14, 18, 'этап B 14–18 дней, 22 раст./м²'] };
 var FM_NEXT = { seed: 'a', a: 'b' }, FM_DENS = { a: 45, b: 22 }, FM_TIER = 21, FM_SOW = [1200, 1300], FM_HEADS = 1040;
 var FV = { batch: null, msg: '', pick: '', ship: '', smp: '', ord: '' };
 var fmById = function (id) { return FBT.filter(function (b) { return b.id === id; })[0] || null; };
@@ -2729,6 +2729,26 @@ function fmDue(b, t) {
 /* замеры по зонам, где партия стояла, за время, пока она там была */
 function fmRows(b) { var h = fmHarv(b); return btRows({ st: b.st, end: h ? h.d : null }); }
 function fmSown(d) { return FBT.filter(function (b) { return b.sow === d; }).reduce(function (a, b) { return a + b.n; }, 0); }
+/* самый ранний срок следующего шага партии: дата, когда этап отстоял минимум */
+function fmStep(b) { var k = fmStage(b), l = fmLast(b), F = FM_ST[k]; return F && l ? { k: k, d: addDays(l.d, F[1]) } : null; }
+/* ближайший сбор среди партий на этапе B */
+function fmNextHarv() {
+  var t = todayISO(), best = null;
+  FBT.forEach(function (b) { var s = fmStep(b); if (!s || s.k !== 'b') return; var d = s.d < t ? t : s.d; if (!best || d < best.d) best = { d: d, b: b }; });
+  return best;
+}
+/* план на n дней по самым ранним срокам записанных партий; то, чей срок уже подошёл, стоит на сегодня */
+function fmWeek(n) {
+  var t = todayISO(), out = [], k, lab = { seed: 'пересадка на этап A', a: 'раздвижка на этап B', b: 'сбор' };
+  for (k = 0; k < n; k++) out.push({ d: addDays(t, k), items: [], kg: 0 });
+  FBT.forEach(function (b) {
+    var s = fmStep(b); if (!s) return;
+    var i = Math.max(0, daysFrom(t, s.d)); if (i >= n) return;
+    out[i].items.push(lab[s.k] + ': ' + esc(fmCode(b) + ' · ' + fmWhere(b)));
+    if (s.k === 'b') out[i].kg += fmCount(b) * 0.9 * PROD.headKg;
+  });
+  return out;
+}
 /* задачи по партиям закрываются записью, а не отметкой: посев за сегодня и партии, у которых вышел срок этапа */
 function fmTasks() {
   var t = todayISO(), out = [];
@@ -2754,6 +2774,14 @@ var fmAge = function (b, t) { var d = daysFrom(b.sow, t); return d <= 0 ? 'по�
 var fmLow = function (x) { return x.charAt(0).toLowerCase() + x.slice(1); };
 var fmDate = function (iso) { return iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4); };
 
+EXTRA.week = function () {
+  var t = todayISO(), plan = fmWeek(7), pre = FBT.filter(function (b) { var s = fmStep(b); return s && s.k === 'b' && daysFrom(t, s.d) <= 5; });
+  return head('План на неделю') + '<p class="lead">Каждый день по норме: посев 1 250 ячеек, пересадка рассады на этап A, раздвижка на этап B, сбор около 1 040 головок. Ниже — что подходит по срокам у записанных партий.</p><div>' +
+    plan.map(function (x) { return line(WD[new Date(x.d + 'T12:00:00').getDay()] + ' ' + dm(x.d), x.items.length ? x.items.join('<br>') : 'по срокам партий работ нет', x.kg ? '≈ ' + fmt(x.kg, 0) + ' кг' : ''); }).join('') + '</div>' +
+    '<p class="note">Срок — самый ранний по гайду: рассадная 12 дней, этап A 7 дней, этап B 14 дней. Масса сбора — оценка: растения партии × 0,9 × 165 г.</p>' +
+    head('Работы по раствору', 'guide') + '<div>' + (pre.length ? pre.map(function (b) { var dd = Math.max(0, daysFrom(t, fmStep(b).d)); return line(esc(fmWhere(b)), fmCode(b) + ' · до сбора ' + dd + ' дн. — снизить EC на 20–30 %', 'за 3–5 дней'); }).join('') : line('Перед сбором', 'за 3–5 дней снизить EC на 20–30 % — партий с близким сбором нет', '')) +
+    line('Полная смена раствора', 'раз в 3–4 недели', svcText('sol')[0], svcText('sol')[1]) + '</div>';
+};
 EXTRA.sowing = function () {
   var t = todayISO(), cells = fmSown(t), seed = FBT.filter(function (b) { return fmStage(b) === 'seed'; });
   var recent = FBT.slice().sort(function (a, b) { return a.sow < b.sow ? 1 : a.sow > b.sow ? -1 : b.no - a.no; }).slice(0, 7);
@@ -2776,7 +2804,7 @@ EXTRA.batches = function () {
   var hOn = function (d) { var hs = LG.harvest.filter(function (h) { return h.d === d && (!h.b || fmById(h.b)); }); return { heads: hs.reduce(function (a, h) { return a + h.heads; }, 0), planted: hs.reduce(function (a, h) { return a + (h.planted || 0); }, 0), full: hs.length > 0 && hs.every(function (h) { return h.planted; }) }; };
   var ht = hOn(t), hy = hOn(y), waste = hy.full && hy.planted ? (hy.planted - hy.heads) / hy.planted * 100 : null, cells = fmSown(t), due = act.filter(function (b) { var du = fmDue(b, t); return du && du.lvl > 0; });
   return shBar() + fmMsg() + head('Конвейер партий', 'guide') + '<div class="grid2">' + st('Проращивание', '2–3 дня', '1 семя на кубик', 'без света') + st('Рассада', '10–14 дней', '250–400 кубиков/м²', '≈ 50 м² столов', 'seed') + st('Этап A', '7–10 дней', '45 раст./м²', '≈ 256 м² · 1,7 стеллажа', 'a') + st('Этап B', '14–18 дней', '22 раст./м²', '≈ 944 м² · 6,4 стеллажа', 'b') + '</div>' +
-    '<div class="frm">этап A: 256 м² × 45 / 10 дней = 1 152 раст./сут<br>этап B: 944 м² × 22 / 18 дней = 1 154 раст./сут<br>после 10 % отхода ≈ 1 040 головок в сутки</div>' +
+    '<div class="frm">этап A: 256 м² × 45 / 10 дней = 1 152 раст./сут<br>этап B: 944 м² × 22 / 18 дней = 1 154 раст./сут<br>после 10 % отхода ≈ 1 040 головок в сутки<br>на стеллажах 21–28 дней, весь цикл 35–42 дня</div>' +
     (!FBT.length ? '<p class="lead">Партий пока нет. Запишите посев в рассадной — партия появится здесь и пройдёт весь путь до отгрузки.</p><div class="btns"><button class="btn solid" type="button" data-fm="tosow">Записать посев</button><button class="btn" type="button" data-fm="bex">Добавить примеры</button></div>' :
       head('Сегодня · ' + dm(t)) + kv([['Посеяно', grp(cells) + ' ячеек', 'норма 1 200–1 300', cells < FM_SOW[0] || cells > FM_SOW[1]], ['Собрано', grp(ht.heads) + ' головок', 'план ' + grp(FM_HEADS)],
         ['Собрано вчера', hy.heads ? grp(hy.heads) + ' головок' : '—', hy.full ? grp(hy.planted) + ' посажено' : ''], ['Отход вчера', waste === null ? '—' : fmt(waste) + ' %', 'план 10 %', waste !== null && waste > 10]]) +
@@ -3097,7 +3125,7 @@ function opCmd(c, el) {
 /* ---------- вход по роли: специалист видит сначала свои задачи и свои разделы. Остальное не прячется насовсем — открывается кнопкой ---------- */
 /* роль: [название, чьи задачи (как в поле «кому»), разделы [помещение, вкладка, подпись]] */
 var ROLES = {
-  owner: ['Собственник', 'собственник', [['owner', 'summary', 'Сводка'], ['owner', 'econ', 'Экономика'], ['owner', 'payback', 'Окупаемость'], ['owner', 'risk', 'Риски'], ['lab', 'ready', 'Готовность к проверке']]],
+  owner: ['Собственник', 'собственник', [['owner', 'summary', 'Сводка'], ['owner', 'econ', 'Экономика'], ['owner', 'payback', 'Окупаемость'], ['owner', 'risk', 'Риски'], ['owner', 'ask', 'Что уточнить'], ['lab', 'ready', 'Готовность к проверке']]],
   agro: ['Агроном', 'агроном', [['hall', 'batches', 'Партии'], ['journal', 'jadd', 'Ввод замеров'], ['journal', 'jrev', 'Разбор отклонений'], ['journal', 'diag', 'Диагностика'], ['journal', 'recipe', 'Рецептура'], ['seedling', 'sowing', 'Посев'], ['hall', 'modes', 'Режимы']]],
   eng: ['Инженер', 'инженер', [['solution', 'facts', 'Раствор'], ['solution', 'service', 'Регламент ТО'], ['solution', 'sensors', 'Датчики'], ['solution', 'climate', 'Климат'], ['solution', 'power', 'Электрика'], ['solution', 'equip', 'Оборудование']]],
   oper: ['Оператор', 'оператор', [['overview', 'shift', 'Смена'], ['seedling', 'sowing', 'Посев'], ['hall', 'batches', 'Партии'], ['journal', 'jadd', 'Ввод замеров'], ['prep', 'clean', 'Уборка']]],
@@ -3138,6 +3166,76 @@ function roleGo(v) {
   if (S.loc !== p[0]) go(p[0]); else renderTabs();
   $('#panel').scrollTop = 0;
 }
+
+/* ---------- открытые вопросы: всё, что в приложении помечено «уточнить» или принято как стартовое. Сверено с реестром проекта 20.11.2026 ---------- */
+/* группа: [кто отвечает, вопросы [что уточнить, на что влияет, помещение, вкладка]] */
+var ASKS = [
+  ['Заказчик и архитектор', [
+    ['Контур и высота цоколя', '29 × 20 м и 4,5 м приняты по эскизному проекту. При высоте 4,2 м или балках под плитой ярусов будет 6, а площадь — около 1 010 м² вместо 1 176', 'owner', 'risk'],
+    ['Колонны и балки', 'колонны 400 × 400 с шагом 6 м в раскладке стеллажей не учтены — от них зависит, встанут ли 8 стеллажей по 15 м', 'owner', 'risk']]],
+  ['Проект отопления, вентиляции и электрики', [
+    ['Электрическая мощность', '250–350 кВт по расчёту, техусловия около 350 кВт — оценка до проекта', 'solution', 'power'],
+    ['Климат, насосы, чиллер', 'принято +35–50 % к мощности света; точная цифра меняет энергию на килограмм', 'solution', 'power'],
+    ['Испарение и осушение', '2–3,5 л с м² в сутки, 2,5–4 т воды на ферму — оценка', 'solution', 'climate'],
+    ['ИБП и генератор', 'состав резервного питания не задан; не задан и допустимый простой насоса', 'solution', 'service'],
+    ['Датчики протечки', 'есть в аварийных сценариях, в проекте не описаны', 'solution', 'service']]],
+  ['Нормативы и лаборатория', [
+    ['Реестр нормативов', 'проверено 2 документа из 8', 'lab', 'norms'],
+    ['ПДК нитратов', 'значение не проверено по ТР ТС 021/2011 — без него результат пробы не с чем сравнить', 'lab', 'norms'],
+    ['Этикетка', 'перечень сведений по ТР ТС 022/2011, срок годности, условия хранения, изготовитель', 'prep', 'label'],
+    ['Вода', 'анализ воды после осмоса не загружен; требования к воде для мойки не проверены', 'lab', 'elements'],
+    ['Медосмотры и поверка приборов', 'сроки не заданы — журналы стоят пустыми', 'lab', 'journals']]],
+  ['Регламенты фермы', [
+    ['Температура холодильной камеры', 'диапазон 2–6 °C стоит как стартовый, двумя источниками не сверялся', 'store', 'cold'],
+    ['Интервал калибровки датчиков', '30 дней — стартовый, нужен по паспортам датчиков', 'solution', 'sensors'],
+    ['Интервалы обслуживания', 'УФ-лампа, мембраны осмоса, фильтры вентиляции — без интервала срок не считается', 'solution', 'service'],
+    ['Регламент уборки', 'перечень средств, концентрации и периодичность не утверждены', 'prep', 'clean']]],
+  ['Экономика', [
+    ['Вложения', 'сумма вложений стоит условной, стоимость этапов внедрения не задана', 'owner', 'econ'],
+    ['Тариф, цены, зарплаты', 'стоят как примеры — подставьте свои, расчёт пересчитается', 'owner', 'econ'],
+    ['Субсидии', 'не подтверждены, в расчёт не включены', 'owner', 'risk']]],
+  ['Решения по работе приложения', [
+    ['Срок в рассадной', '12–17 дней: проращивание 2–3 плюс рассада 10–14 из гайда — от него считаются задачи по партиям', 'hall', 'batches'],
+    ['Кому идут задачи', 'pH и EC — агроному; раствор, воздух и свет — инженеру; партии — оператору; заказы и камера — кладовщику', 'overview', 'tasks'],
+    ['Смена раствора', 'взят верхний срок гайда — 28 дней', 'solution', 'service'],
+    ['Разделы по ролям', 'набор «моих разделов» для каждой роли составлен без согласования', 'overview', 'tasks']]]
+];
+EXTRA.ask = function () {
+  var n = ASKS.reduce(function (a, g) { return a + g[1].length; }, 0);
+  return head('Что нужно уточнить') + '<p class="lead">Открытых вопросов: ' + n + '. Это всё, что в приложении помечено «уточнить», «проверить» или принято как стартовое значение. Цифры сверены с реестром проекта 20.11.2026: расхождений и устаревших значений нет.</p>' +
+    ASKS.map(function (g) { return head(g[0] + ' · ' + g[1].length) + '<div>' + g[1].map(function (x) {
+      return '<div class="line"><span class="dotS w"></span><span class="g"><b>' + x[0] + '</b><span>' + x[1] + '</span></span><button class="mini" type="button" data-rgo="' + x[2] + '|' + x[3] + '" aria-label="Открыть: ' + x[0] + '">Где это</button></div>'; }).join('') + '</div>'; }).join('') +
+    '<p class="note">Пилот в погребе ведёт свой список: вкладка «Паспорт» показывает, что там измерено, что принято и что ещё неизвестно.</p>';
+};
+/* ---------- кнопка «Назад»: возвращает на предыдущий экран — в прошлое помещение или на прошлую вкладку. Работает и системная «Назад» в браузере и на телефоне ---------- */
+var NAV = [], NAVOFF = false;
+function navStore() {
+  NAV.push({ loc: S.loc, crop: S.crop || null, tab: curTab() });
+  if (NAV.length > 60) NAV.shift();
+  try { history.pushState({ gt: NAV.length }, ''); } catch (e) {}
+}
+/* вызывается из go() перед переходом: запоминает, откуда ушли */
+function navPush(from, to, crop) {
+  if (NAVOFF || show || !LOCS[from] || (from === to && (S.crop || null) === (crop || null))) return;
+  navStore();
+}
+/* вызывается перед сменой вкладки внутри помещения */
+function navTab(next) { if (NAVOFF || show || curTab() === next) return; navStore(); }
+/* шаг назад; если возвращаться некуда — на общий вид */
+function navBack() {
+  if (show) return;
+  var p = NAV.pop();
+  NAVOFF = true;
+  if (p && LOCS[p.loc]) {
+    if (p.tab) S.tabs[p.loc] = p.tab;
+    if (p.loc === S.loc && p.crop === (S.crop || null)) { renderWhere(); renderTabs(true); } else go(p.loc, p.crop || undefined);
+  } else if (S.loc !== 'overview') go('overview');
+  NAVOFF = false;
+  $('#panel').scrollTop = 0;
+}
+function navCan() { return !show && (NAV.length > 0 || S.loc !== 'overview'); }
+function navUi() { var b = $('#backPrev'); if (b) b.hidden = !navCan(); }
+window.addEventListener('popstate', function () { if (NAV.length && !show) navBack(); });
 /* ---------- рецептура раствора: граммы солей из целей по элементам, баки A и B ---------- */
 var AM = { H: 1.008, N: 14.007, O: 15.999, Mg: 24.305, P: 30.974, S: 32.06, K: 39.098, Ca: 40.078 };
 var M_KNO3 = AM.K + AM.N + 3 * AM.O, M_MKP = AM.K + 2 * AM.H + AM.P + 4 * AM.O, M_MGS = AM.Mg + AM.S + 4 * AM.O + 7 * (2 * AM.H + AM.O), M_K2S = 2 * AM.K + AM.S + 4 * AM.O, M_CAN = AM.Ca + 2 * (AM.N + 3 * AM.O) + 4 * (2 * AM.H + AM.O);
@@ -3304,7 +3402,7 @@ function storyExit(openTab, stay) {
   S.ev = sn.ev; S.done = sn.done; S.ahead = sn.ahead; S.tabs = sn.tabs;
   if (openTab) S.tabs.overview = openTab;
   $('#panel').classList.remove('showing'); $('.app').classList.remove('showing');
-  go(stay ? here : 'overview'); tickClock(); $('#panel').scrollTop = 0;
+  NAVOFF = true; go(stay ? here : 'overview'); NAVOFF = false; tickClock(); $('#panel').scrollTop = 0;
 }
 function storyCmd(c) {
   if (c === 'start' || c === 'again') storyStart();
@@ -3326,6 +3424,7 @@ $('#panel').addEventListener('click', function (e) {
   if (b.dataset.bt) { btCmd(b.dataset.bt, b); return; }
   if (b.dataset.fm) { fmCmd(b.dataset.fm, b); return; }
   if (b.dataset.op) { opCmd(b.dataset.op, b); return; }
+  if (b.dataset.nav) { navBack(); return; }
   if (b.dataset.rgo) { roleGo(b.dataset.rgo); return; }
   if (b.dataset.role === 'others') { S.others = !S.others; renderTasks(); return; }
   if (b.dataset.rc && RC_SETS[b.dataset.rc]) { var rs = RC_SETS[b.dataset.rc][1]; Object.keys(rs).forEach(function (k) { RC.t[k] = rs[k]; }); renderTabs(); return; }
@@ -3335,7 +3434,7 @@ $('#panel').addEventListener('click', function (e) {
     renderWays(); renderTasks(); renderFacts(); renderTabs(); buildTags(); tickClock();
   }
   else if (b.dataset.ready) opCmd('ready', b);
-  else if (b.dataset.tab) { S.tabs[S.loc] = b.dataset.tab; renderTabs(true); }
+  else if (b.dataset.tab) { navTab(b.dataset.tab); S.tabs[S.loc] = b.dataset.tab; renderWhere(); renderTabs(true); }
   else if (b.dataset.check) { if (roBlock('lg')) return; var ck = {}; ck[b.dataset.check] = !S.shift[b.dataset.check]; put('shift/' + todayISO(), { d: todayISO(), k: ck }); rebuild(); renderTabs(); }
   else if (b.dataset.lg) lgCmd(b.dataset.lg, b);
   else if (b.dataset.tiers) { E.tiers = +b.dataset.tiers; renderTabs(); }
@@ -3399,6 +3498,7 @@ $('#tNight').addEventListener('click', function () {
   lights.dir.intensity = S.night ? 0.05 : 0.55;
   stripMat.color.setHex(S.night ? 0x2C2A3A : 0xFFF1DE); haloMat.opacity = S.night ? 0.03 : 0.34;
 });
+$('#backPrev').addEventListener('click', navBack);
 $('#tTour').addEventListener('click', function () { if (tour) stopTour(false); else startTour(); });
 $('#tShow').addEventListener('click', storyStart);
 /* зона подставляется из прошлой записи: при входе в поле текст выделяется, чтобы новый ввод его заменил */
