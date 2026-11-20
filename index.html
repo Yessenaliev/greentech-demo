@@ -480,6 +480,8 @@ kbd{font-family:var(--font-num);font-size:11px;border:1px solid var(--line);bord
 .tag.board.far{pointer-events:auto;cursor:zoom-in;font:inherit;color:inherit;text-align:left}
 .tag.board.far:hover{background:var(--surface-2)}
 .tag.board.far .bd-r:nth-of-type(n+4),.tag.board.far .bd-f{display:none}
+.tag.chip.lnk{pointer-events:auto;cursor:pointer;font:inherit;color:inherit;text-align:left}
+.tag.chip.lnk:hover{border-color:var(--grow)}
 .tag.go.spot{min-height:36px;padding:3px 13px 3px 10px;border-color:var(--line)}
 .tag.go.spot:hover{border-color:var(--grow)}
 .tag.go.spot .dot{width:8px;height:8px;animation:none}
@@ -809,12 +811,12 @@ function factsFor(loc) {
 }
 
 function chipsFor(loc) {
-  var L = live(), C = function (p, label, value, hot) { return { p: p, label: label, value: value, hot: !!hot }; };
-  if (loc === 'overview') return [C([25, 4.3, 3], 'Воздух в зале', fmt(L.t) + ' °C · ' + fmt(L.rh, 0) + ' %')];
-  if (loc === 'hall') return [C([20, 3.7, AISLE_Z], 'Воздух', fmt(L.t) + ' °C · ' + fmt(L.rh, 0) + ' % · VPD ' + fmt(L.vpd, 2)), C([26.5, 2.9, 11.15], 'Стеллаж 5 · ярус 6', 'EC 1,5 · pH 6,0')];
-  if (loc === 'shelf') return [C([20.7, 1.08, 8.5], 'pH', S.done.ph ? '6,0' : '6,6', !S.done.ph), C([21.5, 1.3, 8.95], 'Свет', 'PPFD 270 · DLI ' + fmt(dli(270, 16))), C([20.1, 0.75, 9.3], 'Раствор', 'EC 1,5 · 20,5 °C')];
-  if (loc === 'solution') return [C([8.2, 2.25, 9.0], 'Бак раствора', fmt(L.ts) + ' °C · O₂ ' + fmt(L.o2), !S.done.temp), C([11.6, 2.1, 8.0], 'Шкаф управления', S.ev.pump && !S.done.pump ? 'насос не отвечает' : 'насос работает', S.ev.pump && !S.done.pump), C([8.2, 2.25, 11.2], 'Насыщение O₂', fmt(L.sat, 0) + ' %')];
-  if (loc === 'seedling') return [C([9.5, 2.0, 2.0], 'Рассада', '23,0 °C · 75 % · VPD ' + fmt(vpd(23, 75), 2))];
+  var L = live(), C = function (p, label, value, hot, to) { return { p: p, label: label, value: value, hot: !!hot, to: to || '' }; };
+  if (loc === 'overview') return [C([25, 4.3, 3], 'Воздух в зале', fmt(L.t) + ' °C · ' + fmt(L.rh, 0) + ' %', false, 'hall|facts')];
+  if (loc === 'hall') return [C([20, 3.7, AISLE_Z], 'Воздух', fmt(L.t) + ' °C · ' + fmt(L.rh, 0) + ' % · VPD ' + fmt(L.vpd, 2), false, 'hall|facts'), C([26.5, 2.9, 11.15], 'Стеллаж 5 · ярус 6', 'EC 1,5 · pH 6,0', false, 'hall|batches')];
+  if (loc === 'shelf') return [C([20.7, 1.08, 8.5], 'pH', S.done.ph ? '6,0' : '6,6', !S.done.ph, 'shelf|charts'), C([21.5, 1.3, 8.95], 'Свет', 'PPFD 270 · DLI ' + fmt(dli(270, 16)), false, 'shelf|facts'), C([20.1, 0.75, 9.3], 'Раствор', 'EC 1,5 · 20,5 °C', false, 'shelf|facts')];
+  if (loc === 'solution') return [C([8.2, 2.25, 9.0], 'Бак раствора', fmt(L.ts) + ' °C · O₂ ' + fmt(L.o2), !S.done.temp, 'solution|facts'), C([11.6, 2.1, 8.0], 'Шкаф управления', S.ev.pump && !S.done.pump ? 'насос не отвечает' : 'насос работает', S.ev.pump && !S.done.pump, 'solution|equip'), C([8.2, 2.25, 11.2], 'Насыщение O₂', fmt(L.sat, 0) + ' %', false, 'solution|sensors')];
+  if (loc === 'seedling') return [C([9.5, 2.0, 2.0], 'Рассада', '23,0 °C · 75 % · VPD ' + fmt(vpd(23, 75), 2), false, 'seedling|facts')];
   return [];
 }
 
@@ -1176,7 +1178,7 @@ function go(id, cropId, fromView) {
   if (renderer) {
     var lift = (from === 'overview' || id === 'overview') ? 0 : (LEVEL[from] && LEVEL[id]) ? 0 : 1.4;
     if (cropId) { var c = cropById(cropId); flyTo([c.pos[0] + 1.0, 1.75, c.pos[2] - 1.9], [c.pos[0], 0.98, c.pos[2]], 0.3, start); }
-    else { var sp = SP.zoom ? spotOf(id, curTab()) : null; SP.zoomed = !!sp; flyTo(id === 'overview' ? overviewCam() : sp ? sp.cam : L.cam, sp ? sp.tgt : L.tgt, lift, start); }
+    else { var sp = SP.zoom ? spotOf(id, curTab()) : null; if (sp && sp.still) sp = null; SP.zoomed = !!sp; flyTo(id === 'overview' ? overviewCam() : sp ? sp.cam : L.cam, sp ? sp.tgt : L.tgt, lift, start); }
   }
   /* обычный вход показывает помещение целиком; переход к конкретной вкладке (SP.zoom) — сразу её предмет */
   SP.zoom = false; SP.key = id + '/' + curTab() + '/' + (S.crop || ''); if (S.crop || id === 'overview') SP.zoomed = false; spotUi();
@@ -1211,6 +1213,7 @@ function buildTags() {
   var L = LOCS[S.loc];
   var add = function (el, p) { tagsEl.appendChild(el); tags.push({ el: el, p: new THREE.Vector3().fromArray(p) }); };
   if (!renderer) return;
+  spotTags(add, true);
   L.links.forEach(function (id) {
     if (id === 'overview') return;
     var T = LOCS[id], n = cntIn(id), b = document.createElement('button');
@@ -1225,10 +1228,11 @@ function buildTags() {
     b.addEventListener('click', function () { go('showcase', c.id); });
     add(b, [c.pos[0], 1.95, c.pos[2]]);
   });
-  spotTags(add);
+  spotTags(add, false);
   /* у предмета цифры уже на табличке — отдельные метки датчиков не дублируют её */
   if (S.sensors && !SP.zoomed) chipsFor(S.loc).forEach(function (c, i) {
-    var d = document.createElement('div'); d.className = 'tag chip' + (c.hot ? ' hot' : ''); d.dataset.chip = i;
+    var d = document.createElement(c.to ? 'button' : 'div'); d.className = 'tag chip' + (c.hot ? ' hot' : '') + (c.to ? ' lnk' : ''); d.dataset.chip = i;
+    if (c.to) { d.type = 'button'; d.setAttribute('aria-label', c.label + ': открыть раздел'); d.addEventListener('click', function () { SP.zoom = true; roleGo(c.to); }); }
     d.innerHTML = '<span class="dot"></span><span class="t"><span>' + c.label + '</span><b>' + c.value + '</b></span>';
     add(d, c.p);
   });
@@ -3876,7 +3880,72 @@ var SPOTS = {
       return { rows: [['В рассадной', by('seed')], ['Этап A', by('a')], ['Этап B', by('b')], ['Срок подошёл', String(due), due > 0]], f: 'партий в работе' }; } }
   }
 };
-function spotOf(loc, tab) { var h = SPOTS[loc]; return (h && !S.crop && h[tab]) || null; }
+/* ---------- остальные помещения. still — камера не двигается: вид и так близкий или предмета-цели нет; hot — предмет подписан кнопкой ---------- */
+var spStill = function (n, p, rows, hot) { return { n: n, p: p, still: true, hot: !!hot, rows: rows }; };
+SPOTS.hall.week = { n: 'Стеллаж 5 · план сбора', p: [22.0, 2.4, 10.5], cam: [25.6, 1.7, 9.85], tgt: [22.0, 1.6, 10.7], rows: function () {
+  var w = fmWeek(7).filter(function (x) { return x.items.length; }).slice(0, 3);
+  return { rows: w.map(function (x) { return [dm(x.d), x.items.length + ' ' + plr(x.items.length, 'работа', 'работы', 'работ') + (x.kg ? ' · ' + fmt(x.kg, 0) + ' кг' : '')]; }), f: w.length ? 'по самым ранним срокам партий' : 'на неделе работ по срокам нет' }; } };
+SPOTS.hall.modes = { n: 'Светильники яруса', p: [20.5, 3.1, 9.2], cam: [24.4, 1.6, 10.0], tgt: [20.5, 2.6, 9.0], rows: function () { return { rows: [['PPFD · этап B', '240–295'], ['DLI', '14–17'], ['EC · этап B', '1,4–1,8'], ['Воздух', '20–22 °C']], f: 'перед сменой света проверьте DLI' }; } };
+SPOTS.seedling.tasks = spStill('Рассадная', [9.5, 2.7, 3.4], function () { var n = cntIn('seedling'); return { rows: [['Открытых задач', String(n), n > 0]], f: n ? 'список — в панели' : 'всё закрыто' }; });
+SPOTS.shelf = {
+  tasks: spStill('Ярус 2', [22.3, 1.6, 9.4], spTasks('shelf'), true),
+  facts: spStill('Лоток яруса', [21.2, 1.5, 8.9], function () { return { rows: [['pH', S.done.ph ? '6,0' : '6,6', !S.done.ph], ['EC', '1,5 мСм/см'], ['Раствор', '20,5 °C'], ['PPFD', '270 мкмоль']], f: 'батавия, этап B, день 12 из 16' }; }, true),
+  charts: spStill('Датчик pH', [20.7, 1.4, 8.5], function () { return { rows: [['pH сейчас', S.done.ph ? '6,0' : '6,6', !S.done.ph], ['Норма', '5,8–6,2'], ['DLI', fmt(dli(270, 16)) + ' моль/м²']], f: 'графики за сутки — в панели' }; }, true),
+  growth: spStill('Головка батавии', [21.7, 1.25, 9.1], function () { return { rows: [['День цикла', '36 из 40'], ['Сбор', dm(addDays(todayISO(), 4)) + ' ± 1 день'], ['Цель', '150–180 г']], f: 'масса — по площади листа' }; }, true),
+  photo: spStill('Камера яруса', [20.3, 1.65, 9.2], function () { var c = camById('k1'), f = c ? camFinds(c).filter(function (x) { return !x.chk && x.lvl !== 'note'; }).length : 0; return { rows: [['Снимков в сутки', '4'], ['Ждут проверки', String(f), f > 0]], f: 'только фото — уверенность низкая' }; }, true)
+};
+SPOTS.journal = (function () {
+  var p = [9.5, 4.4, 0.9];
+  return {
+    jadd: spStill('Журнал замеров', p, function () { var t = todayISO(), r = jRows('farm'), td = r.filter(function (x) { return x.d === t; }).length; return { rows: [['Замеров сегодня', String(td), !td], ['Всего по ферме', String(r.length)]], f: 'каждый замер сверяется с нормой культуры' }; }),
+    jrev: spStill('Разбор отклонений', p, function () { var c = pilotOpen().filter(function (x) { return x.site === 'farm'; }), a = c.filter(function (x) { return x.st === 0; }).length; return { rows: [['Ждут действия', String(a), a > 0], ['Ждут повторного замера', String(c.length - a), c.length - a > 0]], f: 'случай закрывается замером в норме' }; }),
+    diag: spStill('Диагностика', p, function () { return { rows: [['Как', 'симптом → причины'], ['Проверка', 'по журналу и на месте']], f: 'вероятная причина — первой' }; }),
+    recipe: spStill('Рецептура раствора', p, function () { return { rows: [['EC цели', '1,2–1,8'], ['pH', '5,8–6,2'], ['Концентраты', 'A и B раздельно']], f: 'граммы солей считаются в панели' }; }),
+    verify: spStill('Сверка норм', p, function () { return { rows: [['Правило', 'два источника'], ['Сверено', '19.11.2026']], f: 'расхождения с гайдом помечены' }; })
+  };
+})();
+SPOTS.owner = (function () {
+  var p = [14.5, 5.2, 9.5], mln = function (v) { return fmt(v / 1e6, 1) + ' млн ₸'; };
+  return {
+    summary: spStill('Ферма сегодня', p, function () { var n = openIn(); return { rows: [['Индекс состояния', farmIndex() + ' / 100', farmIndex() < 80], ['Сбор по плану', '172 кг/сут'], ['Открытых задач', String(n), n > 0]], f: 'данные демо — условные' }; }),
+    econ: spStill('Экономика месяца', p, function () { var b = econ(1); return { rows: [['Себестоимость', grp(b.perKg) + ' ₸/кг'], ['Маржа', fmt(b.margin, 0) + ' %', b.margin < 0], ['Энергия', fmt(b.kwhKg, 1) + ' кВт·ч/кг']], f: 'тариф и цена — примеры' }; }),
+    scen: spStill('Три сценария', p, function () { return { rows: [['Осторожный', mln(econ(0.8).profit), econ(0.8).profit < 0], ['Базовый', mln(econ(1).profit), econ(1).profit < 0], ['Оптимистичный', mln(econ(1.15).profit)]], f: 'прибыль в месяц' }; }),
+    payback: spStill('Окупаемость', p, function () { var b = econ(1); return { rows: [['Срок', b.payback ? fmt(b.payback, 0) + ' мес.' : 'вложения не заданы', !b.payback]], f: 'впишите вложения в «Экономике»' }; }),
+    scale: spStill('Масштаб', p, function () { return { rows: [['Площадь посадки', '1 176 м²'], ['Стеллажи', '8 × 7 ярусов'], ['При 6 ярусах', '≈ 1 010 м²']], f: 'зависит от балок и высоты' }; }),
+    ramp: spStill('Ввод и штат', p, function () { return { rows: [['Пилот', '3–6 месяцев'], ['Полная загрузка', 'через 4–6 мес.'], ['Штат', '8–9 человек']], f: 'по реестру проекта' }; }),
+    risk: spStill('Риски', p, function () { return { rows: [['Ярусы', '7 или 6', true], ['Мощность', 'оценка до проекта', true], ['Нормативы', '2 из 8', true]], f: 'полный список — в панели' }; }),
+    ask: spStill('Что уточнить', p, function () { var n = ASKS.reduce(function (a, g) { return a + g[1].length; }, 0); return { rows: [['Открытых вопросов', String(n), true], ['Групп', String(ASKS.length)]], f: 'у каждого — кнопка «Где это»' }; })
+  };
+})();
+SPOTS.overview = {
+  tasks: spStill('Вся ферма', [14.5, 4.6, 10], function () { var n = cntIn(null); return { rows: [['Открытых задач', String(n), n > 0]], f: 'нажмите метку помещения' }; }),
+  shift: spStill('Смена', [14.5, 4.6, 10], function () { var n = SHIFT.filter(function (s) { return S.shift[s[0]]; }).length; return { rows: [['Сделано', n + ' из ' + SHIFT.length, n < SHIFT.length]], f: 'отметки — в панели' }; })
+};
+SPOTS.overview.events = spStill('Сценарии', [14.5, 4.6, 10], function () { var n = Object.keys(S.ev).filter(function (k) { return S.ev[k]; }).length; return { rows: [['Включено', n + ' из ' + EVENTS.length, n > 0]], f: 'сценарий добавляет задачи с расчётом' }; });
+SPOTS.overview.how = spStill('Как это работает', [14.5, 4.6, 10], function () { return { rows: [['Система', 'говорит и показывает'], ['Решение', 'за человеком']], f: 'расчёт и основание — у каждой задачи' }; });
+SPOTS.showcase = { crops: spStill('Ассортимент', [9.5, 2.8, 16.8], function () { return { rows: [['Культур', String(CROPS.length)], ['Режим', 'свой у каждой']], f: 'нажмите метку культуры' }; }) };
+/* погреб: план [вдоль, высота, поперёк] → сцена */
+(function () {
+  var V = function (px, h, py) { return [15.975 - px, -2.6 + h, -1.5 - py]; };
+  SPOTS.pilot = {
+    map: spStill('Стеллаж А', V(0.9, 1.45, 0.45), function () { var act = BT.filter(function (b) { return !b.end; }); return { rows: [['Партий в работе', String(act.length)], ['Собрано партий', String(BT.length - act.length)]], f: 'нажмите место на схеме в панели' }; }, true),
+    pass: spStill('Погреб', V(0.05, 1.3, 1.075), function () { return { rows: [['Размер', '2,95 × 2,15 × 1,90 м'], ['Воздух', 'около 16 °C'], ['Влажность', 'не измерена', true]], f: 'что измерено, а что принято — в панели' }; }, true),
+    light: spStill('Светильники А2', V(0.5, 1.3, 0.3), function () { return { rows: [['По паспорту хватает', 'только А2', true], ['Расчёт', 'оценка от 20.11']], f: 'сколько рядов нужно — в панели' }; }, true),
+    fp: spStill('Итоги партий', V(1.3, 1.3, 1.7), function () { var done = BT.filter(function (b) { return b.end; }).length; return { rows: [['Собрано партий', String(done)], ['Показаний счётчика', String(EN.length), EN.length < 2]], f: EN.length < 2 ? 'по энергии данных пока нет' : 'энергия и время — в панели' }; }, true),
+    jadd: spStill('Трубы А2', V(0.75, 0.95, 0.35), function () { var r = zoneLast('А2 NFT'); return { rows: r ? [['Последний замер', dm(r.d)], ['Раствор', rowText(r) || '—']] : [['Замеров', 'нет', true]], f: 'зона «А2 NFT»: бак общий на три трубы' }; }, true),
+    jrev: spStill('Стеллаж Б', V(0.5, 1.4, 1.85), function () { var c = pilotOpen().filter(function (x) { return x.site === 'cellar'; }); return { rows: [['Открытых отклонений', String(c.length), c.length > 0]], f: 'закрываются замером в норме' }; }, true),
+    diag: spStill('Ванна А1', V(0.375, 0.6, 0.3), function () { return { rows: [['Как', 'симптом → причины'], ['Проверка', 'по журналу погреба']], f: 'вероятная причина — первой' }; }, true)
+  };
+})();
+/* у вкладки «показатели» без своего предмета табличка собирается из сводки помещения и висит над ним */
+function spotOf(loc, tab) {
+  if (S.crop) return null;
+  var h = SPOTS[loc], sp = h && h[tab];
+  if (sp) return sp;
+  if (tab !== 'facts' || !LOCS[loc] || !LOCS[loc].anchor) return null;
+  var f = factsFor(loc);
+  return f ? { n: f.title, p: LOCS[loc].anchor, still: true, rows: function () { return { rows: factsFor(loc).rows.slice(0, 4).map(function (r) { return [r.k, r.v + (r.u ? ' ' + r.u : ''), r.bad]; }), f: 'подробности — в панели' }; } } : null;
+}
 /* смена вкладки внутри помещения: камера переходит к предмету вкладки; у вкладки без предмета — на общий вид помещения */
 function spotSync() {
   var tab = curTab(), k = S.loc + '/' + tab + '/' + (S.crop || ''), was = SP.key;
@@ -3884,28 +3953,30 @@ function spotSync() {
   SP.key = k;
   var sp = spotOf(S.loc, tab), same = was.split('/')[0] === S.loc;
   if (!renderer || tour || S.crop || !same) return;
-  if (sp) spotFly(sp); else if (SP.zoomed) spotOut(); else buildTags();
+  if (sp && !sp.still) spotFly(sp); else if (SP.zoomed) spotOut(); else buildTags();
 }
 function spotFly(sp) { SP.zoomed = true; flyTo(sp.cam, sp.tgt, 0); spotUi(); buildTags(); }
 /* назад к общему виду помещения */
 function spotOut() { var L = LOCS[S.loc]; SP.zoomed = false; if (renderer && L) flyTo(S.loc === 'overview' ? overviewCam() : L.cam, L.tgt, 0); spotUi(); buildTags(); }
 /* повторное нажатие на открытую вкладку или на её табличку — подлететь к предмету */
-function spotFocus() { var sp = spotOf(S.loc, curTab()); if (sp && !SP.zoomed && renderer && !tour) spotFly(sp); }
+function spotFocus() { var sp = spotOf(S.loc, curTab()); if (sp && !sp.still && !SP.zoomed && renderer && !tour) spotFly(sp); }
 function spotUi() { var b = $('#roomView'); if (b) b.hidden = !SP.zoomed || !!show; }
 /* метки в сцене: табличка на предмете открытой вкладки и кнопки на остальных предметах помещения */
-function spotTags(add) {
-  var here = SPOTS[S.loc]; if (!here || S.crop) return;
+/* табличка ставится первой: ей достаётся место у предмета, остальные метки подвигаются */
+function spotTags(add, boardOnly) {
+  if (S.crop) return;
   var cur = curTab(), names = {};
   (TABS[S.loc] || []).forEach(function (t) { names[t[0]] = t[1]; });
-  Object.keys(here).forEach(function (tab) {
-    var sp = here[tab]; if (!names[tab]) return;
+  Object.keys(names).forEach(function (tab) {
+    var sp = spotOf(S.loc, tab); if (!sp) return;
     if (tab === cur) {
-      var d = sp.rows(), el = document.createElement(SP.zoomed ? 'div' : 'button');
-      if (!SP.zoomed) { el.type = 'button'; el.addEventListener('click', spotFocus); el.setAttribute('aria-label', sp.n + ': подлететь ближе'); }
-      el.className = 'tag board' + (SP.zoomed ? '' : ' far');
+      if (!boardOnly) return;
+      var near = SP.zoomed || sp.still, d = sp.rows(), el = document.createElement(near ? 'div' : 'button');
+      if (!near) { el.type = 'button'; el.addEventListener('click', spotFocus); el.setAttribute('aria-label', sp.n + ': подлететь ближе'); }
+      el.className = 'tag board' + (near ? '' : ' far');
       el.innerHTML = '<div class="bd-h"><b>' + sp.n + '</b><span>' + names[tab] + '</span></div>' + d.rows.map(function (r) { return '<div class="bd-r' + (r[2] ? ' bad' : '') + '"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join('') + (d.f ? '<div class="bd-f">' + d.f + '</div>' : '');
       add(el, sp.p);
-    } else {
+    } else if (!boardOnly && (!sp.still || sp.hot)) {
       var b = document.createElement('button');
       b.type = 'button'; b.className = 'tag go spot';
       b.innerHTML = '<span class="dot"></span><span class="t"><b>' + names[tab] + '</b><span>' + sp.n + '</span></span>';
