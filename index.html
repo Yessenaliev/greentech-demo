@@ -467,6 +467,77 @@ kbd{font-family:var(--font-num);font-size:11px;border:1px solid var(--line);bord
 }
 @media (prefers-reduced-motion:reduce){.cam{transition:none}}
 
+/* ---------- малая команда на стартовом экране ---------- */
+.launch-in{width:min(1080px,100%)}
+.rcard.crew{min-height:228px;gap:5px}
+.rcard.crew .ric{margin-bottom:2px}
+.rcard.crew b{margin-top:6px;font-size:18px}
+.rcard .rw{align-self:flex-start;font-size:11px;font-weight:700;color:var(--grow);border:1px solid rgba(95,211,141,.4);border-radius:999px;padding:1px 8px}
+.rcard .rt{position:relative;padding-left:13px;font-size:12.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rcard .rt::before{content:'';position:absolute;left:0;top:.42em;width:6px;height:6px;border-radius:50%;background:var(--warn)}
+.rcard .rt.u::before{background:var(--bad)}
+.rcard .rd+.rt{margin-top:6px}
+.rcard .rm{padding-left:13px;color:var(--muted);font-size:12px}
+.rcard .rc{margin-top:auto;padding-top:8px;border-top:1px solid var(--line);color:var(--muted);font-size:11.5px}
+.launch-sys{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;text-align:left;padding:11px 16px;border-radius:14px;border:1px solid rgba(95,211,141,.28);background:rgba(95,211,141,.07);cursor:pointer;font-size:13px}
+.launch-sys:hover{border-color:var(--grow)}
+.launch-sys b{margin-right:4px}
+.launch-sys span{border:1px solid var(--line);border-radius:999px;padding:1px 9px;color:var(--muted)}
+.launch-sys em{margin-left:auto;font-style:normal;color:var(--grow);font-weight:700}
+.launch-r{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.launch-f[aria-current="true"],.launch-f[aria-expanded="true"]{border-color:var(--grow);color:var(--fg)}
+.launch-f b{color:var(--fg);margin-right:-4px}
+.launch-b{grid-template-columns:1.2fr 1fr 1fr 1fr}
+/* ---------- окно «Мои фермы» ---------- */
+.eyeopen .n.z{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.farmg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.farm{display:flex;flex-direction:column;gap:7px;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--surface);text-align:left}
+.farm.u{border-color:var(--bad)}
+.farm-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.farm-h b,.farm.add b{font-size:17px}
+.farm-d{color:var(--muted);font-size:13px}
+.farm-n{font-size:13px}
+.farm-w{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.farm-w button.lv{background:transparent;cursor:pointer}
+.farm-w button.lv:hover{border-color:var(--grow);color:var(--fg)}
+.farm .btns{margin-top:auto;padding-top:6px}
+.farm.add{border-style:dashed;background:transparent;cursor:pointer;justify-content:center;min-height:120px}
+.farm.add:hover{border-color:var(--grow)}
+.farm.add b{color:var(--grow)}
+button.how-s{text-align:left;cursor:pointer}
+button.how-s:hover{border-color:var(--grow)}
+.fd.u{border-color:var(--bad)}
+.trip-n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-size:12px;font-weight:600}
+.fd .tk{position:relative;padding-left:14px;font-size:13.5px}
+.fd .tk::before{content:'';position:absolute;left:1px;top:.5em;width:6px;height:6px;border-radius:50%;background:var(--warn)}
+.fd .tk.u::before{background:var(--bad)}
+.fd .tk i{font-style:normal;color:var(--muted);font-size:12px;border:1px solid var(--line);border-radius:6px;padding:0 6px;margin-left:4px;white-space:nowrap}
+.nwform{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px}
+.nwform label{display:flex;flex-direction:column;gap:5px;color:var(--muted);font-size:12.5px;font-weight:600}
+.nwform input{min-height:46px;width:100%;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font-family:var(--font-num);font-size:16px;padding:0 12px}
+.nwform input[type="text"]{font-family:var(--font-ui)}
+@media (max-width:980px){
+  .launch-g.crew,.farmg{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .launch-b{grid-template-columns:1fr 1fr}
+  .nwform{grid-template-columns:1fr 1fr}
+}
+@media (max-width:760px){
+  .launch-b,.launch-r{grid-template-columns:1fr}
+  .launch-sys em{margin-left:0;flex-basis:100%}
+  .rolechip{max-width:37vw}
+}
+@media (max-width:560px){
+  .launch-g.crew,.farmg{grid-template-columns:1fr}
+  .rcard.crew{min-height:0;display:grid;grid-template-columns:38px minmax(0,1fr);column-gap:12px;row-gap:4px}
+  .rcard.crew .ric{grid-row:1/3;margin:0}
+  .rcard.crew b{margin:0;padding-right:92px;align-self:end}
+  .rcard.crew .rw{justify-self:start}
+  .rcard.crew .rd,.rcard.crew .rt,.rcard.crew .rm,.rcard.crew .rc{grid-column:1/-1}
+  .rcard.crew .rd{margin-top:4px}
+  .rcard .rt{-webkit-line-clamp:1}
+  .how{grid-template-columns:1fr}
+}
+
 /* ---------- табличка на предмете помещения и кнопки на остальных предметах ---------- */
 .tag.board{flex-direction:column;align-items:stretch;gap:4px;white-space:normal;min-width:196px;max-width:250px;padding:10px 12px;border-radius:14px;border-color:var(--grow);background:rgba(11,18,16,.9);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 14px 40px rgba(0,0,0,.45)}
 .bd-h{display:flex;flex-direction:column;line-height:1.2;margin-bottom:3px}
@@ -501,6 +572,7 @@ kbd{font-family:var(--font-num);font-size:11px;border:1px solid var(--line);bord
     <button class="rolechip none" id="roleChip" type="button" aria-label="Выбрать роль"></button>
     <button class="kopen" id="kOpen" type="button" aria-label="Быстрый поиск"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg><span>Поиск</span><kbd>Ctrl K</kbd></button>
     <button class="kopen eyeopen" id="eyeOpen" type="button" aria-label="Наблюдение: камеры и датчики"></button>
+    <button class="kopen eyeopen" id="farmOpen" type="button" aria-label="Мои фермы: сеть ферм"></button>
     <span class="demo">Демо<span class="dl">-версия. Данные условные</span></span>
     <span class="clock"><span class="live"></span><span class="num" id="clock">14:32:00</span></span>
   </header>
@@ -538,6 +610,7 @@ kbd{font-family:var(--font-num);font-size:11px;border:1px solid var(--line);bord
   </aside>
 
   <div class="eyes" id="eyes" hidden></div>
+  <div class="eyes" id="farms" hidden></div>
   <div class="launch" id="launch" hidden></div>
   <div class="kbar" id="kbar" hidden></div>
 
@@ -1272,7 +1345,7 @@ function placeTags(w, h) {
 function renderWhere() {
   var L = LOCS[S.loc], c = S.crop && cropById(S.crop), mine = S.loc === 'overview' && roleOn(), mn = mine ? mineIn(null) : 0;
   /* на общем виде с ролью — короткий личный заголовок вместо описания всей фермы */
-  if (mine) L = { who: 'Ваш экран', name: ROLES[ROLE][0], lead: (mn ? 'Ваших открытых задач — ' + mn + '.' : 'Ваших открытых задач нет.') + ' Ниже — ваши разделы и задачи. Остальная ферма — по кнопке «Все помещения».' };
+  if (mine) L = { who: 'Ваш экран', name: ROLES[ROLE][0], lead: 'Ваша зона: ' + RUI[ROLE][1] + '. ' + (mn ? 'Открытых задач — ' + mn + '.' : 'Открытых задач нет.') + ' Остальная ферма — по кнопке «Все помещения».' };
   $('#pWhere').innerHTML = (navCan() ? '<div class="btns" style="margin:0 0 10px"><button class="mini" type="button" data-nav="back">← Назад</button>' + (S.loc !== 'overview' ? '<button class="mini" type="button" data-go="overview">Общий вид</button>' : '') + '</div>' : '') + '<div class="kicker">' + L.who + '</div><h1>' + (c ? c.name : L.name) + '</h1><p class="lead">' + L.lead + '</p>';
   $('#crumb').textContent = S.loc === 'overview' ? 'Ферма' : 'Ферма › ' + (S.loc === 'shelf' ? 'Проход между стеллажами › ' : '') + L.name + (c ? ' › ' + c.name : '');
   $('#back').hidden = S.loc === 'overview'; navUi();
@@ -1328,7 +1401,7 @@ function renderTasks() {
       (done ? '' : '<button class="btn" type="button" data-snz="' + t.id + '">' + (off ? 'Вернуть' : 'Отложить') + '</button>' + (fbOf(fid) ? '' : '<button class="btn" type="button" data-dis="' + fid + '">Не согласен</button>')) + '</div></article>';
   });
   /* с выбранной ролью сначала идут свои задачи, чужие открываются кнопкой */
-  var w = roleOn() ? ROLES[ROLE][1] : null, mine = [], other = [], put2 = function (who, h) { (!w || who === w ? mine : other).push(h); };
+  var w = roleOn(), mine = [], other = [], put2 = function (who, h) { (!w || whoIs(ROLE, who) ? mine : other).push(h); };
   pc.forEach(function (c, i) { put2(PRM[c.k][1], hp[i]); }); ft.forEach(function (x, i) { put2(x.who, hf[i]); }); list.forEach(function (t, i) { put2(t.who, hl[i]); });
   var html = '<h2>' + (w ? 'Мои задачи · ' + ROLES[ROLE][0] : all ? 'Задачи по всей ферме' : 'Задачи здесь') + '</h2>';
   if (!mine.length) html += '<p class="lead">' + (w ? (all ? 'Ваших открытых задач нет.' : 'Ваших задач в этом помещении нет.') : 'Открытых задач в этом помещении нет.') + '</p>';
@@ -2219,7 +2292,7 @@ function rebuild() {
   if (typeof READY !== 'undefined') { READY.forEach(function (sec) { sec[1].forEach(function (it) { S.ready[it[0]] = !!it[2]; }); }); Object.keys(rd).forEach(function (k) { if (rd[k] !== null) S.ready[k] = !!rd[k]; }); }
   LG = { shift: shift, calInt: cfg.calInt || 30, moves: moves, stock: stock, samples: entries(D, 'samples', 's'), harvest: entries(D, 'harvest', 'h'),
     orders: entries(D, 'orders', 'o').sort(byDay), cold: entries(D, 'cold', 'c').sort(byDay), clean: entries(D, 'clean', 'n').sort(byDay),
-    svc: { done: svc.done || {}, int: svc.int || {}, ex: svc.ex || {} }, coldR: { lo: cr.lo === undefined ? 2 : cr.lo, hi: cr.hi === undefined ? 6 : cr.hi, set: cr.lo !== undefined || cr.hi !== undefined }, readySet: Object.keys(rd).length > 0, eyes: (D['cfg/eyes'] || {}).chk || {},
+    svc: { done: svc.done || {}, int: svc.int || {}, ex: svc.ex || {} }, coldR: { lo: cr.lo === undefined ? 2 : cr.lo, hi: cr.hi === undefined ? 6 : cr.hi, set: cr.lo !== undefined || cr.hi !== undefined }, readySet: Object.keys(rd).length > 0, eyes: (D['cfg/eyes'] || {}).chk || {}, farms: (D['cfg/farms'] || {}).list || {},
     sensors: SENS.map(function (x) { return { id: x[0], n: x[1], last: cal[x[0]] || null, ex: cex[x[0]] }; }) };
   S.shift = shift[t] || {};
   BT = []; FBT = [];
@@ -3324,15 +3397,31 @@ var ROLES = {
   oper: ['Оператор', 'оператор', [['overview', 'shift', 'Смена'], ['seedling', 'sowing', 'Посев'], ['hall', 'batches', 'Партии'], ['journal', 'jadd', 'Ввод замеров'], ['prep', 'clean', 'Уборка']]],
   pack: ['Упаковщик', 'упаковщик', [['prep', 'intake', 'Приёмка'], ['prep', 'packing', 'Фасовка'], ['prep', 'label', 'Этикетка'], ['prep', 'clean', 'Уборка']]],
   store: ['Кладовщик', 'кладовщик', [['store', 'orders', 'Отгрузка и заказы'], ['store', 'stock', 'Остатки'], ['store', 'cold', 'Камера'], ['store', 'forecast', 'Прогноз']]],
-  lab: ['Лаборант', 'лаборант', [['lab', 'samples', 'Журнал проб'], ['lab', 'journals', 'Журналы'], ['lab', 'ready', 'Готовность'], ['lab', 'norms', 'Нормативы'], ['lab', 'elements', 'Раствор']]]
+  lab: ['Лаборант', 'лаборант', [['lab', 'samples', 'Журнал проб'], ['lab', 'journals', 'Журналы'], ['lab', 'ready', 'Готовность'], ['lab', 'norms', 'Нормативы'], ['lab', 'elements', 'Раствор']]],
+  /* малая команда: один человек ведёт несколько ролей. Полив, раствор, свет, климат и наблюдение — на системе */
+  tech: ['Агроном-технолог', ['агроном', 'лаборант'], [['hall', 'batches', 'Партии'], ['journal', 'jrev', 'Разбор отклонений'], ['journal', 'diag', 'Диагностика'], ['journal', 'recipe', 'Рецептура'], ['lab', 'samples', 'Журнал проб'], ['lab', 'ready', 'Готовность'], ['hall', 'modes', 'Режимы']]],
+  shift: ['Оператор смены', ['оператор', 'упаковщик', 'кладовщик'], [['overview', 'shift', 'Смена'], ['seedling', 'sowing', 'Посев'], ['hall', 'batches', 'Партии'], ['journal', 'jadd', 'Ввод замеров'], ['prep', 'intake', 'Приёмка'], ['prep', 'packing', 'Фасовка'], ['store', 'orders', 'Отгрузка и заказы'], ['store', 'stock', 'Остатки'], ['store', 'cold', 'Камера'], ['prep', 'clean', 'Уборка']]]
 };
+/* малая команда — четыре человека вместо семи ролей; семь ролей по отдельности остаются для большой фермы */
+var CREW = ['owner', 'tech', 'eng', 'shift'];
+var crewOf = function (r) { return r === 'agro' || r === 'lab' ? 'tech' : r === 'oper' || r === 'pack' || r === 'store' ? 'shift' : r; };
+/* чья задача: у роли один адресат, у человека из малой команды — несколько */
+function whoIs(role, w) { var a = ROLES[role] ? ROLES[role][1] : null; return !!a && (typeof a === 'string' ? a === w : a.indexOf(w) >= 0); }
+var plain = function (h) { return String(h === undefined || h === null ? '' : h).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(); };
 /* во время экскурсии роль не действует: показ идёт по задачам разных специалистов */
 function roleOn() { return !!(ROLE && ROLES[ROLE] && !show); }
 function mineOf(role, loc) {
-  var w = ROLES[role][1];
-  return allTasks().filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id] && t.who === w; }).length +
-    pilotOpen().filter(function (c) { return (!loc || c.loc === loc || (loc === 'journal' && c.site === 'farm')) && PRM[c.k][1] === w; }).length +
-    recTasks().filter(function (x) { return (!loc || x.loc === loc) && x.who === w; }).length;
+  return allTasks().filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id] && whoIs(role, t.who); }).length +
+    pilotOpen().filter(function (c) { return (!loc || c.loc === loc || (loc === 'journal' && c.site === 'farm')) && whoIs(role, PRM[c.k][1]); }).length +
+    recTasks().filter(function (x) { return (!loc || x.loc === loc) && whoIs(role, x.who); }).length;
+}
+/* открытые задачи списком, срочные первыми: для плитки на стартовом экране и для сети ферм. Без роли — все задачи */
+function mineItems(role) {
+  var out = [], ok = function (w) { return !role || whoIs(role, w); }, line = function (a, b) { a = plain(a); b = plain(b); return a && b ? a + ': ' + b : a || b; };
+  allTasks().forEach(function (t) { if (!S.done[t.id] && ok(t.who)) out.push({ loc: t.loc, who: t.who, u: t.lvl === 'urgent', t: line(t.place, t.what) }); });
+  pilotOpen().forEach(function (c) { var w = PRM[c.k][1]; if (ok(w)) out.push({ loc: c.loc, who: w, u: false, t: line(c.z, c.v + ' вне нормы') }); });
+  recTasks().forEach(function (x) { if (ok(x.who)) out.push({ loc: x.loc, who: x.who, u: x.lvl === 'urgent', t: line(x.place, x.what) }); });
+  return out.filter(function (x) { return x.u; }).concat(out.filter(function (x) { return !x.u; }));
 }
 function mineIn(loc) { return mineOf(ROLE, loc); }
 /* счётчик на кнопках и метках: с ролью — только свои задачи */
@@ -3344,7 +3433,7 @@ function setRole(r) {
 }
 /* блок роли на общем виде. С ролью — только её разделы плитками; без роли — одна строка с кнопкой выбора */
 function renderRole() {
-  renderChip(); eyeBtn();
+  renderChip(); eyeBtn(); nwBtn();
   var el = $('#pRole'); if (!el) return;
   if (S.loc !== 'overview' || show) { el.hidden = true; return; }
   el.hidden = false;
@@ -3352,7 +3441,8 @@ function renderRole() {
     ? '<h2>Мои разделы</h2><div class="tiles">' + ROLES[ROLE][2].map(function (x) { return '<button class="tile" type="button" data-rgo="' + x[0] + '|' + x[1] + '"><span>' + x[2] + '</span></button>'; }).join('') + '</div>' +
       '<div class="btns" style="margin-top:10px"><button class="mini" type="button" data-role="launch">Сменить роль</button><button class="mini" type="button" data-role="wide" aria-pressed="' + !!S.wide + '">' + (S.wide ? 'Скрыть помещения' : 'Все помещения') + '</button></div>'
     : '<div class="rolebar"><span>Вы смотрите всю ферму целиком.</span><button class="btn" type="button" data-role="launch">Выбрать роль</button></div>';
-  el.innerHTML += '<button class="eyebtn" type="button" data-role="eyes">' + icon(IC_EYE) + '<span class="g"><b>Наблюдение</b><span>камеры и датчики · ждут действия: ' + eyeCount() + '</span></span><span class="bdg w">демо</span></button>';
+  el.innerHTML += '<button class="eyebtn" type="button" data-role="eyes">' + icon(IC_EYE) + '<span class="g"><b>Наблюдение</b><span>камеры и датчики · ждут действия: ' + eyeCount() + '</span></span><span class="bdg w">демо</span></button>' +
+    '<button class="eyebtn" type="button" data-role="farms">' + icon(IC_FARM) + '<span class="g"><b>Мои фермы</b><span>' + nwLine() + '</span></span><span class="bdg w">демо</span></button>';
 }
 function roleGo(v) {
   var p = v.split('|');
@@ -3394,7 +3484,9 @@ var ASKS = [
     ['Срок в рассадной', '12–17 дней: проращивание 2–3 плюс рассада 10–14 из гайда — от него считаются задачи по партиям', 'hall', 'batches'],
     ['Кому идут задачи', 'pH и EC — агроному; раствор, воздух и свет — инженеру; партии — оператору; заказы и камера — кладовщику', 'overview', 'tasks'],
     ['Смена раствора', 'взят верхний срок гайда — 28 дней', 'solution', 'service'],
-    ['Разделы по ролям', 'набор «моих разделов» для каждой роли составлен без согласования', 'overview', 'tasks']]]
+    ['Разделы по ролям', 'набор «моих разделов» для каждой роли составлен без согласования', 'overview', 'tasks'],
+    ['Состав команды', 'гайд даёт 8–9 человек при полной загрузке; стартовый экран показывает малую команду — собственник, агроном-технолог, инженер, оператор смены. Кто какие роли совмещает и сколько людей в смене — не согласовано', 'overview', 'tasks'],
+    ['Сеть ферм', 'сколько ферм в одной сети — до 10 или без ограничения — и сколько ферм ведёт один агроном и один инженер, не задано. Фермы партнёров в окне «Мои фермы» — примеры', 'owner', 'summary']]]
 ];
 EXTRA.ask = function () {
   var n = ASKS.reduce(function (a, g) { return a + g[1].length; }, 0);
@@ -3443,6 +3535,12 @@ var RUI = {
   store: ['<path d="M3 10l9-6 9 6v10H3z"></path><path d="M8 20v-6h8v6"></path>', 'заказы, отгрузка, остатки, камера'],
   lab: ['<path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"></path><path d="M7.5 15h9"></path>', 'пробы, нормативы, журналы проверки']
 };
+/* малая команда: значок, за что отвечает, где работает, какие роли совмещает */
+RUI.tech = [RUI.agro[0], 'рецепт, растения, диагностика, пробы и готовность к проверке', 'удалённо · выезд по задаче', 'агроном + лаборант'];
+RUI.shift = [RUI.oper[0], 'посев, пересадки, сбор, фасовка, склад и отгрузка', 'на ферме каждый день', 'оператор + упаковщик + кладовщик'];
+RUI.owner[2] = 'удалённо · вся сеть ферм';
+RUI.eng[2] = 'выезд по задаче';
+var LA = { fine: false };
 var IC_ALL = '<rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect>';
 var IC_FIND = '<circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path>';
 var icon = function (inner) { return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' + inner + '</svg>'; };
@@ -3460,17 +3558,30 @@ function renderChip() {
 }
 
 /* ---------- стартовый экран ---------- */
-function launchOpen() {
+/* плитка человека из малой команды: за что отвечает, где работает, что у него сегодня */
+function crewCard(k, i) {
+  var it = mineItems(k), n = it.length;
+  return '<button class="rcard crew" type="button" data-l="role" data-r="' + k + '"' + (crewOf(ROLE) === k ? ' aria-current="true"' : '') + ' style="animation-delay:' + (i * 45) + 'ms"><span class="ric">' + roleIcon(k) + '</span><span class="rn' + (n ? '' : ' z') + '">' + (n ? word(n) : 'задач нет') + '</span>' +
+    '<b>' + ROLES[k][0] + '</b><span class="rw">' + RUI[k][2] + '</span><span class="rd">' + RUI[k][1] + '</span>' +
+    it.slice(0, 2).map(function (x) { return '<span class="rt' + (x.u ? ' u' : '') + '">' + esc(x.t) + '</span>'; }).join('') +
+    (n > 2 ? '<span class="rm">и ещё ' + (n - 2) + '</span>' : '') + (RUI[k][3] ? '<span class="rc">совмещает: ' + RUI[k][3] + '</span>' : '') + '</button>';
+}
+function launchOpen(keep) {
   if (show) storyExit();
-  var el = $('#launch'), i = 0;
+  var el = $('#launch'), i = 0, na = openIn();
+  if (keep !== true) LA.fine = !!ROLE && CREW.indexOf(ROLE) < 0;
   el.innerHTML = '<div class="launch-in" role="dialog" aria-modal="true" aria-label="Выбор роли">' +
     '<button class="launch-x" type="button" data-l="close" aria-label="Закрыть">✕</button>' +
     '<div class="launch-k">GreenTech · гидроферма в цоколе</div><h1>Кто вы сегодня?</h1>' +
-    '<p class="launch-s">Выберите роль — останутся только ваши задачи и ваши разделы. Сменить роль можно в любой момент в шапке.</p>' +
-    '<div class="launch-g">' + Object.keys(ROLES).map(function (k) { var n = mineOf(k, null);
-      return '<button class="rcard" type="button" data-l="role" data-r="' + k + '"' + (ROLE === k ? ' aria-current="true"' : '') + ' style="animation-delay:' + (i++ * 45) + 'ms"><span class="ric">' + roleIcon(k) + '</span><span class="rn' + (n ? '' : ' z') + '">' + (n ? word(n) : 'задач нет') + '</span><b>' + ROLES[k][0] + '</b><span class="rd">' + RUI[k][1] + '</span></button>'; }).join('') +
-      '<button class="rcard all" type="button" data-l="all"' + (ROLE ? '' : ' aria-current="true"') + ' style="animation-delay:' + (i * 45) + 'ms"><span class="ric">' + icon(IC_ALL) + '</span><span class="rn' + (openIn() ? '' : ' z') + '">' + word(openIn()) + '</span><b>Вся ферма</b><span class="rd">все помещения и все задачи, без роли</span></button></div>' +
+    '<p class="launch-s">Ферму ведёт малая команда. Выберите себя — останутся только ваши задачи и ваши разделы.</p>' +
+    '<div class="launch-g crew">' + CREW.map(function (k) { return crewCard(k, i++); }).join('') + '</div>' +
+    '<button class="launch-sys" type="button" data-l="sys"><b>Остальное делает система</b><span>полив и раствор</span><span>свет и климат</span><span>камеры и датчики</span><span>задачи и напоминания</span><em>как это работает →</em></button>' +
+    '<div class="launch-r"><button class="launch-f" type="button" data-l="all"' + (ROLE ? '' : ' aria-current="true"') + '><span>' + icon(IC_ALL) + '<b>Вся ферма</b> без роли</span><span class="num">' + word(na) + '</span></button>' +
+    '<button class="launch-f" type="button" data-l="fine" aria-expanded="' + LA.fine + '"><span>' + icon(RUI.oper[0]) + '<b>Большая ферма:</b> семь ролей по отдельности</span><span>' + (LA.fine ? 'скрыть' : 'показать') + '</span></button></div>' +
+    (LA.fine ? '<div class="launch-g">' + Object.keys(ROLES).filter(function (k) { return k !== 'tech' && k !== 'shift'; }).map(function (k) { var n = mineOf(k, null);
+      return '<button class="rcard" type="button" data-l="role" data-r="' + k + '"' + (ROLE === k ? ' aria-current="true"' : '') + '><span class="ric">' + roleIcon(k) + '</span><span class="rn' + (n ? '' : ' z') + '">' + (n ? word(n) : 'задач нет') + '</span><b>' + ROLES[k][0] + '</b><span class="rd">' + RUI[k][1] + '</span></button>'; }).join('') + '</div>' : '') +
     '<div class="launch-b"><button class="lbig acc" type="button" data-l="story"><b>Проследить путь салата</b><span>одна партия от семени до упаковки · около двух минут</span></button>' +
+    '<button class="lbig" type="button" data-l="farms"><b>' + icon(IC_FARM) + ' Мои фермы</b><span>' + nwLine() + ' · демо</span></button>' +
     '<button class="lbig" type="button" data-l="eyes"><b>' + icon(IC_EYE) + ' Наблюдение</b><span>камеры и датчики · демо</span></button>' +
     '<button class="lbig find" type="button" data-l="find"><b>' + icon(IC_FIND) + ' Быстрый поиск</b><span>раздел, партия или действие · Ctrl K</span></button></div></div>';
   el.hidden = false;
@@ -3491,6 +3602,9 @@ $('#launch').addEventListener('click', function (e) {
   else if (c === 'story') { launchClose(); storyStart(); }
   else if (c === 'find') { launchClose(); kOpen(); }
   else if (c === 'eyes') { launchClose(); eyeOpen('cams'); }
+  else if (c === 'sys') { launchClose(); eyeOpen('how'); }
+  else if (c === 'farms') { launchClose(); nwOpen('list'); }
+  else if (c === 'fine') { LA.fine = !LA.fine; launchOpen(true); }
   else launchClose();
 });
 $('#roleChip').addEventListener('click', launchOpen);
@@ -3513,6 +3627,9 @@ function kIndex() {
     TABS[loc].forEach(function (tb) { add('раздел', tb[1], LOCS[loc].name, function () { roleGo(loc + '|' + tb[0]); }); });
   });
   add('действие', 'Открыть наблюдение', 'камеры и датчики · демо', function () { eyeOpen('cams'); }, 'глаза видео камера датчики лента');
+  add('действие', 'Мои фермы', 'сеть ферм одной команды · демо', function () { nwOpen('list'); }, 'сеть партнёр филиал объект');
+  add('действие', 'Куда ехать: выезды по фермам', 'задачи инженера и агронома на всех фермах', function () { nwOpen('trips'); }, 'маршрут выезд поездка сеть');
+  add('действие', 'Новая ферма по своим размерам', 'расчёт площади и урожая', function () { nwOpen('new'); }, 'добавить создать партнёр чертёж стеллажи ярусы');
   CAMS.forEach(function (c) { if (c.loc !== 'pilot' || LOCS.pilot) add('камера', 'Камера: ' + c.n, c.site, function () { eyeOpen('cams', c.id); }); });
   add('показ', 'Проследить путь салата', 'экскурсия за одной партией', function () { storyStart(); }, 'тур показ экскурсия');
   add('вид', 'Вся ферма', 'все помещения и задачи, без роли', function () { pickRole(''); }, 'общий вид');
@@ -3985,6 +4102,144 @@ function spotTags(add, boardOnly) {
     }
   });
 }
+/* ---------- «Мои фермы»: одна команда ведёт несколько ферм. Демо: основная ферма и погреб — настоящие записи приложения,
+   фермы партнёров — примеры. Показывает, как агроном и инженер видят всю сеть и понимают, куда ехать первым ---------- */
+var IC_FARM = '<path d="M3 21h18"></path><path d="M5 21V8l7-4 7 4v13"></path><path d="M9 21v-5h6v5"></path><path d="M9 11h6"></path>';
+var NW = { tab: 'list', who: '', farm: '', msg: '', f: { n: '', racks: 4, len: 12, tiers: 6 } };
+/* нормы основной фермы из реестра: стеллаж шириной 1,4 м; 1 176 м² посадки дают 1 040 головок в сутки после отхода 10 %; головка 150–180 г */
+var NW_W = 1.4, NW_AREA = 1176, NW_HEADS = 1040, NW_KG = [0.15, 0.18];
+function nwCalc(racks, len, tiers) { var a = racks * len * NW_W * tiers, h = a * NW_HEADS / NW_AREA; return { area: a, heads: h, lo: h * NW_KG[0] * 30 / 1000, hi: h * NW_KG[1] * 30 / 1000 }; }
+var nwRound = function (h) { return h >= 100 ? Math.round(h / 10) * 10 : Math.round(h); };
+/* фермы партнёров — примеры. Задача: [кому, срочная, что] */
+var NW_EX = [
+  { id: 'x1', n: 'Партнёр А · склад', dim: '18 × 12 м', racks: 4, len: 12, tiers: 6, kind: 'пример',
+    tasks: [['инженер', 1, 'Насос подачи на стеллаже 2 работает с перебоями'], ['агроном', 0, 'EC в баке 1,9 мСм/см — выше коридора 1,2–1,8'], ['оператор', 0, 'Пересадка партии на этап B — сегодня']] },
+  { id: 'x2', n: 'Партнёр Б · подвал', dim: '40 × 24 м', racks: 9, len: 20, tiers: 7, kind: 'пример',
+    tasks: [['агроном', 0, 'Сбор через 2 дня — назначить пробу на нитраты'], ['инженер', 0, 'Калибровка датчика pH: срок истёк'], ['кладовщик', 0, 'Субстрата осталось на 6 дней']] }
+];
+/* кто ведёт сеть: человек из малой команды, как он работает с несколькими фермами */
+var NW_WHO = [['eng', 'Инженер', 'нужен выезд', 'Видит задачи по оборудованию на всех фермах сразу и едет туда, где срочнее.'],
+  ['tech', 'Агроном', 'удалённо · выезд, если нужен осмотр', 'Ведёт несколько ферм удалённо: рецепт, отклонения, пробы. На место — когда нужен осмотр.'],
+  ['shift', 'Смена', 'на месте · у каждой фермы своя смена', 'Работает на месте: посев, пересадки, сбор, фасовка, склад. На каждой ферме своя смена.']];
+function nwFarms() {
+  var L = LG.farms || {}, own = Object.keys(L).map(function (id) { var f = L[id];
+    return f && !f.del && f.n ? { id: id, n: f.n, dim: 'размеры заданы вручную', racks: f.racks, len: f.len, tiers: f.tiers, kind: 'черновик', own: 1, t: f.t || 0, tasks: [] } : null; })
+    .filter(Boolean).sort(function (a, b) { return a.t - b.t; });
+  var out = [{ id: 'main', n: 'Астана · цоколь', dim: '29 × 20 м', racks: 8, len: 15, tiers: 7, kind: 'проект', real: 1 }];
+  if (LOCS.pilot) out.push({ id: 'pilot', n: 'Астана · погреб', dim: '2,95 × 2,15 м', kind: 'пилот', real: 1 });
+  return out.concat(NW_EX, own);
+}
+/* задачи фермы для человека; без роли — все. У основной фермы и погреба — настоящие задачи приложения */
+function nwTasks(f, role) {
+  if (f.real) return mineItems(role).filter(function (x) { return (x.loc === 'pilot') === (f.id === 'pilot'); });
+  var it = (f.tasks || []).filter(function (t) { return !role || whoIs(role, t[0]); }).map(function (t) { return { who: t[0], u: !!t[1], t: t[2], ex: 1 }; });
+  return it.filter(function (x) { return x.u; }).concat(it.filter(function (x) { return !x.u; }));
+}
+var nwUrg = function (it) { return it.filter(function (x) { return x.u; }).length; };
+function nwLine() {
+  var fs = nwFarms(), u = fs.reduce(function (a, f) { return a + nwUrg(nwTasks(f, '')); }, 0);
+  return fs.length + ' ' + plr(fs.length, 'ферма', 'фермы', 'ферм') + ' · ' + (u ? 'срочных задач: ' + u : 'срочных задач нет');
+}
+var nwNum = function (c) { return grp(Math.round(c.area)) + ' м² посадки · ≈ ' + grp(nwRound(c.heads)) + ' головок в сутки · ' + fmt(c.lo) + '–' + fmt(c.hi) + ' т в месяц'; };
+var nwSize = function (f) { return f.racks + ' ' + plr(f.racks, 'стеллаж', 'стеллажа', 'стеллажей') + ' по ' + qf(f.len) + ' м · ' + f.tiers + ' ' + plr(f.tiers, 'ярус', 'яруса', 'ярусов'); };
+function nwValid(f) {
+  if (!(f.racks >= 1 && f.racks <= 60 && Math.round(f.racks) === f.racks)) return 'Стеллажей — целое число от 1 до 60.';
+  if (!(f.len >= 2 && f.len <= 60)) return 'Длина стеллажа — от 2 до 60 м.';
+  if (!(f.tiers >= 1 && f.tiers <= 10 && Math.round(f.tiers) === f.tiers)) return 'Ярусов — целое число от 1 до 10.';
+  return '';
+}
+
+function nwCard(f) {
+  var all = nwTasks(f, ''), u = nwUrg(all), c = f.racks ? nwCalc(f.racks, f.len, f.tiers) : null;
+  return '<div class="farm' + (u ? ' u' : '') + '"><div class="farm-h"><b>' + esc(f.n) + '</b><span class="lv ' + (f.real ? 'src-man' : 'src-off') + '">' + f.kind + '</span></div>' +
+    '<span class="farm-d">' + f.dim + ' · ' + (c ? nwSize(f) : 'настоящие записи пилота') + '</span>' + (c ? '<span class="farm-n num">' + nwNum(c) + '</span>' : '') +
+    '<div class="farm-w">' + (u ? '<span class="lv crit">Срочно · ' + u + '</span>' : '') +
+    NW_WHO.map(function (p) { var n = nwTasks(f, p[0]).length; return n ? '<button class="lv note" type="button" data-nw="trip" data-w="' + p[0] + '" data-f="' + f.id + '">' + p[1] + ' · ' + n + '</button>' : ''; }).join('') +
+    (all.length ? '' : '<span class="lv note">' + (f.own ? 'задачи появятся после подключения' : 'задач нет') + '</span>') + '</div>' +
+    '<div class="btns">' + (f.id === 'main' ? '<button class="btn solid" type="button" data-nw="open" data-f="main">Открыть ферму</button>' : f.id === 'pilot' ? '<button class="btn solid" type="button" data-nw="open" data-f="pilot">Открыть погреб</button>' : '') +
+    (all.length ? '<button class="btn" type="button" data-nw="trip" data-w="" data-f="' + f.id + '">Задачи · ' + all.length + '</button>' : '') +
+    (f.own ? '<button class="btn" type="button" data-nw="del" data-f="' + f.id + '">Удалить</button>' : '') + '</div></div>';
+}
+function nwTrips() {
+  var role = NW.who, all = nwFarms(), one = all.filter(function (f) { return f.id === NW.farm; })[0];
+  var rows = all.map(function (f, i) { var it = nwTasks(f, role); return { f: f, it: it, u: nwUrg(it), i: i }; }).filter(function (x) { return x.it.length && (!one || x.f === one); })
+    .sort(function (a, b) { return b.u - a.u || b.it.length - a.it.length || a.i - b.i; });
+  var who = NW_WHO.filter(function (p) { return p[0] === role; })[0], top = rows[0];
+  var html = '<div class="farm-w">' + [['', 'Все']].concat(NW_WHO).map(function (p) { return '<button class="tab" type="button" data-nw="who" data-w="' + p[0] + '" aria-selected="' + (role === p[0]) + '">' + (p[0] ? ROLES[p[0]][0] : p[1]) + '</button>'; }).join('') +
+    (one ? '<button class="tab" type="button" data-nw="allf" aria-selected="true">' + esc(one.n) + ' ✕</button>' : '') + '</div>';
+  html += '<p class="lead">' + (rows.length ? (who ? ROLES[role][0] : 'Вся команда') + ': задачи на ' + rows.length + ' из ' + all.length + ' ' + plr(all.length, 'фермы', 'ферм', 'ферм') + '. ' +
+    (top.u ? 'Начать с «' + esc(top.f.n) + '» — срочных задач: ' + top.u + '.' : 'Срочных задач нет — порядок свободный.') + (who ? ' Как работает: ' + who[2] + '.' : '') : 'Открытых задач нет.') + '</p>';
+  return html + '<div class="feed">' + rows.map(function (x, n) {
+    return '<div class="fd' + (x.u ? ' u' : '') + '"><div class="fd-h"><span class="trip-n num">' + (n + 1) + '</span><b>' + esc(x.f.n) + '</b>' + (x.u ? '<span class="lv crit">Срочно · ' + x.u + '</span>' : '') + '<span class="who">' + x.f.kind + '</span></div>' +
+      x.it.map(function (t) { return '<span class="tk' + (t.u ? ' u' : '') + '">' + esc(t.t) + (role ? '' : ' <i>' + t.who + '</i>') + '</span>'; }).join('') +
+      (x.f.real ? '<div class="btns"><button class="mini" type="button" data-nw="open" data-f="' + x.f.id + '">' + (x.f.id === 'pilot' ? 'Открыть погреб' : 'Открыть задачи фермы') + '</button></div>' : '<span class="fd-c">Пример: сцена и журналы появятся после подключения фермы.</span>') + '</div>'; }).join('') + '</div>';
+}
+function nwRes() {
+  var f = NW.f, err = nwValid(f); if (err) return '<p class="lead" role="status" style="color:var(--warn)">' + err + '</p>';
+  var c = nwCalc(f.racks, f.len, f.tiers);
+  return '<div class="seng"><div class="sen"><span class="sen-n">Посадочная площадь</span><span class="sen-v num">' + grp(Math.round(c.area)) + ' м²</span><span class="sen-r">' + nwSize(f) + ' · ширина 1,4 м</span></div>' +
+    '<div class="sen"><span class="sen-n">Головок в сутки</span><span class="sen-v num">≈ ' + grp(nwRound(c.heads)) + '</span><span class="sen-r">после отхода 10 %</span></div>' +
+    '<div class="sen"><span class="sen-n">Урожай в месяц</span><span class="sen-v num">' + fmt(c.lo) + '–' + fmt(c.hi) + ' т</span><span class="sen-r">головка 150–180 г</span></div>' +
+    '<div class="sen off"><span class="sen-n">Для сравнения</span><span class="sen-v num">1 176 м²</span><span class="sen-r">основная ферма: ≈ 1 040 головок в сутки</span></div></div>';
+}
+function nwBody() {
+  if (NW.tab === 'trips') return nwTrips();
+  if (NW.tab === 'new') { var f = NW.f;
+    return '<p class="lead">Партнёр строит ферму по своим чертежам. Задайте стеллажи — приложение посчитает площадь и урожай по тем же нормам, что у основной фермы.</p>' +
+      '<div class="nwform"><label>Название<input id="nwN" type="text" maxlength="40" placeholder="Например: Ферма 2" value="' + esc(f.n) + '"></label>' +
+      '<label>Стеллажей<input id="nwR" type="number" inputmode="numeric" min="1" max="60" step="1" value="' + f.racks + '"></label>' +
+      '<label>Длина стеллажа, м<input id="nwL" type="number" inputmode="decimal" min="2" max="60" step="0.5" value="' + f.len + '"></label>' +
+      '<label>Ярусов<input id="nwT" type="number" inputmode="numeric" min="1" max="10" step="1" value="' + f.tiers + '"></label></div>' +
+      '<div id="nwRes">' + nwRes() + '</div><div class="btns"><button class="btn solid" type="button" data-nw="add">Добавить в мои фермы</button></div>' +
+      '<p class="note">Предварительный расчёт. Колонны, балки, проходы и высота потолка не учтены: на основной ферме при высоте 4,5 м встаёт 7 ярусов, при 4,2 м — 6. Точную раскладку, сцену и помещения строим по чертежам партнёра. Сколько ферм может быть в одной сети — ещё не решено.</p>'; }
+  return '<div class="farmg">' + nwFarms().map(nwCard).join('') + '<button class="farm add" type="button" data-nw="tab" data-t="new"><b>+ Новая ферма</b><span class="farm-d">по своим размерам: стеллажи, длина, ярусы — площадь и урожай посчитаются сами</span></button></div>' +
+    '<h2>Кто ведёт сеть</h2><div class="how">' + NW_WHO.map(function (p) { return '<button class="how-s" type="button" data-nw="who" data-w="' + p[0] + '"><b>' + ROLES[p[0]][0] + '</b><span>' + p[3] + '</span></button>'; }).join('') +
+    '<button class="how-s" type="button" data-nw="sys"><b>Система</b><span>Полив, раствор, свет и климат идут сами. Камеры и датчики следят постоянно и ставят задачи нужному человеку.</span></button></div>' +
+    '<p class="note">Основная ферма и погреб — настоящие записи приложения. Фермы партнёров — примеры: так будет выглядеть сеть, когда ферм станет несколько. По замыслу один агроном и один инженер ведут 2–3 фермы; точное число не задано.</p>';
+}
+function nwRender() {
+  var el = $('#farms'), fs = nwFarms(), all = fs.reduce(function (a, f) { return a.concat(nwTasks(f, '')); }, []);
+  var tabs = [['list', 'Фермы · ' + fs.length], ['trips', 'Куда ехать · ' + all.length], ['new', 'Новая ферма']];
+  el.innerHTML = '<div class="eyes-in" role="dialog" aria-modal="true" aria-label="Мои фермы"><div class="eyes-h"><div><div class="launch-k">Сеть ферм · демо</div><h1>Мои фермы</h1>' +
+    '<p class="launch-s">Одна команда ведёт несколько ферм. Агроном и инженер видят все фермы сразу и знают, куда ехать первым.</p></div><button class="launch-x" type="button" data-nw="close" aria-label="Закрыть">✕</button></div>' +
+    '<div class="eyes-sum"><span class="lv crit">Срочно · ' + nwUrg(all) + '</span><span class="lv rec">Задач · ' + all.length + '</span><span class="lv src-off">демо: фермы партнёров — примеры</span></div>' +
+    (NW.msg ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(NW.msg) + '</p>' : '') +
+    '<div class="tabs" role="tablist">' + tabs.map(function (t) { return '<button class="tab" type="button" role="tab" data-nw="tab" data-t="' + t[0] + '" aria-selected="' + (NW.tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div><div class="eyes-b">' + nwBody() + '</div></div>';
+  NW.msg = '';
+}
+function nwOpen(tab) {
+  if (show) storyExit(); launchClose();
+  var me = crewOf(ROLE);
+  NW.tab = tab || 'list'; NW.farm = ''; NW.who = NW_WHO.some(function (p) { return p[0] === me; }) ? me : tab === 'trips' ? 'eng' : '';
+  $('#farms').hidden = false; nwRender(); $('#farms').scrollTop = 0;
+}
+function nwClose() { $('#farms').hidden = true; }
+function nwBtn() { var b = $('#farmOpen'); if (b) b.innerHTML = icon(IC_FARM) + '<span>Фермы</span><span class="n z">' + nwFarms().length + '</span>'; }
+function nwRead() { var v = function (id) { var e = $(id); return e ? e.value : ''; }; NW.f = { n: String(v('#nwN')).trim().slice(0, 40), racks: +v('#nwR'), len: +String(v('#nwL')).replace(',', '.'), tiers: +v('#nwT') }; }
+function nwCmd(c, b) {
+  if (c === 'close') { nwClose(); return; }
+  if (c === 'tab') { NW.tab = b.dataset.t; NW.farm = ''; }
+  else if (c === 'who') { NW.tab = 'trips'; NW.who = b.dataset.w; }
+  else if (c === 'trip') { NW.tab = 'trips'; NW.who = b.dataset.w; NW.farm = b.dataset.f; }
+  else if (c === 'allf') NW.farm = '';
+  else if (c === 'sys') { nwClose(); eyeOpen('how'); return; }
+  else if (c === 'open') { nwClose(); if (b.dataset.f === 'pilot' && LOCS.pilot) { if (S.loc !== 'pilot') go('pilot'); } else { S.tabs.overview = 'tasks'; if (S.loc !== 'overview') go('overview'); else renderAll(); } $('#panel').scrollTop = 0; return; }
+  else if (c === 'add' || c === 'del') {
+    if (c === 'add') nwRead();
+    var err = c === 'add' ? nwValid(NW.f) : '', e2 = {};
+    if (err) { nwRender(); return; }
+    if (shared() && SH.ro) NW.msg = 'Общий журнал открыт вам только для чтения — список ферм не изменён.';
+    else if (c === 'add') { e2['u' + Date.now().toString(36)] = stamp({ n: NW.f.n || 'Новая ферма', racks: NW.f.racks, len: NW.f.len, tiers: NW.f.tiers }); put('cfg/farms', { list: e2 }); rebuild();
+      NW.msg = 'Ферма «' + (NW.f.n || 'Новая ферма') + '» добавлена как черновик. Задачи и сцена появятся после подключения по чертежам.'; NW.tab = 'list'; NW.f = { n: '', racks: 4, len: 12, tiers: 6 }; }
+    else { e2[b.dataset.f] = { del: 1 }; put('cfg/farms', { list: e2 }); rebuild(); NW.msg = 'Черновик фермы удалён.'; }
+    nwBtn(); renderRole();
+  }
+  nwRender(); $('#farms').scrollTop = 0;
+}
+$('#farms').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b && b.dataset.nw) nwCmd(b.dataset.nw, b); });
+$('#farms').addEventListener('input', function () { if (NW.tab !== 'new') return; nwRead(); var r = $('#nwRes'); if (r) r.innerHTML = nwRes(); });
+$('#farmOpen').addEventListener('click', function () { nwOpen('list'); });
+window.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('#farms').hidden && $('#kbar').hidden && $('#launch').hidden) nwClose(); });
 /* ---------- показ за две минуты: одна история по шагам ---------- */
 var show = null, showTimer = null;
 var at = function (ev, done, loc, tab) { S.ev = ev; S.done = done; S.tabs[loc] = tab; SP.zoom = true; go(loc); };
@@ -4083,6 +4338,7 @@ $('#panel').addEventListener('click', function (e) {
   if (b.dataset.role === 'others') { S.others = !S.others; renderTasks(); return; }
   if (b.dataset.role === 'launch') { launchOpen(); return; }
   if (b.dataset.role === 'eyes') { eyeOpen('cams'); return; }
+  if (b.dataset.role === 'farms') { nwOpen('list'); return; }
   if (b.dataset.role === 'wide') { S.wide = !S.wide; renderRole(); renderWays(); return; }
   if (b.dataset.rc && RC_SETS[b.dataset.rc]) { var rs = RC_SETS[b.dataset.rc][1]; Object.keys(rs).forEach(function (k) { RC.t[k] = rs[k]; }); renderTabs(); return; }
   if (show) storyPause();
