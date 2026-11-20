@@ -1044,34 +1044,38 @@ function initGL() {
       var g = plants(id); [-0.225, -0.075, 0.075, 0.225].forEach(function (dx) { [-0.13, 0.13].forEach(function (dy) { leaf(g, px + dx, h + 0.2, py + dy); }); });
     };
     var led = function (len, px, h, py) { cb(len, 0.022, 0.05, mLed, px, h, py); };
-    /* стеллаж А: 1,5 × 0,6 м. А1 — две ванны, А2 — три трубы Ø110 с уклоном 3 % к баку, А3 — рассада и микрозелень */
-    rack(0, 0, 1.5, 2);
-    bath('А1-1', 0.375, 0.3, 0.2); bath('А1-2', 1.125, 0.3, 0.2);
-    [0.1, 0.3, 0.5].forEach(function (py, j) {
-      tube([0.05, 0.857, py], [1.45, 0.815, py], 0.055, mPipe);
-      var g = plants('А2-' + (j + 1)); for (var q = 0; q < 7; q++) leaf(g, 0.15 + 0.2 * q, 0.93 - 0.03 * (0.1 + 0.2 * q), py, 0.85);
-      tube([1.45, 0.8, py], [1.56, 0.74, 0.3], 0.02, mPipe);
-    });
-    tube([1.56, 0.74, 0.3], [1.87, 0.6, 0.25], 0.025, mPipe);
-    tube([1.72, 0.3, 0.06], [1.72, 1.02, 0.03], 0.008, mBlue); tube([1.72, 1.02, 0.03], [0.04, 1.02, 0.03], 0.008, mBlue);
-    [0.375, 1.125].forEach(function (px, j) { cb(0.54, 0.05, 0.28, mTray, px, 1.345, 0.3); if (!j) cb(0.54, 0.11, 0.28, mat(0xDCE8E1, { transparent: true, opacity: 0.3, roughness: 0.2 }), px, 1.425, 0.3); });
-    var gA3 = plants('А3'); [0.375, 1.125].forEach(function (px) { cb(0.5, 0.03, 0.24, mLeaf, 0, 0, 0, gA3).position.copy(V([px, 1.385, 0.3])); });
-    [0.09, 0.23, 0.37, 0.51].forEach(function (py) { led(1.2, 0.75, 0.735, py); });
-    [0.06, 0.18, 0.3, 0.42, 0.54].forEach(function (py) { led(1.2, 0.75, 1.295, py); });
-    [0.2, 0.4].forEach(function (py) { led(1.2, 0.75, 1.66, py); });
-    /* бак 60 л с насосом на поддоне 0,7 × 0,5 м — у торца стеллажа А со стороны лестницы */
-    cb(0.7, 0.05, 0.5, mTray, 1.87, 0.025, 0.25);
-    var tank = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.19, 0.5, 20), mTank); tank.position.copy(V([1.87, 0.3, 0.25])); cellarG.add(tank);
-    var lid = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.03, 20), mDark); lid.position.copy(V([1.87, 0.565, 0.25])); cellarG.add(lid);
-    /* полка на стене выше метра: компрессоры, бесперебойник, таймеры */
-    cb(0.66, 0.025, 0.2, mBd, 2.6, 1.1, 0.1); cb(0.3, 0.13, 0.14, mDark, 2.44, 1.18, 0.1); cb(0.1, 0.09, 0.1, mBlue, 2.72, 1.16, 0.1); cb(0.1, 0.09, 0.1, mBlue, 2.85, 1.16, 0.1);
-    /* стеллаж Б: около 2,15 × 0,6 м, три секции. Б1 и Б2 — по три ванны, Б3 — микрозелень */
+    /* оба стеллажа одинаковые: около 2,15 × 0,6 м, три секции, до края лестницы (раскладка от 20.11.2026) */
+    var SEC = [0.36, 1.075, 1.79];
+    /* стеллаж А: А1 и А2 — по три ванны, А3 — рассада и микрозелень */
+    rack(0, 0, 2.15, 3);
+    SEC.forEach(function (px, j) { bath('А1-' + (j + 1), px, 0.3, 0.2); bath('А2-' + (j + 1), px, 0.3, 0.76); cb(0.54, 0.05, 0.28, mTray, px, 1.345, 0.3); if (!j) cb(0.54, 0.11, 0.28, mat(0xDCE8E1, { transparent: true, opacity: 0.3, roughness: 0.2 }), px, 1.425, 0.3); });
+    var gA3 = plants('А3'); SEC.forEach(function (px) { cb(0.5, 0.03, 0.24, mLeaf, 0, 0, 0, gA3).position.copy(V([px, 1.385, 0.3])); });
+    [0.09, 0.23, 0.37, 0.51].forEach(function (py) { led(1.2, 0.65, 0.735, py); led(0.6, 1.8, 0.735, py); });
+    [0.2, 0.4].forEach(function (py) { led(1.2, 0.65, 1.66, py); led(0.6, 1.8, 1.66, py); });
+    /* свободный угол у стеллажа А: канистры с водой */
+    cb(0.26, 0.38, 0.2, mWhite, 2.4, 0.19, 0.25); cb(0.26, 0.38, 0.2, mWhite, 2.72, 0.19, 0.25);
+    /* стеллаж Б: Б1 — три ванны; Б2 — три трубы Ø110 в двух секциях у бака с уклоном 3 % к нему и одна ванна в дальней секции; Б3 — микрозелень */
     rack(0, 1.55, 2.15, 3);
-    [0.36, 1.075, 1.79].forEach(function (px, j) { bath('Б1-' + (j + 1), px, 1.85, 0.2); bath('Б2-' + (j + 1), px, 1.85, 0.76); cb(0.54, 0.05, 0.28, mTray, px, 1.345, 1.85); });
-    var gB3 = plants('Б3'); [0.36, 1.075, 1.79].forEach(function (px) { cb(0.5, 0.03, 0.24, mLeaf, 0, 0, 0, gB3).position.copy(V([px, 1.385, 1.85])); });
+    SEC.forEach(function (px, j) { bath('Б1-' + (j + 1), px, 1.85, 0.2); cb(0.54, 0.05, 0.28, mTray, px, 1.345, 1.85); });
+    bath('Б2-3', 0.36, 1.85, 0.76);
+    [1.65, 1.85, 2.05].forEach(function (py, j) {
+      tube([0.72, 0.857, py], [2.12, 0.815, py], 0.055, mPipe);
+      var g = plants('Б2-Т' + (j + 1)); for (var q = 0; q < 7; q++) leaf(g, 0.82 + 0.2 * q, 0.93 - 0.03 * (0.1 + 0.2 * q), py, 0.85);
+      tube([2.12, 0.8, py], [2.24, 0.74, 1.85], 0.02, mPipe);
+    });
+    tube([2.24, 0.74, 1.85], [2.55, 0.6, 1.85], 0.025, mPipe);
+    tube([2.42, 0.3, 2.06], [2.42, 1.02, 2.1], 0.008, mBlue); tube([2.42, 1.02, 2.1], [0.74, 1.02, 2.1], 0.008, mBlue);
+    var gB3 = plants('Б3'); SEC.forEach(function (px) { cb(0.5, 0.03, 0.24, mLeaf, 0, 0, 0, gB3).position.copy(V([px, 1.385, 1.85])); });
     [0.735, 1.66].forEach(function (h) { [1.75, 1.95].forEach(function (py) { led(1.2, 0.65, h, py); led(0.6, 1.8, h, py); }); });
+    [1.61, 1.73, 1.85, 1.97, 2.09].forEach(function (py) { led(1.2, 1.42, 1.295, py); });
+    /* бак 60 л с насосом на поддоне 0,7 × 0,5 м — в углу у стеллажа Б со стороны лестницы */
+    cb(0.7, 0.05, 0.5, mTray, 2.55, 0.025, 1.85);
+    var tank = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.19, 0.5, 20), mTank); tank.position.copy(V([2.55, 0.3, 1.85])); cellarG.add(tank);
+    var lid = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.03, 20), mDark); lid.position.copy(V([2.55, 0.565, 1.85])); cellarG.add(lid);
+    /* полка на стене над баком, выше метра: компрессоры, бесперебойник, таймеры */
+    cb(0.66, 0.025, 0.2, mBd, 2.55, 1.1, 2.05); cb(0.3, 0.13, 0.14, mDark, 2.4, 1.18, 2.05); cb(0.1, 0.09, 0.1, mBlue, 2.66, 1.16, 2.05); cb(0.1, 0.09, 0.1, mBlue, 2.79, 1.16, 2.05);
     /* вентиляторы-клипсы и термогигрометр */
-    cb(0.07, 0.12, 0.12, mDark, 1.47, 1.02, 0.66); cb(0.07, 0.12, 0.12, mDark, 0.1, 1.02, 1.51); cb(0.06, 0.06, 0.015, mWhite, 0.75, 1.5, 0.02);
+    cb(0.07, 0.12, 0.12, mDark, 2.1, 1.02, 0.66); cb(0.07, 0.12, 0.12, mDark, 0.1, 1.02, 1.51); cb(0.06, 0.06, 0.015, mWhite, 0.75, 1.5, 0.02);
     var pl = new THREE.PointLight(0xFFE7BF, 0.7, 6); pl.position.copy(V([1.3, 1.7, 1.075])); cellarG.add(pl);
     cellarSync();
   })();
@@ -1786,8 +1790,8 @@ var JEX = [
   { o: -3, z: 'Б1-2', s: 'grow', c: 'dill', ph: 5.8, ec: 1.2, ts: 20.5, ta: 21, rh: 65, v: 30 },
   { o: -2, z: 'Б1-2', s: 'grow', c: 'dill', ph: 6.3, ec: 1.2, ts: 20.8, ta: 21, rh: 64, v: 30 },
   { o: -1, z: 'Б1-2', s: 'grow', c: 'dill', ph: 6.6, ec: 1.25, ts: 21.0, ta: 21, rh: 65, v: 30 },
-  { o: -2, z: 'А2 NFT', s: 'grow', c: 'batavia', ph: 6.0, ec: 1.85, ts: 23.0, ta: 21, rh: 62, v: 60, lx: 21000, h: 16 },
-  { o: -1, z: 'А2 NFT', s: 'grow', c: 'batavia', ph: 6.0, ec: 1.95, ts: 23.5, ta: 23.5, rh: 52, v: 60, lx: 21000, h: 16 },
+  { o: -2, z: 'Б2 NFT', s: 'grow', c: 'batavia', ph: 6.0, ec: 1.85, ts: 23.0, ta: 21, rh: 62, v: 60, lx: 21000, h: 16 },
+  { o: -1, z: 'Б2 NFT', s: 'grow', c: 'batavia', ph: 6.0, ec: 1.95, ts: 23.5, ta: 23.5, rh: 52, v: 60, lx: 21000, h: 16 },
   { o: -1, z: 'А1-1', s: 'grow', c: 'batavia', ph: 6.0, ec: 1.6, ts: 20.5, ta: 21, rh: 65, v: 30 },
   { o: -1, z: 'А1-2', s: 'grow', c: 'batavia', ph: 5.9, ec: 1.5, ts: 20.0, ta: 21, rh: 66, v: 30 },
   { o: -1, z: 'Б1-1', s: 'grow', c: 'onion', ph: 6.2, ec: 1.6, ts: 20.0, ta: 21, rh: 65, v: 30 },
@@ -1806,12 +1810,14 @@ var FEX = [
 ];
 /* примеры партий пилота: [культура, сорт, мест, [место, сколько дней назад]…, итог сбора] — по раскладке реестра */
 var BEX = [
-  ['batavia', 'Батавия', 7, [['А3', -16], ['А2-1', -6]]], ['lollo', 'Лолло росса', 8, [['А3', -24], ['А1-1', -12]]], ['romaine', 'Мини-ромэн', 8, [['А3', -20], ['А1-2', -9]]],
+  ['batavia', 'Батавия', 7, [['А3', -16], ['Б2-Т1', -6]]], ['lollo', 'Лолло росса', 8, [['А3', -24], ['А1-1', -12]]], ['romaine', 'Мини-ромэн', 8, [['А3', -20], ['А1-2', -9]]],
   ['batavia', 'Батавия, рассада', 16, [['А3', -5]]], ['onion', 'Лук на перо', 8, [['Б1-1', -18]]], ['dill', 'Укроп', 8, [['Б1-2', -21]]], ['micro', 'Микрозелень', 4, [['Б3', -5]]],
   ['batavia', 'Батавия', 8, [['А3', -45], ['А1-1', -33]], { end: -8, got: 7, g: 1085 }]
 ];
 /* зоны пилотного стенда: ванны, общий контур труб и полки. Замеры с такой зоной относятся к пилоту, остальные — к ферме */
-var PILOT_Z = ['А1-1', 'А1-2', 'А2 NFT', 'А3', 'Б1-1', 'Б1-2', 'Б1-3', 'Б2-1', 'Б2-2', 'Б2-3', 'Б3'];
+var PILOT_Z = ['А1-1', 'А1-2', 'А1-3', 'А2-1', 'А2-2', 'А2-3', 'А3', 'Б1-1', 'Б1-2', 'Б1-3', 'Б2 NFT', 'Б2-3', 'Б3'];
+/* до 20.11.2026 трубы стояли на ярусе А2: старые замеры этой зоны читаются как замеры труб */
+var Z_OLD = { 'А2 NFT': 'Б2 NFT' };
 var FARM_Z = ['Узел', 'Рассадная', 'Стеллаж 1', 'Стеллаж 2', 'Стеллаж 3', 'Стеллаж 4', 'Стеллаж 5', 'Стеллаж 6', 'Стеллаж 7', 'Стеллаж 8'];
 var zoneSite = function (z) { return PILOT_Z.indexOf(z) >= 0 ? 'cellar' : 'farm'; };
 /* в какое помещение фермы попадает отклонение: раствор и воздух — к инженеру в растворный узел, питание — к агроному в зал */
@@ -2194,7 +2200,7 @@ function exampleOps() {
 function seedDocs() {
   var t = todayISO(), ym = t.slice(0, 7), D = {}, add = function (pth, b) { D[pth] = merge(D[pth] || {}, b); };
   ['cellar', 'farm'].forEach(function (site) { exampleRows(site).forEach(function (x) { var e = {}; e[x[0]] = x[1]; add('journal/' + x[1].d, { d: x[1].d, r: e }); }); });
-  D['meta/store'] = { farmEx: 1, pilotEx: 2, farmBt: 1, ops: 1 };
+  D['meta/store'] = { farmEx: 1, pilotEx: 3, farmBt: 1, ops: 1 };
   exampleOps().forEach(function (x) { add(x[0], x[1]); });
   [['Семена салата', 'шт', 12000, 5000], ['Кубики субстрата', 'шт', 3500, 5000], ['Концентрат A', 'л', 62, 20], ['Концентрат B', 'л', 48, 20], ['Кислота pH−', 'л', 11, 5], ['Упаковка', 'шт', 4000, 1500], ['CO₂', 'кг', 45, 20]]
     .forEach(function (x, i) { D['stock/s' + (i + 1)] = { n: x[0], u: x[1], q0: x[2], r: x[3], t: i + 1, ex: 1 }; });
@@ -2233,13 +2239,17 @@ function boxSave() { try { localStorage.setItem('gt-outbox-v1', JSON.stringify(S
 /* устройства, где журнал завели до появления журнала фермы, получают её примеры один раз */
 function farmExOnce() {
   var m = DOCS['meta/store'] || {}, rowsIn = function (site) { exampleRows(site).forEach(function (x) { var b = { d: x[1].d, r: {} }; b.r[x[0]] = x[1]; DOCS['journal/' + x[1].d] = merge(DOCS['journal/' + x[1].d] || {}, b); }); };
-  if (m.farmEx && m.pilotEx >= 2 && m.farmBt && m.ops) return;
+  if (m.farmEx && m.pilotEx >= 3 && m.farmBt && m.ops) return;
   if (!m.farmEx) rowsIn('farm');
-  if (!(m.pilotEx >= 2)) {
-    /* прежние примеры пилота с жёсткими датами заменяются новым набором */
-    Object.keys(DOCS).forEach(function (pth) { if (pth.indexOf('journal/') === 0 && DOCS[pth] && DOCS[pth].r) Object.keys(DOCS[pth].r).forEach(function (id) { var r = DOCS[pth].r[id]; if (r && r.ex && /^x\d+$/.test(id)) DOCS[pth].r[id] = null; }); });
-    if (DOCS['batches/x1'] && DOCS['batches/x1'].ex) delete DOCS['batches/x1'];
-    rowsIn('cellar'); exampleBatches().forEach(function (x) { if (!DOCS[x[0]]) DOCS[x[0]] = x[1]; });
+  if (!(m.pilotEx >= 3)) {
+    /* прежние примеры пилота заменяются новым набором: сначала у них были жёсткие даты, с 20.11.2026 сменилась раскладка погреба.
+       Если примеры пилота уже удалены руками, заново они не появляются */
+    var had = !(m.pilotEx >= 2), exId = /^[xc]\d+$/;
+    Object.keys(DOCS).forEach(function (pth) {
+      if (pth.indexOf('journal/') === 0 && DOCS[pth] && DOCS[pth].r) Object.keys(DOCS[pth].r).forEach(function (id) { var r = DOCS[pth].r[id]; if (r && r.ex && exId.test(id)) { DOCS[pth].r[id] = null; had = true; } });
+      if (/^batches\/[xc]\d+$/.test(pth) && DOCS[pth] && DOCS[pth].ex) { delete DOCS[pth]; had = true; }
+    });
+    if (had) { rowsIn('cellar'); exampleBatches().forEach(function (x) { if (!DOCS[x[0]]) DOCS[x[0]] = x[1]; }); }
   }
   if (!m.farmBt) {
     /* партии фермы появились позже: примеры добавляются один раз, прежний пример приёмки привязывается к первой партии */
@@ -2249,7 +2259,7 @@ function farmExOnce() {
     fx.docs.forEach(function (x) { if (!DOCS[x[0]] && (x[0] !== 'batches/f1' || (old && old.b === 'f1'))) DOCS[x[0]] = x[1]; });
   }
   if (!m.ops) exampleOps().forEach(function (x) { DOCS[x[0]] = merge(DOCS[x[0]] || {}, x[1]); });
-  DOCS['meta/store'] = { farmEx: 1, pilotEx: 2, farmBt: 1, ops: 1 }; docsSave();
+  DOCS['meta/store'] = { farmEx: 1, pilotEx: 3, farmBt: 1, ops: 1 }; docsSave();
 }
 function docsLoad() {
   try { var raw = localStorage.getItem('gt-store-v1'); if (raw) { var D = JSON.parse(raw); if (D && typeof D === 'object') { DOCS = D; farmExOnce(); return; } } } catch (e) {}
@@ -2280,7 +2290,7 @@ function lgSync() {
 /* пересобирает журналы из документов; возвращает true, если что-то изменилось */
 function rebuild() {
   var D = eff(), t = todayISO(), cfg = D['cfg/sensors'] || {}, cal = cfg.cal || {}, cex = cfg.ex || {}, sum = {}, stock = [], shift = {};
-  J.rows = entries(D, 'journal', 'r'); KC = entries(D, 'phk', 'k'); ACTS = entries(D, 'acts', 'a'); WK = entries(D, 'work', 'w'); FB = entries(D, 'fb', 'f'); LIGHT = clone(D['cfg/light'] || {});
+  J.rows = entries(D, 'journal', 'r'); J.rows.forEach(function (r) { if (Z_OLD[r.z]) r.z = Z_OLD[r.z]; }); KC = entries(D, 'phk', 'k'); ACTS = entries(D, 'acts', 'a'); WK = entries(D, 'work', 'w'); FB = entries(D, 'fb', 'f'); LIGHT = clone(D['cfg/light'] || {});
   EN = entries(D, 'energy', 'e').sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : (a.t || 0) - (b.t || 0); });
   var moves = entries(D, 'moves', 'm');
   moves.forEach(function (m) { sum[m.i] = (sum[m.i] || 0) + m.k; });
@@ -2594,20 +2604,22 @@ function srSave(el) {
   putIn(smp._p, null, 's', smp.id, { res: el.value }); el.defaultValue = el.value; rebuild();
 }
 
-/* ---------- пилот в погребе: места на стеллажах и партии. Раскладка — по реестру проекта от 19.11.2026 ---------- */
+/* ---------- пилот в погребе: места на стеллажах и партии. Раскладка — по реестру проекта от 20.11.2026:
+   два одинаковых стеллажа по три секции, трубы NFT на среднем ярусе стеллажа Б у бака ---------- */
 var CELLAR = [
-  { r: 'А', dim: '1,5 × 0,6 м · две секции', tiers: [
+  { r: 'А', dim: 'около 2,15 × 0,6 м · три секции', tiers: [
     { id: 'А3', mm: 1320, kind: 'tray', plan: 'рассада или микрозелень', places: [{ id: 'А3' }] },
-    { id: 'А2', mm: 760, kind: 'nft', plan: 'салаты, по сорту на трубу', places: [{ id: 'А2-1', zone: 'А2 NFT', seats: 7 }, { id: 'А2-2', zone: 'А2 NFT', seats: 7 }, { id: 'А2-3', zone: 'А2 NFT', seats: 7 }] },
-    { id: 'А1', mm: 200, kind: 'dwc', plan: 'салаты', places: [{ id: 'А1-1', seats: 8 }, { id: 'А1-2', seats: 8 }] }] },
+    { id: 'А2', mm: 760, kind: 'dwc', plan: 'кинза и петрушка · второй этап', places: [{ id: 'А2-1', seats: 8 }, { id: 'А2-2', seats: 8 }, { id: 'А2-3', seats: 8 }] },
+    { id: 'А1', mm: 200, kind: 'dwc', plan: 'салаты', places: [{ id: 'А1-1', seats: 8 }, { id: 'А1-2', seats: 8 }, { id: 'А1-3', seats: 8 }] }] },
   { r: 'Б', dim: 'около 2,15 × 0,6 м · три секции', tiers: [
     { id: 'Б3', mm: 1320, kind: 'tray', plan: 'микрозелень', places: [{ id: 'Б3' }] },
-    { id: 'Б2', mm: 760, kind: 'dwc', plan: 'кинза и петрушка · второй этап', places: [{ id: 'Б2-1', seats: 8 }, { id: 'Б2-2', seats: 8 }, { id: 'Б2-3', seats: 8 }] },
+    { id: 'Б2', mm: 760, kind: 'nft', plan: 'салаты, по сорту на трубу', places: [{ id: 'Б2-Т1', zone: 'Б2 NFT', seats: 7 }, { id: 'Б2-Т2', zone: 'Б2 NFT', seats: 7 }, { id: 'Б2-Т3', zone: 'Б2 NFT', seats: 7 },
+      { id: 'Б2-3', kind: 'dwc', plan: 'кинза и петрушка · второй этап', seats: 8 }] },
     { id: 'Б1', mm: 200, kind: 'dwc', plan: 'лук и укроп', places: [{ id: 'Б1-1', seats: 8 }, { id: 'Б1-2', seats: 8 }, { id: 'Б1-3', seats: 8 }] }] }
 ];
-var KIND = { dwc: ['ванна', 'Ванна с плавающим плотом: около 30 л раствора, 8 мест.'], nft: ['труба', 'Проточная труба Ø 110: 7 мест. Раствор общий на три трубы, бак 60 л — замеры ведутся по зоне «А2 NFT».'], tray: ['полка', 'Полка для рассады и микрозелени.'] };
+var KIND = { dwc: ['ванна', 'Ванна с плавающим плотом: около 30 л раствора, 8 мест.'], nft: ['труба', 'Проточная труба Ø 110: 7 мест. Раствор общий на три трубы, бак 60 л — замеры ведутся по зоне «Б2 NFT».'], tray: ['полка', 'Полка для рассады и микрозелени.'] };
 var PLACE = {}, PV = { place: null, batch: null, form: false, msg: '' };
-CELLAR.forEach(function (r) { r.tiers.forEach(function (t) { t.places.forEach(function (pl) { pl.kind = t.kind; pl.plan = t.plan; pl.rack = r.r; pl.mm = t.mm; pl.zone = pl.zone || pl.id; PLACE[pl.id] = pl; }); }); });
+CELLAR.forEach(function (r) { r.tiers.forEach(function (t) { t.places.forEach(function (pl) { pl.kind = pl.kind || t.kind; pl.plan = pl.plan || t.plan; pl.rack = r.r; pl.mm = t.mm; pl.zone = pl.zone || pl.id; PLACE[pl.id] = pl; }); }); });
 function btStays(b) { var m = b.st || {}; return Object.keys(m).filter(function (k) { return m[k] && m[k].p; }).map(function (k) { return m[k]; }).sort(function (x, y) { return x.d < y.d ? -1 : x.d > y.d ? 1 : (x.t || 0) - (y.t || 0); }); }
 function btPlace(b) { var st = btStays(b); return st.length ? st[st.length - 1].p : null; }
 function btAt(id) { return BT.filter(function (b) { return !b.end && btPlace(b) === id; }); }
@@ -2651,7 +2663,7 @@ function placeState(id) {
 }
 var cycDays = function (c) { var m = /(\d+)(?:–(\d+))?/.exec((c && c.cycle) || ''); return m ? [+m[1], +(m[2] || m[1])] : null; };
 /* раздел пилота: место в сцене и вкладки. Виден всем; настоящие записи команды — только в общем журнале */
-LOCS.pilot = { name: 'Пилот в погребе', who: 'Пилот · проверка на практике', lead: 'Настоящий погреб 2,95 × 2,15 м: два стеллажа, восемь ванн и три трубы. Нажмите место на схеме — откроются партия, замеры и указания.',
+LOCS.pilot = { name: 'Пилот в погребе', who: 'Пилот · проверка на практике', lead: 'Настоящий погреб 2,95 × 2,15 м: два стеллажа, десять ванн и три трубы. Нажмите место на схеме — откроются партия, замеры и указания.',
   cam: [13.525, -1.05, -2.575], tgt: [15.675, -1.8, -2.575], links: ['overview'], anchor: [13.5, -0.2, -2.6], sub: 'пилот' };
 TABS.pilot = [['map', 'Погреб'], ['pass', 'Паспорт'], ['light', 'Свет'], ['fp', 'Итоги'], ['jadd', 'Ввод'], ['jrev', 'Разбор'], ['diag', 'Диагностика']];
 applyMode();
@@ -2666,7 +2678,7 @@ function cellarMap() {
     CELLAR.map(function (r) {
       return '<div class="rk"><h3>Стеллаж ' + r.r + '<span>' + r.dim + '</span></h3>' + r.tiers.map(function (t) {
         return '<div class="tier"><div class="tl"><b>' + t.id + '</b>' + grp(t.mm) + ' мм</div><div class="cells" style="grid-template-columns:repeat(' + t.places.length + ',minmax(0,1fr))">' + t.places.map(cell).join('') + '</div></div>'; }).join('') + '</div>'; }).join('') +
-    '<p class="note">Раскладка и размеры — по реестру проекта от 19.11.2026, статус «принято». Ярус Б2 — второй этап. Ярусы считаются снизу: первый на высоте 200 мм.</p>' +
+    '<p class="note">Раскладка — по реестру проекта от 20.11.2026: оба стеллажа по три секции, трубы NFT на ярусе Б2 у бака. Ярус А2 и ванна Б2-3 — второй этап. Ярусы считаются снизу: первый на высоте 200 мм.</p>' +
     head('Партии в работе') + (act.length ? '<div>' + act.map(function (b) { var pl = btPlace(b);
       return '<div class="line"><span class="g"><b>' + esc(btName(b)) + (b.ex ? ' ' + badge('ex') : '') + '</b><span>' + pl + ' · ' + daysFrom(b.sow, todayISO()) + '-й день от посева</span></span><button class="mini" type="button" data-bt="open" data-b="' + b.id + '">Открыть</button></div>'; }).join('') + '</div>' : '<p class="lead">Партий пока нет. Запишите первый посев или посмотрите, как выглядит заполненный погреб, на примерах.</p><div class="btns"><button class="btn" type="button" data-bt="bex">Добавить примеры</button></div>') +
     '<div class="btns"><button class="btn solid" type="button" data-bt="new">Новая партия</button></div>' +
@@ -2748,17 +2760,17 @@ function batchCard() {
 /* паспорт погреба: что установлено точно, что принято решением, что расчёт, что ещё вопрос. По реестру проекта и схеме сборки от 19.11.2026 */
 var PASS = [
   ['Помещение', [['Длина × ширина × высота', '2,95 × 2,15 × 1,90 м', 'fact', 'обмер 18.11'], ['Люк и лестница', 'у торцевой стены', 'fact', 'подтверждено 19.11; точное место — по месту'],
-    ['Вытяжка', 'колено Ø 110 в торцевой стене напротив люка', 'fact', 'фото и видео 19.11'], ['Температура', 'около 16 °C', 'fact', 'один замер 18.11; минимум и влажность не сняты'], ['Электролиния', 'автомат, УЗО и сечение неизвестны', 'ask', '']]],
-  ['Стеллажи', [['Стеллаж А', '1,5 × 0,6 м, две секции по 750 мм', 'fact', 'обмер 18.11, ± 2 см'], ['Стеллаж Б', 'около 2,15 × 0,6 м, три секции', 'acc', 'решение 19.11; точная длина — по месту'],
-    ['Ярусы', '200 / 760 / 1 320 мм', 'acc', '18.11'], ['Проход', 'около 0,95 м', 'calc', ''], ['Нагрузка на полку', 'А — около 80 кг, Б — около 120 кг', 'calc', 'полки усилить до 100 и 130 кг']]],
-  ['Система', [['Ванны', '8 штук: А1 — 2, Б1 — 3, Б2 — 3; около 30 л, 8 мест', 'acc', '19.11'], ['Проточные трубы', '3 × Ø 110 × 1,40 м, по 7 мест, уклон 3 %', 'acc', '19.11'],
+    ['Вытяжка', 'колено Ø 110 в торцевой стене напротив люка', 'fact', 'фото и видео 19.11'], ['Температура и влажность', '18,4 °C и 50 %', 'fact', 'замер 20.11 при открытом люке; 18.11 было около 16 °C; ночной минимум не снят'], ['Слив', 'в погребе слива нет', 'fact', 'раствор выносится канистрами или откачивается наверх'], ['Электролиния', 'автомат, УЗО и сечение неизвестны', 'ask', '']]],
+  ['Стеллажи', [['Стеллаж А', 'около 2,15 × 0,6 м, три секции', 'acc', 'решение 20.11: продлить до края лестницы; сейчас 1,5 м, две секции'], ['Стеллаж Б', 'около 2,15 × 0,6 м, три секции', 'acc', 'решение 19.11; точная длина — по месту; в углу у лестницы — бак'],
+    ['Ярусы', '200 / 760 / 1 320 мм', 'acc', '18.11'], ['Проход', 'около 0,95 м', 'calc', ''], ['Нагрузка на полку', 'около 120 кг: три ванны', 'calc', 'полки усилить до 130 кг']]],
+  ['Система', [['Ванны', '10 штук: А1 — 3, А2 — 3, Б1 — 3, Б2 — 1; около 30 л, 8 мест', 'acc', '20.11'], ['Проточные трубы', '3 × Ø 110 × 1,40 м, по 7 мест, уклон 3 %', 'acc', 'с 20.11 — на среднем ярусе стеллажа Б, у бака'],
     ['Насос', 'Atman AT-105S', 'ask', 'напор не ниже 1,5 м — проверить по шильдику'], ['Свет', 'линейные светильники 36 Вт', 'acc', 'сначала проверить один образец: 17–20 тыс. лк у листьев'],
-    ['Хватит ли света', 'в цель попадает только ярус А2', 'calc', 'оценка по паспортному потоку от 20.11: А3, Б1 и Б3 получают около половины нужного, А1 и Б2 — на границе; замерить до закупки остальных светильников'],
-    ['Сколько светильников до нормы', 'при 18 ч света: А1 — 5, А2 — 5, А3 — 4, Б1 — 4 ряда, Б2 — 4, Б3 — 3–4', 'calc', 'оценка от 20.11 при 80 % потока на полке; при 16 ч на ряд больше почти везде. Пересчёт по замеру — на вкладке «Свет»'],
-    ['Тепло от света', 'возможен перегрев погреба', 'ask', 'вытяжка 150 м³/ч уносит около 500 Вт на каждые 10 °C разницы, а света 0,6–1,3 кВт; проверить термогигрометром в первую неделю со светом'],
-    ['Аэрация', '5 компрессоров, 10 выходов', 'acc', ''], ['Нагрузка на линию', 'около 0,9 кВт', 'calc', '']]],
+    ['Хватит ли света', 'в цель попадает только ярус с трубами Б2', 'calc', 'оценка по паспортному потоку от 20.11: А3, Б1 и Б3 получают около половины нужного, А1 и А2 — на границе; замерить до закупки остальных светильников'],
+    ['Сколько светильников до нормы', 'при 18 ч света, рядов: А1 — 5, А2 — 4, А3 — 4, Б1 — 4, Б2 над трубами — 5, Б3 — 3', 'calc', 'оценка от 20.11 при 80 % потока на полке; при 16 ч на ряд больше почти везде. Пересчёт по замеру — на вкладке «Свет»'],
+    ['Тепло от света', 'возможен перегрев погреба', 'ask', 'вытяжка 150 м³/ч уносит около 500 Вт на каждые 10 °C разницы, а света 0,7–1,1 кВт; проверить термогигрометром в первую неделю со светом'],
+    ['Аэрация', '6 компрессоров, 12 выходов', 'acc', '10 ванн и бак'], ['Нагрузка на линию', 'около 1,0 кВт на запуске', 'calc', 'с резервом под обогреватель — до 2,5 кВт']]],
   ['Откуда берутся цифры', [['Термогигрометр Xiaomi', 'стоит в погребе с 19.11', 'fact', 'к приложению не подключён — показания вносятся вручную'], ['Тестер pH, EC и температуры', 'в списке закупки', 'acc', 'замеры — вручную'],
-    ['Весы с шагом 1 г', 'в списке закупки', 'acc', 'вес партии при сборе'], ['Два ваттметра', 'в списке закупки', 'acc', 'свет отдельно, остальное отдельно'], ['Связь в погребе', 'не проверена', 'ask', 'от неё зависит автоматическая передача данных']]]
+    ['Весы с шагом 1 г', 'в списке закупки', 'acc', 'вес партии при сборе'], ['Два ваттметра', 'в списке закупки', 'acc', 'свет отдельно, остальное отдельно'], ['Связь в погребе', 'Wi-Fi есть', 'fact', 'со слов 20.11; скорость при закрытом люке не проверена']]]
 ];
 EXTRA.pass = function () {
   var all = [], n = { fact: 0, acc: 0, calc: 0, ask: 0 };
@@ -2894,53 +2906,55 @@ function btCmd(c, el) {
 /* светильники из схемы сборки: длинный 1200 мм 36 Вт не меньше 3 600 лм, короткий 600 мм 18 Вт не меньше 1 800 лм.
    uf — доля потока, доходящая до полки (допущение до замера); vent — вытяжка из схемы, м³/ч */
 var LAMP = { L: { lm: 3600, w: 36 }, S: { lm: 1800, w: 18 }, uf: 0.8, vent: 150 };
-/* ряд на стеллаже А — один длинный светильник, на Б — длинный и короткий. plan — рядов в схеме: первый этап и после второго */
+/* ряд обычный (LS) — длинный и короткий светильник на всю длину стеллажа 2,15 м; ряд над трубами (L) — один длинный над двумя секциями 1,45 м.
+   plan — рядов в схеме: первый этап и после второго */
 var LIGHT_TIERS = [
-  { id: 'А1', rack: 'А', what: 'салаты', crops: ['batavia'], plan: [4, 4] }, { id: 'А2', rack: 'А', what: 'салаты в трубах', crops: ['batavia'], plan: [5, 5] },
-  { id: 'А3', rack: 'А', what: 'рассада', seed: true, plan: [2, 2] }, { id: 'Б1', rack: 'Б', what: 'лук и укроп', crops: ['onion', 'dill'], plan: [2, 3] },
-  { id: 'Б2', rack: 'Б', what: 'кинза и петрушка', crops: ['cilantro', 'parsley'], plan: [0, 4] }, { id: 'Б3', rack: 'Б', what: 'микрозелень', crops: ['micro'], plan: [2, 2] }
+  { id: 'А1', row: 'LS', what: 'салаты', crops: ['batavia'], plan: [4, 4] }, { id: 'А2', row: 'LS', what: 'кинза и петрушка', crops: ['cilantro', 'parsley'], plan: [0, 4] },
+  { id: 'А3', row: 'LS', what: 'рассада', seed: true, plan: [2, 2] }, { id: 'Б1', row: 'LS', what: 'лук и укроп', crops: ['onion', 'dill'], plan: [2, 3] },
+  { id: 'Б2', row: 'L', what: 'салаты в трубах', crops: ['batavia'], plan: [5, 5] }, { id: 'Б3', row: 'LS', what: 'микрозелень', crops: ['micro'], plan: [2, 2] }
 ];
-var RACK_AREA = { 'А': 1.5 * 0.6, 'Б': 2.15 * 0.6 };
-/* вклад одного ряда в освещённость полки, лк: средний замер, а без него — оценка по паспорту */
-function rowLux(rack) {
-  var m = LIGHT[rack === 'А' ? 'a' : 'b'];
+var ROW_AREA = { L: 1.45 * 0.6, LS: 2.15 * 0.6 };
+/* вклад одного ряда в освещённость полки, лк: средний замер, а без него — оценка по паспорту. Замер a — ряд над трубами, b — обычный ряд */
+function rowLux(row) {
+  var m = LIGHT[row === 'L' ? 'a' : 'b'];
   if (m > 0) return { v: m, meas: true };
-  return { v: (LAMP.L.lm + (rack === 'Б' ? LAMP.S.lm : 0)) * LAMP.uf / RACK_AREA[rack], meas: false };
+  return { v: (LAMP.L.lm + (row === 'LS' ? LAMP.S.lm : 0)) * LAMP.uf / ROW_AREA[row], meas: false };
 }
 /* что нужно ярусу при h часах света: коридор в люксах, число рядов до нижней границы и что получится */
 function lightNeed(tier, h) {
   var rg, lo = 0, hi = 99;
   if (tier.seed) rg = [150, 200];
   else { tier.crops.forEach(function (id) { var c = cropById(id); lo = Math.max(lo, c.dliR[0]); hi = Math.min(hi, c.dliR[1]); }); rg = [lo / (h * 0.0036), hi / (h * 0.0036)]; }
-  var row = rowLux(tier.rack), lux = [rg[0] * 72, rg[1] * 72], rows = Math.ceil(lux[0] / row.v - 1e-9), got = rows * row.v;
+  var row = rowLux(tier.row), lux = [rg[0] * 72, rg[1] * 72], rows = Math.ceil(lux[0] / row.v - 1e-9), got = rows * row.v;
   return { lux: lux, rows: rows, got: got, ppfd: got / 72, dli: dli(got / 72, h), tight: got < lux[0] * 1.05, over: got > lux[1] * 1.001, row: row };
 }
 function lightPlan() {
   var h = LIGHT.h || 16, nL = 0, nS = 0;
-  var rows = LIGHT_TIERS.map(function (t) { var n = lightNeed(t, h); nL += n.rows; if (t.rack === 'Б') nS += n.rows; return { t: t, n: n }; });
+  var rows = LIGHT_TIERS.map(function (t) { var n = lightNeed(t, h); nL += n.rows; if (t.row === 'LS') nS += n.rows; return { t: t, n: n }; });
   var w = nL * LAMP.L.w + nS * LAMP.S.w;
   /* dT — на сколько градусов воздух в погребе должен быть теплее приточного, чтобы вытяжка унесла всё тепло света: 0,335 Вт на м³/ч и градус */
   return { h: h, rows: rows, long: nL, short: nS, w: w, kwh: w * h / 1000, dT: w / (0.335 * LAMP.vent) };
 }
 EXTRA.light = function () {
-  var P = lightPlan(), ra = rowLux('А'), rb = rowLux('Б'), k = function (v) { return fmt(v / 1000, 1); };
+  var P = lightPlan(), ra = rowLux('L'), rb = rowLux('LS'), k = function (v) { return fmt(v / 1000, 1); };
   var src = function (r, n) { return k(r.v) + ' тыс. лк — ' + (r.meas ? 'замер' + (LIGHT.d ? ' ' + dm(LIGHT.d) : '') + (n ? ', среднее по ' + n + ' ' + plr(n, 'точке', 'точкам', 'точкам') : '') : 'оценка по паспорту, 80 % потока'); };
   var p1 = 0, p2 = 0; LIGHT_TIERS.forEach(function (t) { p1 += t.plan[0]; p2 += t.plan[1]; });
-  var planS = function (i) { return LIGHT_TIERS.filter(function (t) { return t.rack === 'Б'; }).reduce(function (s, t) { return s + t.plan[i]; }, 0); };
+  /* коротких в схеме: по одному на обычный ряд, плюс четыре над ванной Б2-3 на втором этапе */
+  var planS = function (i) { return LIGHT_TIERS.filter(function (t) { return t.row === 'LS'; }).reduce(function (s, t) { return s + t.plan[i]; }, 0) + (i ? 4 : 0); };
   return shBar() + (PV.msg ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(PV.msg) + '</p>' : '') +
     head('Свет по ярусам', ra.meas && rb.meas ? 'fact' : 'calc') + '<p class="lead">Сколько рядов светильников нужно каждому ярусу, чтобы выйти на нижнюю границу нормы своей культуры. Пока замера нет, расчёт идёт по паспортному потоку — это оценка.</p>' +
     '<div class="scroll"><table class="scn"><thead><tr><th>Ярус</th><th>Нужно, тыс. лк</th><th>Рядов нужно</th><th>В схеме</th><th>Получится</th></tr></thead><tbody>' +
     P.rows.map(function (x) { var t = x.t, n = x.n, lack = n.rows > t.plan[1];
       return '<tr><td><b>' + t.id + '</b><br>' + t.what + '</td><td>' + k(n.lux[0]) + '–' + k(n.lux[1]) + '</td><td style="' + (lack ? 'color:var(--warn);font-weight:600' : '') + '">' + n.rows + '</td><td>' + t.plan[0] + (t.plan[1] !== t.plan[0] ? ' → ' + t.plan[1] : '') + '</td><td>' + k(n.got) + ' тыс. лк<br>DLI ' + fmt(n.dli) + (n.over ? ' — выше нормы' : n.tight ? ' — впритык' : '') + '</td></tr>'; }).join('') + '</tbody></table></div>' +
-    '<p class="note">«В схеме» — рядов по схеме сборки: первый этап → после второго. Ряд на стеллаже А — один длинный светильник, на стеллаже Б — длинный и короткий.</p>' +
+    '<p class="note">«В схеме» — рядов по схеме сборки: первый этап → после второго. Ряд над трубами Б2 — один длинный светильник, на остальных ярусах — длинный и короткий. Над ванной Б2-3 на втором этапе — ещё четыре коротких.</p>' +
     kv([['Всего светильников', P.long + ' длинных + ' + P.short + ' коротких', 'в схеме: ' + p1 + ' + ' + planS(0) + ', после второго этапа ' + p2 + ' + ' + planS(1), P.long > p2],
-      ['Мощность света', fmt(P.w / 1000, 2) + ' кВт', fmt(P.kwh) + ' кВт·ч в сутки при ' + P.h + ' ч', P.w > 900],
+      ['Мощность света', fmt(P.w / 1000, 2) + ' кВт', fmt(P.kwh) + ' кВт·ч в сутки при ' + P.h + ' ч', P.w > 1300],
       ['Тепло', 'разница около ' + fmt(P.dT, 0) + ' °C', 'настолько воздух должен быть теплее приточного, чтобы вытяжка ' + LAMP.vent + ' м³/ч унесла всё тепло света; грубо, без стен и испарения', P.dT > 8]]) +
     head('Замер') + '<div class="fld"><label for="lH">Часов света в сутки</label><input id="lH" type="text" inputmode="decimal" value="' + P.h + '"></div>' +
-    inF('lA', 'Стеллаж А: один длинный светильник, люксы в 6–9 точках полки', '3100 3400 2900 3300 3000 3200', 'name') +
-    inF('lB', 'Стеллаж Б: длинный и короткий в ряд, люксы в 6–9 точках полки', '3200 3500 3000 3400 3100 3300', 'name') +
+    inF('lA', 'Ряд над трубами Б2: один длинный светильник, люксы в 6–9 точках полки', '3100 3400 2900 3300 3000 3200', 'name') +
+    inF('lB', 'Обычный ряд: длинный и короткий, люксы в 6–9 точках полки', '3200 3500 3000 3400 3100 3300', 'name') +
     '<div class="btns"><button class="btn solid" type="button" data-bt="light">Пересчитать и сохранить</button>' + (ra.meas || rb.meas ? '<button class="mini" type="button" data-bt="lightreset">Вернуть оценку по паспорту</button>' : '') + '</div>' +
-    '<div>' + line('Вклад ряда, стеллаж А', src(ra, LIGHT.an), badge(ra.meas ? 'fact' : 'calc')) + line('Вклад ряда, стеллаж Б', src(rb, LIGHT.bn), badge(rb.meas ? 'fact' : 'calc')) + '</div>' +
+    '<div>' + line('Вклад ряда над трубами', src(ra, LIGHT.an), badge(ra.meas ? 'fact' : 'calc')) + line('Вклад обычного ряда', src(rb, LIGHT.bn), badge(rb.meas ? 'fact' : 'calc')) + '</div>' +
     '<p class="note">Как мерить: повесьте один ряд на рабочей высоте над пустой полкой, остальной свет выключите, обойдите люксметром 6–9 точек по всей полке — и края тоже. Числа впишите через пробел; пустое поле оставляет прежнее значение.</p>' +
     '<div class="frm">нужные люксы = DLI ÷ (часы × 0,0036) × 72 · для рассады гайд задаёт 150–200 мкмоль напрямую<br>рядов = нужные люксы ÷ вклад одного ряда, с округлением вверх · DLI = люксы ÷ 72 × часы × 0,0036<br>люксметр даёт грубую оценку: по Cornell он завышает свет для растений примерно на четверть</div>';
 };
@@ -4046,10 +4060,10 @@ SPOTS.showcase = { crops: spStill('Ассортимент', [9.5, 2.8, 16.8], fu
   var V = function (px, h, py) { return [15.975 - px, -2.6 + h, -1.5 - py]; };
   SPOTS.pilot = {
     map: spStill('Стеллаж А', V(0.9, 1.45, 0.45), function () { var act = BT.filter(function (b) { return !b.end; }); return { rows: [['Партий в работе', String(act.length)], ['Собрано партий', String(BT.length - act.length)]], f: 'нажмите место на схеме в панели' }; }, true),
-    pass: spStill('Погреб', V(0.05, 1.3, 1.075), function () { return { rows: [['Размер', '2,95 × 2,15 × 1,90 м'], ['Воздух', 'около 16 °C'], ['Влажность', 'не измерена', true]], f: 'что измерено, а что принято — в панели' }; }, true),
-    light: spStill('Светильники А2', V(0.5, 1.3, 0.3), function () { return { rows: [['По паспорту хватает', 'только А2', true], ['Расчёт', 'оценка от 20.11']], f: 'сколько рядов нужно — в панели' }; }, true),
+    pass: spStill('Погреб', V(0.05, 1.3, 1.075), function () { return { rows: [['Размер', '2,95 × 2,15 × 1,90 м'], ['Воздух', '18,4 °C'], ['Влажность', '50 %']], f: 'что измерено, а что принято — в панели' }; }, true),
+    light: spStill('Светильники над трубами', V(1.42, 1.3, 1.85), function () { return { rows: [['По паспорту хватает', 'только Б2', true], ['Расчёт', 'оценка от 20.11']], f: 'сколько рядов нужно — в панели' }; }, true),
     fp: spStill('Итоги партий', V(1.3, 1.3, 1.7), function () { var done = BT.filter(function (b) { return b.end; }).length; return { rows: [['Собрано партий', String(done)], ['Показаний счётчика', String(EN.length), EN.length < 2]], f: EN.length < 2 ? 'по энергии данных пока нет' : 'энергия и время — в панели' }; }, true),
-    jadd: spStill('Трубы А2', V(0.75, 0.95, 0.35), function () { var r = zoneLast('А2 NFT'); return { rows: r ? [['Последний замер', dm(r.d)], ['Раствор', rowText(r) || '—']] : [['Замеров', 'нет', true]], f: 'зона «А2 NFT»: бак общий на три трубы' }; }, true),
+    jadd: spStill('Трубы Б2', V(1.42, 0.95, 1.85), function () { var r = zoneLast('Б2 NFT'); return { rows: r ? [['Последний замер', dm(r.d)], ['Раствор', rowText(r) || '—']] : [['Замеров', 'нет', true]], f: 'зона «Б2 NFT»: бак общий на три трубы' }; }, true),
     jrev: spStill('Стеллаж Б', V(0.5, 1.4, 1.85), function () { var c = pilotOpen().filter(function (x) { return x.site === 'cellar'; }); return { rows: [['Открытых отклонений', String(c.length), c.length > 0]], f: 'закрываются замером в норме' }; }, true),
     diag: spStill('Ванна А1', V(0.375, 0.6, 0.3), function () { return { rows: [['Как', 'симптом → причины'], ['Проверка', 'по журналу погреба']], f: 'вероятная причина — первой' }; }, true)
   };
@@ -4287,7 +4301,7 @@ var STORY = [
     run: function () { at({}, { temp: true }, 'prep', 'intake'); } },
   { sec: 12, t: 'Упаковка и маркировка', x: function () { return 'Фасовка, этикетка с датой сбора и номером партии, затем холодильная камера и отгрузка. Так помещения связаны в один цикл — от семени до покупателя.'; },
     run: function () { at({}, { temp: true }, 'prep', 'label'); } },
-  { sec: 14, t: 'А теперь — в наш пилот', x: function () { return 'Всё это проверяется на практике: погреб 2,95 × 2,15 м, два стеллажа, восемь ванн и три трубы. Здесь условные цифры по мере работы заменяются настоящими.'; },
+  { sec: 14, t: 'А теперь — в наш пилот', x: function () { return 'Всё это проверяется на практике: погреб 2,95 × 2,15 м, два стеллажа, десять ванн и три трубы. Здесь условные цифры по мере работы заменяются настоящими.'; },
     run: function () { if (LOCS.pilot) at({}, { temp: true }, 'pilot', 'map'); else at({}, { temp: true }, 'journal', 'jrev'); } }
 ];
 function storyRender() {
