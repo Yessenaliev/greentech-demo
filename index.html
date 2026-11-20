@@ -3486,7 +3486,7 @@ var ASKS = [
     ['Смена раствора', 'взят верхний срок гайда — 28 дней', 'solution', 'service'],
     ['Разделы по ролям', 'набор «моих разделов» для каждой роли составлен без согласования', 'overview', 'tasks'],
     ['Состав команды', 'гайд даёт 8–9 человек при полной загрузке; стартовый экран показывает малую команду — собственник, агроном-технолог, инженер, оператор смены. Кто какие роли совмещает и сколько людей в смене — не согласовано', 'overview', 'tasks'],
-    ['Сеть ферм', 'сколько ферм в одной сети — до 10 или без ограничения — и сколько ферм ведёт один агроном и один инженер, не задано. Фермы партнёров в окне «Мои фермы» — примеры', 'owner', 'summary']]]
+    ['Сеть ферм', 'сколько ферм в одной сети — до 10 или без ограничения — и сколько ферм ведёт один агроном и один инженер, не задано. Образцы на 100 и 300 м² в окне «Мои фермы» разложены по правилам основной фермы; размеры помещений и высота 4,5 м у них приняты без согласования', 'owner', 'summary']]]
 ];
 EXTRA.ask = function () {
   var n = ASKS.reduce(function (a, g) { return a + g[1].length; }, 0);
@@ -4103,18 +4103,19 @@ function spotTags(add, boardOnly) {
   });
 }
 /* ---------- «Мои фермы»: одна команда ведёт несколько ферм. Демо: основная ферма и погреб — настоящие записи приложения,
-   фермы партнёров — примеры. Показывает, как агроном и инженер видят всю сеть и понимают, куда ехать первым ---------- */
+   образцы на 100 и 300 м² — примеры. Показывает, как агроном и инженер видят всю сеть и понимают, куда ехать первым ---------- */
 var IC_FARM = '<path d="M3 21h18"></path><path d="M5 21V8l7-4 7 4v13"></path><path d="M9 21v-5h6v5"></path><path d="M9 11h6"></path>';
-var NW = { tab: 'list', who: '', farm: '', msg: '', f: { n: '', racks: 4, len: 12, tiers: 6 } };
+var NW = { tab: 'list', who: '', farm: '', msg: '', f: { n: '', racks: 6, len: 10, tiers: 7 } };
 /* нормы основной фермы из реестра: стеллаж шириной 1,4 м; 1 176 м² посадки дают 1 040 головок в сутки после отхода 10 %; головка 150–180 г */
 var NW_W = 1.4, NW_AREA = 1176, NW_HEADS = 1040, NW_KG = [0.15, 0.18];
 function nwCalc(racks, len, tiers) { var a = racks * len * NW_W * tiers, h = a * NW_HEADS / NW_AREA; return { area: a, heads: h, lo: h * NW_KG[0] * 30 / 1000, hi: h * NW_KG[1] * 30 / 1000 }; }
 var nwRound = function (h) { return h >= 100 ? Math.round(h / 10) * 10 : Math.round(h); };
-/* фермы партнёров — примеры. Задача: [кому, срочная, что] */
+/* образцы — фермы меньшего размера, разложенные по тем же правилам, что основная: стеллаж 1,4 м, проходы 0,9 м, 7 ярусов при высоте 4,5 м,
+   под стеллажами около 29 % пола (у основной 168 из 580 м²). Служат шаблоном для новой фермы. Задачи у образцов — примеры: [кому, срочная, что] */
 var NW_EX = [
-  { id: 'x1', n: 'Партнёр А · склад', dim: '18 × 12 м', racks: 4, len: 12, tiers: 6, kind: 'пример',
+  { id: 'x1', n: 'Образец · 300 м²', fl: 300, dim: '20 × 15 м', racks: 6, len: 10, tiers: 7, kind: 'образец',
     tasks: [['инженер', 1, 'Насос подачи на стеллаже 2 работает с перебоями'], ['агроном', 0, 'EC в баке 1,9 мСм/см — выше коридора 1,2–1,8'], ['оператор', 0, 'Пересадка партии на этап B — сегодня']] },
-  { id: 'x2', n: 'Партнёр Б · подвал', dim: '40 × 24 м', racks: 9, len: 20, tiers: 7, kind: 'пример',
+  { id: 'x2', n: 'Образец · 100 м²', fl: 100, dim: '12,5 × 8 м', racks: 3, len: 7, tiers: 7, kind: 'образец',
     tasks: [['агроном', 0, 'Сбор через 2 дня — назначить пробу на нитраты'], ['инженер', 0, 'Калибровка датчика pH: срок истёк'], ['кладовщик', 0, 'Субстрата осталось на 6 дней']] }
 ];
 /* кто ведёт сеть: человек из малой команды, как он работает с несколькими фермами */
@@ -4125,10 +4126,12 @@ function nwFarms() {
   var L = LG.farms || {}, own = Object.keys(L).map(function (id) { var f = L[id];
     return f && !f.del && f.n ? { id: id, n: f.n, dim: 'размеры заданы вручную', racks: f.racks, len: f.len, tiers: f.tiers, kind: 'черновик', own: 1, t: f.t || 0, tasks: [] } : null; })
     .filter(Boolean).sort(function (a, b) { return a.t - b.t; });
-  var out = [{ id: 'main', n: 'Астана · цоколь', dim: '29 × 20 м', racks: 8, len: 15, tiers: 7, kind: 'проект', real: 1 }];
+  var out = [{ id: 'main', n: 'Астана · цоколь', fl: 580, dim: '29 × 20 м', racks: 8, len: 15, tiers: 7, kind: 'проект', real: 1 }];
   if (LOCS.pilot) out.push({ id: 'pilot', n: 'Астана · погреб', dim: '2,95 × 2,15 м', kind: 'пилот', real: 1 });
   return out.concat(NW_EX, own);
 }
+/* шаблоны для новой фермы: образцы и основная ферма, от меньшей к большей */
+function nwTpl() { return nwFarms().filter(function (f) { return f.fl; }).sort(function (a, b) { return a.fl - b.fl; }); }
 /* задачи фермы для человека; без роли — все. У основной фермы и погреба — настоящие задачи приложения */
 function nwTasks(f, role) {
   if (f.real) return mineItems(role).filter(function (x) { return (x.loc === 'pilot') === (f.id === 'pilot'); });
@@ -4152,12 +4155,13 @@ function nwValid(f) {
 function nwCard(f) {
   var all = nwTasks(f, ''), u = nwUrg(all), c = f.racks ? nwCalc(f.racks, f.len, f.tiers) : null;
   return '<div class="farm' + (u ? ' u' : '') + '"><div class="farm-h"><b>' + esc(f.n) + '</b><span class="lv ' + (f.real ? 'src-man' : 'src-off') + '">' + f.kind + '</span></div>' +
-    '<span class="farm-d">' + f.dim + ' · ' + (c ? nwSize(f) : 'настоящие записи пилота') + '</span>' + (c ? '<span class="farm-n num">' + nwNum(c) + '</span>' : '') +
+    '<span class="farm-d">' + (f.fl ? 'помещение ' + f.fl + ' м² · ' : '') + f.dim + ' · ' + (c ? nwSize(f) : 'настоящие записи пилота') + '</span>' + (c ? '<span class="farm-n num">' + nwNum(c) + '</span>' : '') +
     '<div class="farm-w">' + (u ? '<span class="lv crit">Срочно · ' + u + '</span>' : '') +
     NW_WHO.map(function (p) { var n = nwTasks(f, p[0]).length; return n ? '<button class="lv note" type="button" data-nw="trip" data-w="' + p[0] + '" data-f="' + f.id + '">' + p[1] + ' · ' + n + '</button>' : ''; }).join('') +
     (all.length ? '' : '<span class="lv note">' + (f.own ? 'задачи появятся после подключения' : 'задач нет') + '</span>') + '</div>' +
     '<div class="btns">' + (f.id === 'main' ? '<button class="btn solid" type="button" data-nw="open" data-f="main">Открыть ферму</button>' : f.id === 'pilot' ? '<button class="btn solid" type="button" data-nw="open" data-f="pilot">Открыть погреб</button>' : '') +
     (all.length ? '<button class="btn" type="button" data-nw="trip" data-w="" data-f="' + f.id + '">Задачи · ' + all.length + '</button>' : '') +
+    (f.fl ? '<button class="btn" type="button" data-nw="tpl" data-f="' + f.id + '">Взять за образец</button>' : '') +
     (f.own ? '<button class="btn" type="button" data-nw="del" data-f="' + f.id + '">Удалить</button>' : '') + '</div></div>';
 }
 function nwTrips() {
@@ -4172,7 +4176,7 @@ function nwTrips() {
   return html + '<div class="feed">' + rows.map(function (x, n) {
     return '<div class="fd' + (x.u ? ' u' : '') + '"><div class="fd-h"><span class="trip-n num">' + (n + 1) + '</span><b>' + esc(x.f.n) + '</b>' + (x.u ? '<span class="lv crit">Срочно · ' + x.u + '</span>' : '') + '<span class="who">' + x.f.kind + '</span></div>' +
       x.it.map(function (t) { return '<span class="tk' + (t.u ? ' u' : '') + '">' + esc(t.t) + (role ? '' : ' <i>' + t.who + '</i>') + '</span>'; }).join('') +
-      (x.f.real ? '<div class="btns"><button class="mini" type="button" data-nw="open" data-f="' + x.f.id + '">' + (x.f.id === 'pilot' ? 'Открыть погреб' : 'Открыть задачи фермы') + '</button></div>' : '<span class="fd-c">Пример: сцена и журналы появятся после подключения фермы.</span>') + '</div>'; }).join('') + '</div>';
+      (x.f.real ? '<div class="btns"><button class="mini" type="button" data-nw="open" data-f="' + x.f.id + '">' + (x.f.id === 'pilot' ? 'Открыть погреб' : 'Открыть задачи фермы') + '</button></div>' : '<span class="fd-c">Образец: задачи — примеры. Сцена и журналы появятся у настоящей фермы.</span>') + '</div>'; }).join('') + '</div>';
 }
 function nwRes() {
   var f = NW.f, err = nwValid(f); if (err) return '<p class="lead" role="status" style="color:var(--warn)">' + err + '</p>';
@@ -4185,24 +4189,25 @@ function nwRes() {
 function nwBody() {
   if (NW.tab === 'trips') return nwTrips();
   if (NW.tab === 'new') { var f = NW.f;
-    return '<p class="lead">Партнёр строит ферму по своим чертежам. Задайте стеллажи — приложение посчитает площадь и урожай по тем же нормам, что у основной фермы.</p>' +
+    return '<p class="lead">Партнёр строит ферму по своим чертежам. Начните с образца или задайте стеллажи сами — приложение посчитает площадь и урожай по тем же нормам, что у основной фермы.</p>' +
+      '<div class="farm-w"><span class="farm-d">Образец по площади помещения:</span>' + nwTpl().map(function (t) { return '<button class="tab" type="button" data-nw="tpl" data-f="' + t.id + '" aria-selected="' + (t.racks === f.racks && t.len === f.len && t.tiers === f.tiers) + '">' + t.fl + ' м² · ' + t.dim + '</button>'; }).join('') + '</div>' +
       '<div class="nwform"><label>Название<input id="nwN" type="text" maxlength="40" placeholder="Например: Ферма 2" value="' + esc(f.n) + '"></label>' +
       '<label>Стеллажей<input id="nwR" type="number" inputmode="numeric" min="1" max="60" step="1" value="' + f.racks + '"></label>' +
       '<label>Длина стеллажа, м<input id="nwL" type="number" inputmode="decimal" min="2" max="60" step="0.5" value="' + f.len + '"></label>' +
       '<label>Ярусов<input id="nwT" type="number" inputmode="numeric" min="1" max="10" step="1" value="' + f.tiers + '"></label></div>' +
       '<div id="nwRes">' + nwRes() + '</div><div class="btns"><button class="btn solid" type="button" data-nw="add">Добавить в мои фермы</button></div>' +
-      '<p class="note">Предварительный расчёт. Колонны, балки, проходы и высота потолка не учтены: на основной ферме при высоте 4,5 м встаёт 7 ярусов, при 4,2 м — 6. Точную раскладку, сцену и помещения строим по чертежам партнёра. Сколько ферм может быть в одной сети — ещё не решено.</p>'; }
+      '<p class="note">Предварительный расчёт. Колонны, балки, проходы и высота потолка не учтены: на основной ферме при высоте 4,5 м встаёт 7 ярусов, при 4,2 м — 6. Образцы разложены по тем же правилам, что основная ферма: проходы 0,9 м, под стеллажами около 29 % пола, остальное — рассадная, растворный узел, цех и склад. Точную раскладку, сцену и помещения строим по чертежам партнёра. Сколько ферм может быть в одной сети — ещё не решено.</p>'; }
   return '<div class="farmg">' + nwFarms().map(nwCard).join('') + '<button class="farm add" type="button" data-nw="tab" data-t="new"><b>+ Новая ферма</b><span class="farm-d">по своим размерам: стеллажи, длина, ярусы — площадь и урожай посчитаются сами</span></button></div>' +
     '<h2>Кто ведёт сеть</h2><div class="how">' + NW_WHO.map(function (p) { return '<button class="how-s" type="button" data-nw="who" data-w="' + p[0] + '"><b>' + ROLES[p[0]][0] + '</b><span>' + p[3] + '</span></button>'; }).join('') +
     '<button class="how-s" type="button" data-nw="sys"><b>Система</b><span>Полив, раствор, свет и климат идут сами. Камеры и датчики следят постоянно и ставят задачи нужному человеку.</span></button></div>' +
-    '<p class="note">Основная ферма и погреб — настоящие записи приложения. Фермы партнёров — примеры: так будет выглядеть сеть, когда ферм станет несколько. По замыслу один агроном и один инженер ведут 2–3 фермы; точное число не задано.</p>';
+    '<p class="note">Основная ферма и погреб — настоящие записи приложения. Образцы на 100 и 300 м² — шаблоны: по ним видно, какой получится ферма в помещении меньшего размера, и с них можно начать свою. Задачи у образцов — примеры. По замыслу один агроном и один инженер ведут 2–3 фермы; точное число не задано.</p>';
 }
 function nwRender() {
   var el = $('#farms'), fs = nwFarms(), all = fs.reduce(function (a, f) { return a.concat(nwTasks(f, '')); }, []);
   var tabs = [['list', 'Фермы · ' + fs.length], ['trips', 'Куда ехать · ' + all.length], ['new', 'Новая ферма']];
   el.innerHTML = '<div class="eyes-in" role="dialog" aria-modal="true" aria-label="Мои фермы"><div class="eyes-h"><div><div class="launch-k">Сеть ферм · демо</div><h1>Мои фермы</h1>' +
     '<p class="launch-s">Одна команда ведёт несколько ферм. Агроном и инженер видят все фермы сразу и знают, куда ехать первым.</p></div><button class="launch-x" type="button" data-nw="close" aria-label="Закрыть">✕</button></div>' +
-    '<div class="eyes-sum"><span class="lv crit">Срочно · ' + nwUrg(all) + '</span><span class="lv rec">Задач · ' + all.length + '</span><span class="lv src-off">демо: фермы партнёров — примеры</span></div>' +
+    '<div class="eyes-sum"><span class="lv crit">Срочно · ' + nwUrg(all) + '</span><span class="lv rec">Задач · ' + all.length + '</span><span class="lv src-off">демо: образцы и их задачи — примеры</span></div>' +
     (NW.msg ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(NW.msg) + '</p>' : '') +
     '<div class="tabs" role="tablist">' + tabs.map(function (t) { return '<button class="tab" type="button" role="tab" data-nw="tab" data-t="' + t[0] + '" aria-selected="' + (NW.tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div><div class="eyes-b">' + nwBody() + '</div></div>';
   NW.msg = '';
@@ -4222,6 +4227,8 @@ function nwCmd(c, b) {
   else if (c === 'who') { NW.tab = 'trips'; NW.who = b.dataset.w; }
   else if (c === 'trip') { NW.tab = 'trips'; NW.who = b.dataset.w; NW.farm = b.dataset.f; }
   else if (c === 'allf') NW.farm = '';
+  else if (c === 'tpl') { var t = nwFarms().filter(function (x) { return x.id === b.dataset.f; })[0], nm = NW.tab === 'new' && $('#nwN') ? String($('#nwN').value || '').trim().slice(0, 40) : '';
+    if (t) NW.f = { n: nm, racks: t.racks, len: t.len, tiers: t.tiers }; NW.tab = 'new'; }
   else if (c === 'sys') { nwClose(); eyeOpen('how'); return; }
   else if (c === 'open') { nwClose(); if (b.dataset.f === 'pilot' && LOCS.pilot) { if (S.loc !== 'pilot') go('pilot'); } else { S.tabs.overview = 'tasks'; if (S.loc !== 'overview') go('overview'); else renderAll(); } $('#panel').scrollTop = 0; return; }
   else if (c === 'add' || c === 'del') {
@@ -4230,7 +4237,7 @@ function nwCmd(c, b) {
     if (err) { nwRender(); return; }
     if (shared() && SH.ro) NW.msg = 'Общий журнал открыт вам только для чтения — список ферм не изменён.';
     else if (c === 'add') { e2['u' + Date.now().toString(36)] = stamp({ n: NW.f.n || 'Новая ферма', racks: NW.f.racks, len: NW.f.len, tiers: NW.f.tiers }); put('cfg/farms', { list: e2 }); rebuild();
-      NW.msg = 'Ферма «' + (NW.f.n || 'Новая ферма') + '» добавлена как черновик. Задачи и сцена появятся после подключения по чертежам.'; NW.tab = 'list'; NW.f = { n: '', racks: 4, len: 12, tiers: 6 }; }
+      NW.msg = 'Ферма «' + (NW.f.n || 'Новая ферма') + '» добавлена как черновик. Задачи и сцена появятся после подключения по чертежам.'; NW.tab = 'list'; NW.f = { n: '', racks: 6, len: 10, tiers: 7 }; }
     else { e2[b.dataset.f] = { del: 1 }; put('cfg/farms', { list: e2 }); rebuild(); NW.msg = 'Черновик фермы удалён.'; }
     nwBtn(); renderRole();
   }
