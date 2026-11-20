@@ -563,7 +563,7 @@ function allTasks() {
   });
   return out;
 }
-var openIn = function (loc) { return allTasks().filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id]; }).length + pilotOpen().filter(function (c) { return !loc || c.loc === loc || (loc === 'journal' && c.site === 'farm'); }).length; };
+var openIn = function (loc) { return allTasks().filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id]; }).length + pilotOpen().filter(function (c) { return !loc || c.loc === loc || (loc === 'journal' && c.site === 'farm'); }).length + fmTasks().filter(function (x) { return !loc || x.loc === loc; }).length; };
 var word = function (n) { return n === 0 ? 'задач нет' : n === 1 ? '1 задача' : n < 5 ? n + ' задачи' : n + ' задач'; };
 
 /* ---------- места ---------- */
@@ -1106,12 +1106,17 @@ function renderTasks() {
   el.hidden = false;
   var html = '<h2>' + (all ? 'Задачи по всей ферме' : 'Задачи здесь') + '</h2>';
   var pc = pilotOpen().filter(function (c) { return all || c.loc === here; });
-  if (!list.length && !pc.length) html += '<p class="lead">Открытых задач в этом помещении нет.</p>';
+  var ft = fmTasks().filter(function (x) { return all || x.loc === here; });
+  if (!list.length && !pc.length && !ft.length) html += '<p class="lead">Открытых задач в этом помещении нет.</p>';
   html += pc.map(function (c) { var la = c.acts[c.acts.length - 1];
     return '<article class="task"><div class="top"><span class="lvl ' + (c.st ? 'plan' : 'warn') + '">' + (c.site === 'cellar' ? 'Погреб' : 'Журнал') + ' · ' + (c.st ? 'ждёт повторного замера' : 'ждёт действия') + '</span><span class="who">' + PRM[c.k][1] + '</span></div>' +
       '<div class="what"><b>' + esc(c.z) + '</b> · ' + c.v + ' вне нормы с ' + dm(c.from.d) + (c.last.ex ? ' ' + badge('ex') : '') + '</div>' +
       '<div class="act">' + (c.st ? 'Действие записано ' + dm(la.d) + '. Нужен повторный замер.' : 'Откройте разбор: там указание с расчётом.') + (fresh(c.last).lvl === 2 ? ' Замер устарел (' + fresh(c.last).txt + ') — сначала перемерьте.' : '') + ' Задача закроется замером в норме, а не отметкой.</div>' +
       '<div class="btns"><button class="btn solid" type="button" data-j="open" data-z="' + esc(c.z) + '">Открыть разбор</button></div></article>'; }).join('');
+  html += ft.map(function (x) {
+    return '<article class="task"><div class="top"><span class="lvl ' + x.lvl + '">Партии · ' + x.when + '</span><span class="who">' + x.who + '</span></div>' +
+      '<div class="what"><b>' + x.place + '</b> · ' + x.what + '</div><div class="act">' + x.act + ' Задача закроется записью, а не отметкой.</div>' +
+      '<div class="btns"><button class="btn solid" type="button" data-fm="' + x.cmd + '"' + (x.b ? ' data-b="' + x.b + '"' : '') + '>' + x.btn + '</button></div></article>'; }).join('');
   html += list.map(function (t) {
     var done = !!S.done[t.id], away = t.loc !== here, off = !done && !!snz[t.id], fid = 't:' + t.id;
     return '<article class="task ' + (t.lvl === 'urgent' && !done && !off ? 'urgent' : '') + (done ? ' done' : '') + (off ? ' snz' : '') + '">' +
@@ -1192,7 +1197,7 @@ var TABS = {
   hall: [['tasks', 'Задачи'], ['facts', 'Воздух'], ['batches', 'Партии'], ['week', 'Неделя'], ['modes', 'Режимы']],
   shelf: [['tasks', 'Задачи'], ['facts', 'Ярус'], ['charts', 'Графики'], ['growth', 'Рост'], ['photo', 'Фото']],
   solution: [['tasks', 'Задачи'], ['facts', 'Раствор'], ['unit', 'Узел'], ['equip', 'Оборудование'], ['power', 'Электрика'], ['climate', 'Климат'], ['sensors', 'Датчики'], ['service', 'ТО']],
-  seedling: [['facts', 'Режим'], ['sowing', 'Посев']],
+  seedling: [['facts', 'Режим'], ['tasks', 'Задачи'], ['sowing', 'Посев']],
   lab: [['tasks', 'Задачи'], ['samples', 'Журнал проб'], ['elements', 'Раствор'], ['norms', 'Нормативы'], ['ready', 'Готовность'], ['journals', 'Журналы']],
   prep: [['intake', 'Приёмка'], ['packing', 'Фасовка'], ['label', 'Этикетка'], ['facts', 'Показатели']],
   store: [['stock', 'Остатки'], ['forecast', 'Прогноз'], ['orders', 'Отгрузка'], ['cold', 'Камера'], ['facts', 'Сводка']],
@@ -1300,12 +1305,6 @@ var EXTRA = {
       line('Электрическая мощность', 'техусловия ≈ 350 кВт — оценка до проекта ОВ', 'уточнить', true) + line('Нормативы', 'проверено 2 документа из 8', 'лаборатория', true) + line('Субсидии', 'не подтверждены, в расчёт не включены', '', false) +
       line('Открытые задачи', word(openIn()), '', openIn() > 0) + '</div>';
   },
-  batches: function () {
-    var st = function (n, d, den, ar) { return '<div class="box"><span class="t">' + n + '</span><span class="num">' + d + '</span><span class="s">' + den + '</span><span class="s">' + ar + '</span></div>'; };
-    return head('Конвейер партий', 'guide') + '<div class="grid2">' + st('Проращивание', '2–3 дня', '1 семя на кубик', 'без света') + st('Рассада', '10–14 дней', '250–400 кубиков/м²', '≈ 50 м² столов') + st('Этап A', '7–10 дней', '45 раст./м²', '≈ 256 м² · 1,7 стеллажа') + st('Этап B', '14–18 дней', '22 раст./м²', '≈ 944 м² · 6,4 стеллажа') + '</div>' +
-      '<div class="frm">этап A: 256 м² × 45 / 10 дней = 1 152 раст./сут<br>этап B: 944 м² × 22 / 18 дней = 1 154 раст./сут<br>после 10 % отхода ≈ 1 040 головок в сутки</div>' +
-      head('Сегодня', 'cond') + kv([['Посеять', '1 250 ячеек', 'норма 1 200–1 300'], ['Собрать', '1 040 головок', 'план'], ['Собрано вчера', '1 012 головок', '1 150 посажено'], ['Отход вчера', '12,0 %', 'план 10 %', true]]);
-  },
   modes: function () {
     var m = function (n, r) { return '<div class="box"><span class="t">' + n + '</span>' + kv(r) + '</div>'; };
     return head('Режим по этапам', 'guide') + m('Рассада', [['PPFD', '150–200'], ['EC', '0,8–1,2'], ['Воздух день / ночь', '22–24 / 20 °C'], ['Влажность', '70–80 %'], ['DLI', '10–12']]) +
@@ -1350,10 +1349,6 @@ var EXTRA = {
     return head('Регламент обслуживания') + '<div>' + line('Калибровка датчиков pH и EC', 'стеллаж 1 — 32 дня назад', S.done.cal ? 'сделано' : 'просрочено', !S.done.cal) + line('Смена раствора', 'раз в 3–4 недели', 'через 9 дн.') + line('УФ-лампа', 'ресурс лампы', 'уточнить', true) + line('Мембраны осмоса', 'интервал замены', 'уточнить', true) + line('Фильтры вентиляции', 'интервал замены', 'уточнить', true) + '</div>' +
       head('Аварийные сценарии') + '<div>' + line('Отключение питания', 'ИБП держит насосы и автоматику', 'уточнить состав', true) + line('Перегрев раствора', 'выше 22 °C — задача инженеру') + line('Протечка', 'датчики воды на полу', 'уточнить', true) + '</div>';
   },
-  sowing: function () {
-    return head('Ежедневный посев', 'guide') + kv([['Норма партии', '1 200–1 300 ячеек', 'каждый день одинаково'], ['Плотность', '250–400 кубиков/м²', ''], ['Столы', '≈ 50 м²', 'прилив-отлив, 2 яруса']]) +
-      head('Журнал посева', 'cond') + '<div>' + ['19.11', '18.11', '17.11', '16.11', '15.11'].map(function (d, i) { return line(d, i === 0 ? 'сегодня — не отмечено' : 'посеяно', i === 0 ? '0 из 1 250' : '1 250 ячеек', i === 0); }).join('') + '</div>';
-  },
   samples: function () {
     return samplesTab();
   },
@@ -1377,10 +1372,6 @@ var EXTRA = {
   },
   stock: function () {
     return stockTab();
-  },
-  orders: function () {
-    return head('Заказы на неделю', 'cond') + '<div>' + line('Кафе, заказ 1', 'отгрузка 24.11', '40 кг') + line('Магазин, заказ 2', 'отгрузка 24.11', '120 кг') + line('Ресторан, заказ 3', 'отгрузка 25.11', '25 кг') + '</div>' +
-      '<div class="frm">резерв под заказы: 40 + 120 + 25 = 185 кг<br>суточный сбор по плану: 156–187 кг</div>';
   },
   cold: function () {
     return head('Холодильная камера', 'cond') + kv([['Сейчас', '4,1 °C', ''], ['Режим хранения', 'уточнить', 'норма не задана', true]]) + '<div>' + [['08:00', '4,1'], ['10:00', '3,9'], ['12:00', '4,2'], ['14:00', '4,0']].map(function (x) { return line(x[0], 'запись в журнал температуры', x[1] + ' °C'); }).join('') + '</div>';
@@ -1525,10 +1516,6 @@ EXTRA.journals = function () {
     head('Уборка и дезинфекция, последние записи', 'cond') + '<div>' + line('19.11 · 07:30', 'заготовочный цех: столы, мойка, пол', 'оператор') + line('18.11 · 19:40', 'стеллаж 5: лотки после сбора', 'оператор') + line('18.11 · 07:25', 'заготовочный цех: столы, мойка, пол', 'оператор') + '</div>' +
     '<p class="note">Состав журналов — по перечню из ТЗ. Формы и периодичность сверить с санитарными правилами.</p>';
 };
-EXTRA.label = function () {
-  return head('Макет этикетки', 'cond') + '<div class="lbl"><div class="lbl-t">Салат батавия</div><dl class="kv">' + [['Масса нетто', '165 г'], ['Дата сбора', '23.11.2026'], ['Номер партии', 'С6-2311'], ['Срок годности', '[уточнить]'], ['Условия хранения', '[уточнить]'], ['Изготовитель', '[уточнить]']].map(function (r) { return '<dt>' + r[0] + '</dt><dd><b class="num">' + r[1] + '</b></dd>'; }).join('') + '</dl></div>' +
-    '<p class="note">Перечень обязательных сведений на этикетке нужно проверить по ТР ТС 022/2011 — документ в реестре помечен «проверить».</p>' + kv([['Прослеживаемость', 'стеллаж 6 → С6-2311', 'по номеру партии находится ярус и проба'], ['Проба на нитраты', S.done.lab ? 'отобрана' : 'ждёт лаборанта', 'П-015', !S.done.lab]]);
-};
 EXTRA.forecast = function () {
   var day = PROD.headsDay * PROD.headKg, d = [['пт 20', 0], ['сб 21', 0], ['вс 22', 0], ['пн 23', 0], ['вт 24', 160], ['ср 25', 25], ['чт 26', 0]], res = 185, tot = day * 7;
   return head('Сбор на неделю вперёд', 'reg') + '<div class="bars">' + d.map(function (x) { return '<span><i style="height:' + ((day - x[1]) / day * 100).toFixed(0) + '%"></i><i class="r" style="height:' + (x[1] / day * 100).toFixed(0) + '%"></i><b>' + x[0] + '</b></span>'; }).join('') + '</div>' +
@@ -1552,6 +1539,17 @@ var JEX = [
   { o: -1, z: 'А1-2', s: 'grow', c: 'batavia', ph: 5.9, ec: 1.5, ts: 20.0, ta: 21, rh: 66, v: 30 },
   { o: -1, z: 'Б1-1', s: 'grow', c: 'onion', ph: 6.2, ec: 1.6, ts: 20.0, ta: 21, rh: 65, v: 30 },
   { o: -1, z: 'А3', s: 'seed', c: 'batavia', ph: 6.0, ec: 1.0, ts: 20.0, ta: 23, rh: 75, v: 10 }
+];
+/* примеры партий фермы: [культура, сорт, ячеек, [этап, место, сколько дней назад, ярусы, растений]…, отгрузки [дней назад, кому, кг]].
+   Срез конвейера: по одной партии на каждом шаге; один ярус 21 м² вмещает 945 растений на этапе A и 462 на этапе B */
+var FEX = [
+  ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -40], ['a', 'Стеллаж 1', -26, 'ярусы 1–2', 1200], ['b', 'Стеллаж 5', -17, 'ярусы 5–7', 1150]], [[-1, 'Кафе', 40], [0, 'Магазин', 100]]],
+  ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -35], ['a', 'Стеллаж 1', -21, 'ярусы 3–4', 1210], ['b', 'Стеллаж 6', -11, 'ярусы 1–3', 1160]]],
+  ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -32], ['a', 'Стеллаж 1', -19, 'ярусы 5–6', 1195], ['b', 'Стеллаж 4', -10, 'ярусы 1–3', 1150]]],
+  ['lollo', 'Лолло росса', 1250, [['seed', 'Рассадная', -27], ['a', 'Стеллаж 2', -14, 'ярусы 1–2', 1205], ['b', 'Стеллаж 7', -6, 'ярусы 1–3', 1170]]],
+  ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -22], ['a', 'Стеллаж 2', -9, 'ярусы 3–4', 1215]]],
+  ['romaine', 'Мини-ромэн', 1250, [['seed', 'Рассадная', -17], ['a', 'Стеллаж 1', -4, 'ярусы 1–2', 1220]]],
+  ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -13]]], ['batavia', 'Батавия', 1250, [['seed', 'Рассадная', -7]]], ['lollo', 'Лолло росса', 1250, [['seed', 'Рассадная', -1]]]
 ];
 /* примеры партий пилота: [культура, сорт, мест, [место, сколько дней назад]…, итог сбора] — по раскладке реестра */
 var BEX = [
@@ -1881,7 +1879,7 @@ var isoOf = function (dt) { return dt.getFullYear() + '-' + String(dt.getMonth()
 var todayISO = function () { return isoOf(new Date()); };
 var addDays = function (iso, k) { var dt = new Date(iso + 'T12:00:00'); dt.setDate(dt.getDate() + k); return isoOf(dt); };
 var daysFrom = function (a, b) { return Math.round((Date.parse(b + 'T12:00:00') - Date.parse(a + 'T12:00:00')) / 864e5); };
-var LG = null, LGmsg = '', LGlast = '', BT = [], ACTS = [], EN = [], WK = [], LIGHT = {}, FB = [];
+var LG = null, LGmsg = '', LGlast = '', BT = [], FBT = [], ACTS = [], EN = [], WK = [], LIGHT = {}, FB = [];
 var SENS = [['ph1', 'pH · стеллаж 1'], ['ph4', 'pH · стеллаж 4'], ['ec', 'EC · бак'], ['o2', 'Кислород · бак'], ['co2', 'CO₂ · зал']];
 var MAPS = [['journal', 'r'], ['phk', 'k'], ['moves', 'm'], ['samples', 's'], ['harvest', 'h'], ['acts', 'a'], ['energy', 'e'], ['work', 'w'], ['fb', 'f']];
 /* DOCS — записи этого устройства. SH — общий журнал: rem — что пришло из базы, box — очередь неотправленных записей */
@@ -1918,18 +1916,31 @@ function exampleBatches() {
   });
   return out;
 }
+/* примеры партий фермы: срез конвейера от посева до отгрузки. Возвращает документы партий и запись приёмки первой партии */
+function exampleFarm() {
+  var t = todayISO(), docs = [];
+  FEX.forEach(function (x, i) {
+    var st = {}, doc = { f: 1, no: i + 1, crop: x[0], sort: x[1], sow: addDays(t, x[3][0][2]), n: x[2], t: i + 1, ex: 1, st: st };
+    x[3].forEach(function (p, j) { var v = { k: p[0], p: p[1], d: addDays(t, p[2]), t: j + 1 }; if (p[3]) v.tr = p[3]; if (p[4]) v.n = p[4]; st['s' + j] = v; });
+    if (x[4]) { doc.sh = {}; x[4].forEach(function (h, j) { doc.sh['h' + j] = { d: addDays(t, h[0]), to: h[1], kg: h[2], t: j + 1, ex: 1 }; }); }
+    docs.push(['batches/f' + (i + 1), doc]);
+  });
+  var hd = addDays(t, -1);
+  return { docs: docs, hd: hd, harvest: { d: hd, z: 'Стеллаж 5, ярусы 5–7', heads: 1012, kg: 163.9, planted: 1150, b: 'f1', t: 1, ex: 1 } };
+}
 function seedDocs() {
   var t = todayISO(), ym = t.slice(0, 7), D = {}, add = function (pth, b) { D[pth] = merge(D[pth] || {}, b); };
   ['cellar', 'farm'].forEach(function (site) { exampleRows(site).forEach(function (x) { var e = {}; e[x[0]] = x[1]; add('journal/' + x[1].d, { d: x[1].d, r: e }); }); });
-  D['meta/store'] = { farmEx: 1, pilotEx: 2 };
+  D['meta/store'] = { farmEx: 1, pilotEx: 2, farmBt: 1 };
   [['Семена салата', 'шт', 12000, 5000], ['Кубики субстрата', 'шт', 3500, 5000], ['Концентрат A', 'л', 62, 20], ['Концентрат B', 'л', 48, 20], ['Кислота pH−', 'л', 11, 5], ['Упаковка', 'шт', 4000, 1500], ['CO₂', 'кг', 45, 20]]
     .forEach(function (x, i) { D['stock/s' + (i + 1)] = { n: x[0], u: x[1], q0: x[2], r: x[3], t: i + 1, ex: 1 }; });
   [[13, -3, 'Вода', 'после осмоса', 'исходный анализ', 1], [14, 0, 'Раствор', 'бак', 'состав по элементам', 1], [15, 2, 'Лист', 'стеллаж 6', 'нитраты', 0]]
     .forEach(function (x) { var e = {}; e['x' + x[0]] = { no: x[0], d: addDays(t, x[1]), what: x[2], from: x[3], test: x[4], st: x[5], res: '', t: x[0], ex: 1 }; add('samples/' + ym, { d: ym, s: e }); });
   D['cfg/sensors'] = { calInt: 30, cal: { ph1: addDays(t, -32), ph4: addDays(t, -12), ec: addDays(t, -12), o2: addDays(t, -20), co2: addDays(t, -45) }, ex: { ph1: 1, ph4: 1, ec: 1, o2: 1, co2: 1 } };
-  var hd = addDays(t, -1), hm = hd.slice(0, 7);
+  var fx = exampleFarm(), hm = fx.hd.slice(0, 7);
   exampleBatches().forEach(function (x) { D[x[0]] = x[1]; });
-  D['harvest/' + hm] = { d: hm, h: { x1: { d: hd, z: 'стеллаж 5, ярусы 5–7', heads: 1012, kg: 163.9, planted: 1150, t: 1, ex: 1 } } };
+  fx.docs.forEach(function (x) { D[x[0]] = x[1]; });
+  D['harvest/' + hm] = { d: hm, h: { x1: fx.harvest } };
   return D;
 }
 /* записи, сделанные до появления хранилища, переносятся в него один раз */
@@ -1958,7 +1969,7 @@ function boxSave() { try { localStorage.setItem('gt-outbox-v1', JSON.stringify(S
 /* устройства, где журнал завели до появления журнала фермы, получают её примеры один раз */
 function farmExOnce() {
   var m = DOCS['meta/store'] || {}, rowsIn = function (site) { exampleRows(site).forEach(function (x) { var b = { d: x[1].d, r: {} }; b.r[x[0]] = x[1]; DOCS['journal/' + x[1].d] = merge(DOCS['journal/' + x[1].d] || {}, b); }); };
-  if (m.farmEx && m.pilotEx >= 2) return;
+  if (m.farmEx && m.pilotEx >= 2 && m.farmBt) return;
   if (!m.farmEx) rowsIn('farm');
   if (!(m.pilotEx >= 2)) {
     /* прежние примеры пилота с жёсткими датами заменяются новым набором */
@@ -1966,7 +1977,14 @@ function farmExOnce() {
     if (DOCS['batches/x1'] && DOCS['batches/x1'].ex) delete DOCS['batches/x1'];
     rowsIn('cellar'); exampleBatches().forEach(function (x) { if (!DOCS[x[0]]) DOCS[x[0]] = x[1]; });
   }
-  DOCS['meta/store'] = { farmEx: 1, pilotEx: 2 }; docsSave();
+  if (!m.farmBt) {
+    /* партии фермы появились позже: примеры добавляются один раз, прежний пример приёмки привязывается к первой партии */
+    var fx = exampleFarm(), old = null;
+    Object.keys(DOCS).forEach(function (pth) { var h = pth.indexOf('harvest/') === 0 && DOCS[pth] && DOCS[pth].h; if (h && h.x1 && h.x1.ex) old = h.x1; });
+    if (old && !old.b && old.d >= addDays(todayISO(), -8)) old.b = 'f1';
+    fx.docs.forEach(function (x) { if (!DOCS[x[0]] && (x[0] !== 'batches/f1' || (old && old.b === 'f1'))) DOCS[x[0]] = x[1]; });
+  }
+  DOCS['meta/store'] = { farmEx: 1, pilotEx: 2, farmBt: 1 }; docsSave();
 }
 function docsLoad() {
   try { var raw = localStorage.getItem('gt-store-v1'); if (raw) { var D = JSON.parse(raw); if (D && typeof D === 'object') { DOCS = D; farmExOnce(); return; } } } catch (e) {}
@@ -2007,12 +2025,14 @@ function rebuild() {
   LG = { shift: shift, calInt: cfg.calInt || 30, moves: moves, stock: stock, samples: entries(D, 'samples', 's'), harvest: entries(D, 'harvest', 'h'),
     sensors: SENS.map(function (x) { return { id: x[0], n: x[1], last: cal[x[0]] || null, ex: cex[x[0]] }; }) };
   S.shift = shift[t] || {};
-  BT = [];
+  BT = []; FBT = [];
   if (cellarG) setTimeout(cellarSync, 0);
-  eachDoc(D, 'batches', function (doc, pth, id) { if (doc.crop && !doc.del) BT.push(merge(clone(doc), { id: id, _p: pth })); });
+  /* в одной коллекции лежат партии пилота и партии фермы; у партий фермы стоит пометка f */
+  eachDoc(D, 'batches', function (doc, pth, id) { if (doc.crop && !doc.del) (doc.f ? FBT : BT).push(merge(clone(doc), { id: id, _p: pth })); });
   BT.sort(function (a, b) { return (a.t || 0) - (b.t || 0); });
+  FBT.sort(function (a, b) { return (a.no || 0) - (b.no || 0) || (a.t || 0) - (b.t || 0); });
   lgSync();
-  var sig = JSON.stringify([J.rows, KC, LG, BT, ACTS, EN, WK, LIGHT, FB]), changed = sig !== SH.sig;
+  var sig = JSON.stringify([J.rows, KC, LG, BT, FBT, ACTS, EN, WK, LIGHT, FB]), changed = sig !== SH.sig;
   SH.sig = sig;
   return changed;
 }
@@ -2205,14 +2225,16 @@ function shiftTab() {
 }
 function intakeTab() {
   var t = todayISO(), td = LG.harvest.filter(function (h) { return h.d === t; }), heads = td.reduce(function (a, h) { return a + h.heads; }, 0), kg = td.reduce(function (a, h) { return a + h.kg; }, 0), avg = heads ? kg / heads * 1000 : 0;
-  var rowOf = function (h) { var i = LG.harvest.indexOf(h), g = h.kg / h.heads * 1000, waste = h.planted ? (h.planted - h.heads) / h.planted * 100 : null, rack = (/\d+/.exec(h.z) || ['0'])[0];
-    var hb = h.b ? BT.filter(function (x) { return x.id === h.b; })[0] : null;
-    return '<div class="line"><span class="g"><b>' + dm(h.d) + ' · ' + esc(h.z) + (h.ex ? ' ' + badge('ex') : '') + '</b><span class="num">' + (hb ? 'партия ' + esc(btName(hb)) : 'партия С' + rack + '-' + h.d.slice(8, 10) + h.d.slice(5, 7)) + ' · ' + grp(h.heads) + ' гол. · ' + fmt(h.kg) + ' кг · ' + fmt(g, 0) + ' г на головку' + (waste !== null ? ' · отход ' + fmt(waste) + ' %' : '') + '</span></span><button class="mini" type="button" data-lg="hdel" data-i="' + i + '" aria-label="Удалить запись приёмки ' + dm(h.d) + '">Удалить</button></div>'; };
-  return shBar() + lgMsg() + head('Принять урожай') + inF('hZ', 'Стеллаж и ярусы', 'стеллаж 6, ярусы 1–3', 'name') + inF('hH', 'Принято головок', '340') + inF('hK', 'Масса, кг', '55,2') + inF('hP', 'Было посажено, шт', 'необязательно') +
+  var rowOf = function (h) { var i = LG.harvest.indexOf(h), g = h.kg / h.heads * 1000, waste = h.planted ? (h.planted - h.heads) / h.planted * 100 : null;
+    var hb = h.b ? btById(h.b) : null, hf = h.b ? fmById(h.b) : null;
+    return '<div class="line"><span class="g"><b>' + dm(h.d) + ' · ' + esc(h.z) + (h.ex ? ' ' + badge('ex') : '') + '</b><span class="num">' + (hf ? 'партия ' + esc(fmName(hf)) : hb ? 'партия пилота ' + esc(btName(hb)) : 'без партии') + ' · ' + grp(h.heads) + ' гол. · ' + fmt(h.kg) + ' кг · ' + fmt(g, 0) + ' г на головку' + (waste !== null ? ' · отход ' + fmt(waste) + ' %' : '') + '</span></span><button class="mini" type="button" data-lg="hdel" data-i="' + i + '" aria-label="Удалить запись приёмки ' + dm(h.d) + '">Удалить</button></div>'; };
+  var onB = FBT.filter(function (b) { return fmStage(b) === 'b'; });
+  return shBar() + lgMsg() + head('Принять урожай') + fmSel('hB', 'Партия', onB, FV.pick, 'без партии', function (b) { return fmName(b) + ' · ' + fmWhere(b); }) +
+    inF('hZ', 'Стеллаж и ярусы', onB.length ? 'возьмётся из партии' : 'стеллаж 6, ярусы 1–3', 'name') + inF('hH', 'Принято головок', '1 040') + inF('hK', 'Масса, кг', '165,0') + inF('hP', 'Было посажено, шт', onB.length ? 'возьмётся из партии' : 'необязательно') +
     '<div class="btns"><button class="btn solid" type="button" data-lg="harvest">Записать приёмку</button></div>' +
     head('Сегодня · ' + dm(t)) + kv([['Принято', grp(heads) + ' из 1 040 головок', 'план сбора в сутки'], ['Масса', fmt(kg) + ' кг', 'план 156–187 кг'], ['Средняя головка', heads ? fmt(avg, 0) + ' г' : '—', 'норма 150–180 г', heads > 0 && (avg < 150 || avg > 180)]]) + bar(heads / 1040 * 100) +
     head('Журнал приёмки') + (LG.harvest.length ? '<div>' + LG.harvest.slice().reverse().slice(0, 8).map(rowOf).join('') + '</div>' : '<p class="lead">Записей пока нет.</p>') + exBtn(LG.harvest, 'harvest') +
-    '<div class="frm">средняя головка = масса ÷ число головок · отход = (посажено − принято) ÷ посажено · план отхода 10 %<br>номер партии = стеллаж и дата сбора; по нему находятся ярус и проба</div>';
+    '<div class="frm">средняя головка = масса ÷ число головок · отход = (посажено − принято) ÷ посажено · план отхода 10 %<br>номер партии даётся при посеве; по нему находятся посев, стеллаж и ярусы, замеры, проба и покупатель</div>';
 }
 function stockTab() {
   var low = LG.stock.filter(function (x) { return x.q <= x.r; });
@@ -2228,9 +2250,10 @@ var SST = ['запланирована', 'в работе', 'готово'];
 function samplesTab() {
   var t = todayISO();
   return shBar() + lgMsg() + head('Новая проба') + '<div class="fld"><label for="sW">Что берём</label><select id="sW"><option>Лист</option><option>Раствор</option><option>Вода</option><option>Смыв с поверхности</option></select></div>' +
-    inF('sF', 'Откуда: стеллаж, бак, партия', 'стеллаж 6', 'name') + inF('sT', 'Какой анализ', 'нитраты', 'name') + inF('sD', 'Срок', '', 'date') + '<div class="btns"><button class="btn solid" type="button" data-lg="sample">Записать пробу</button></div>' +
+    fmSel('sB', 'Партия', FBT.filter(function (b) { return fmStage(b) !== 'done'; }), FV.smp, 'не привязывать', function (b) { return fmName(b) + ' · ' + fmWhere(b); }) +
+    inF('sF', 'Откуда: стеллаж или бак', 'возьмётся из партии', 'name') + inF('sT', 'Какой анализ', 'нитраты', 'name') + inF('sD', 'Срок', '', 'date') + '<div class="btns"><button class="btn solid" type="button" data-lg="sample">Записать пробу</button></div>' +
     head('Журнал проб') + (LG.samples.length ? '<div class="sec">' + LG.samples.slice().sort(function (a, b) { return (b.no - a.no) || (b.t - a.t); }).map(function (s) { var late = s.st < 2 && s.d < t;
-      return '<div class="box"><span class="t">П-' + String(s.no).padStart(3, '0') + ' · ' + esc(String(s.what || '').toLowerCase()) + ', ' + esc(s.from) + (s.ex ? ' ' + badge('ex') : '') + '</span><span class="s">' + esc(s.test) + ' · срок ' + dm(s.d) + (late ? ' — просрочено' : '') + '</span>' +
+      return '<div class="box"><span class="t">П-' + String(s.no).padStart(3, '0') + ' · ' + esc(String(s.what || '').toLowerCase()) + ', ' + esc(s.from) + (s.ex ? ' ' + badge('ex') : '') + '</span>' + (s.b && fmById(s.b) ? '<span class="s num">партия ' + esc(fmName(fmById(s.b))) + '</span>' : '') + '<span class="s">' + esc(s.test) + ' · срок ' + dm(s.d) + (late ? ' — просрочено' : '') + '</span>' +
         '<div class="mv"><button class="mini" type="button" data-lg="sst" data-id="' + s.id + '" style="' + (s.st === 2 ? 'color:var(--grow)' : late ? 'color:var(--warn)' : '') + '">' + SST[s.st] + ' →</button><input id="sr' + s.id + '" type="text" placeholder="результат" value="' + esc(s.res) + '" aria-label="Результат пробы П-' + s.no + '"></div></div>'; }).join('') + '</div>' : '<p class="lead">Проб пока нет.</p>') + exBtn(LG.samples, 'samples') +
     '<p class="note">Кнопка статуса переключает: запланирована → в работе → готово. Каждая проба привязана к месту: проба → стеллаж → партия → покупатель.</p>';
 }
@@ -2251,10 +2274,14 @@ function lgCmd(c, b) {
   if (c === 'upload') { shUpload(); return; }
   if (roBlock('lg')) return;
   if (c === 'harvest') {
-    var z = txtOf('hZ'), hh = numOf('hH'), kk = numOf('hK'), pp = numOf('hP');
-    if (!z || !hh || !kk || hh <= 0 || kk <= 0) { LGmsg = 'Укажите место, число головок и массу.'; renderTabs(); return; }
+    var z = txtOf('hZ'), hh = numOf('hH'), kk = numOf('hK'), pp = numOf('hP'), hb = fmById(($('#hB') || {}).value);
+    if (hb) { FV.pick = hb.id; if (!z) z = fmWhere(hb); if (!pp) pp = fmCount(hb); }
+    if (!z || !hh || !kk || hh <= 0 || kk <= 0) { LGmsg = 'Укажите партию или место, число головок и массу.'; renderTabs(); return; }
+    if (hb && hh > fmCount(hb)) { LGmsg = 'Принято ' + grp(hh) + ' головок, а в партии ' + fmCode(hb) + ' было ' + grp(fmCount(hb)) + ' растений. Проверьте число.'; renderTabs(); return; }
     var hr = stamp({ d: t, z: z, heads: Math.round(hh), kg: kk }); if (pp && pp >= hh) hr.planted = Math.round(pp);
-    putIn('harvest/' + ym, ym, 'h', uidGen(), hr); LGmsg = 'Приёмка записана: ' + grp(hr.heads) + ' головок, ' + fmt(kk) + ' кг, в среднем ' + fmt(kk / hh * 1000, 0) + ' г.';
+    if (hb) hr.b = hb.id;
+    putIn('harvest/' + ym, ym, 'h', uidGen(), hr); FV.pick = '';
+    LGmsg = 'Приёмка записана: ' + grp(hr.heads) + ' головок, ' + fmt(kk) + ' кг, в среднем ' + fmt(kk / hh * 1000, 0) + ' г.' + (hb ? ' Партия ' + fmCode(hb) + ' собрана и ждёт отгрузки' + (hr.planted ? ', отход ' + fmt((hr.planted - hr.heads) / hr.planted * 100) + ' %.' : '.') : '');
   } else if (c === 'hdel') { var hd = LG.harvest[i]; if (hd) putIn(hd._p, null, 'h', hd.id, null); }
   else if (c === 'in' || c === 'out') {
     var q = numOf('mv' + i), it = LG.stock[i];
@@ -2269,10 +2296,11 @@ function lgCmd(c, b) {
     if (!nn || !nu || nq === null || nr === null) { LGmsg = 'Заполните все четыре поля новой позиции.'; renderTabs(); return; }
     put('stock/' + uidGen(), stamp({ n: nn, u: nu, q0: nq, r: nr })); LGmsg = 'Позиция «' + nn + '» добавлена.';
   } else if (c === 'sample') {
-    var sf = txtOf('sF'), stt = txtOf('sT'), sd = $('#sD').value;
-    if (!sf || !stt || !sd) { LGmsg = 'Укажите, откуда проба, какой анализ и срок.'; renderTabs(); return; }
+    var sf = txtOf('sF'), stt = txtOf('sT'), sd = $('#sD').value, sbt = fmById(($('#sB') || {}).value);
+    if (sbt && !sf) sf = fmWhere(sbt);
+    if (!sf || !stt || !sd) { LGmsg = 'Укажите партию или место, какой анализ и срок.'; renderTabs(); return; }
     var no = LG.samples.reduce(function (a, x) { return Math.max(a, x.no || 0); }, 0) + 1;
-    putIn('samples/' + ym, ym, 's', uidGen(), stamp({ no: no, d: sd, what: $('#sW').value, from: sf, test: stt, st: 0, res: '' })); LGmsg = 'Проба П-' + String(no).padStart(3, '0') + ' записана.';
+    putIn('samples/' + ym, ym, 's', uidGen(), stamp(merge({ no: no, d: sd, what: $('#sW').value, from: sf, test: stt, st: 0, res: '' }, sbt ? { b: sbt.id } : {}))); FV.smp = ''; LGmsg = 'Проба П-' + String(no).padStart(3, '0') + ' записана' + (sbt ? ' и привязана к партии ' + fmCode(sbt) + '.' : '.');
   } else if (c === 'sst') {
     var sm = LG.samples.filter(function (x) { return x.id === b.dataset.id; })[0];
     if (sm) putIn(sm._p, null, 's', sm.id, { st: ((sm.st || 0) + 1) % 3 });
@@ -2662,6 +2690,232 @@ function lightCmd(c) {
   put('cfg/light', body);
   return 'Сохранено: ' + h + ' ч света' + (said.length ? '; ' + said.join('; ') : '') + '.';
 }
+/* ---------- партия фермы: одна запись ведёт салат от посева до отгрузки. Сроки этапов и плотность — по гайду фермы ---------- */
+/* этап: [название, дней от, дней до, пояснение] */
+var FM_ST = { seed: ['Рассада', 12, 17, 'проращивание 2–3 дня и рассада 10–14 дней'], a: ['Этап A', 7, 10, 'этап A 7–10 дней, 45 раст./м²'], b: ['Этап B', 14, 18, 'этап B 14–18 дней, 22 раст./м²'] };
+var FM_NEXT = { seed: 'a', a: 'b' }, FM_DENS = { a: 45, b: 22 }, FM_TIER = 21, FM_SOW = [1200, 1300], FM_HEADS = 1040;
+var FV = { batch: null, msg: '', pick: '', ship: '', smp: '' };
+var fmById = function (id) { return FBT.filter(function (b) { return b.id === id; })[0] || null; };
+var fmCode = function (b) { return 'Ф-' + String(b.no).padStart(3, '0'); };
+var fmName = function (b) { var c = cropById(b.crop); return fmCode(b) + ' · ' + (b.sort || (c ? c.name : b.crop)); };
+var fmLast = function (b) { var st = btStays(b); return st[st.length - 1] || null; };
+var fmWhere = function (b) { var l = fmLast(b); return l ? l.p + (l.tr ? ', ' + l.tr : '') : '—'; };
+/* сбор партии — сумма записей приёмки с её номером: удалили запись приёмки — партия снова на стеллаже */
+function fmHarv(b) {
+  var hs = LG.harvest.filter(function (h) { return h.b === b.id; });
+  if (!hs.length) return null;
+  return { heads: hs.reduce(function (a, h) { return a + h.heads; }, 0), kg: Math.round(hs.reduce(function (a, h) { return a + h.kg; }, 0) * 100) / 100, d: hs.reduce(function (a, h) { return h.d > a ? h.d : a; }, '') };
+}
+function fmShips(b) {
+  var m = b.sh || {};
+  return Object.keys(m).filter(function (k) { return m[k] && m[k].kg; }).map(function (k) { return merge(clone(m[k]), { id: k }); }).sort(function (x, y) { return x.d < y.d ? -1 : x.d > y.d ? 1 : (x.t || 0) - (y.t || 0); });
+}
+function fmLeft(b) { var h = fmHarv(b); return h ? Math.max(0, Math.round((h.kg - fmShips(b).reduce(function (a, x) { return a + x.kg; }, 0)) * 10) / 10) : 0; }
+/* где партия сейчас: seed, a, b — растёт; cold — собрана и ждёт отгрузки; done — отгружена полностью */
+function fmStage(b) { if (fmHarv(b)) return fmLeft(b) > 0 ? 'cold' : 'done'; var l = fmLast(b); return (l && l.k) || 'seed'; }
+function fmCount(b) { var st = btStays(b), i; for (i = st.length - 1; i >= 0; i--) if (st[i].n) return st[i].n; return b.n; }
+/* сколько дней партия на текущем этапе: lvl 0 — рано, 1 — срок подошёл, 2 — срок вышел */
+function fmDue(b, t) {
+  var k = fmStage(b), l = fmLast(b), F = FM_ST[k];
+  if (!F || !l) return null;
+  var d = daysFrom(l.d, t || todayISO());
+  return { k: k, d: d, lvl: d > F[2] ? 2 : d >= F[1] ? 1 : 0, what: k === 'seed' ? 'пересадить на этап A' : k === 'a' ? 'раздвинуть на этап B' : 'собрать', left: F[1] - d, over: d - F[2] };
+}
+/* замеры по зонам, где партия стояла, за время, пока она там была */
+function fmRows(b) { var h = fmHarv(b); return btRows({ st: b.st, end: h ? h.d : null }); }
+function fmSown(d) { return FBT.filter(function (b) { return b.sow === d; }).reduce(function (a, b) { return a + b.n; }, 0); }
+/* задачи по партиям закрываются записью, а не отметкой: посев за сегодня и партии, у которых вышел срок этапа */
+function fmTasks() {
+  var t = todayISO(), out = [];
+  if (!FBT.length) return out;
+  if (!fmSown(t)) out.push({ id: 'sow', loc: 'seedling', who: 'оператор', lvl: 'plan', when: 'сегодня', place: 'Рассадная', what: 'посев за ' + dm(t) + ' не записан',
+    act: 'Посеять ' + grp(FM_SOW[0]) + '–' + grp(FM_SOW[1]) + ' ячеек и записать посев: одинаковая партия каждый день даёт ровный сбор.', cmd: 'tosow', btn: 'Записать посев' });
+  FBT.forEach(function (b) {
+    var du = fmDue(b, t), F = du && FM_ST[du.k];
+    if (!du || du.d < F[2]) return;
+    out.push({ id: 'b' + b.id, b: b.id, loc: du.k === 'seed' ? 'seedling' : 'hall', who: 'оператор', lvl: du.lvl === 2 ? 'warn' : 'plan', when: du.lvl === 2 ? 'срок вышел ' + du.over + ' дн. назад' : 'сегодня — последний день',
+      place: esc(fmName(b)) + (b.ex ? ' ' + badge('ex') : ''), what: fmLow(F[0]) + ', ' + esc(fmWhere(b)) + ' · ' + du.d + '-й день при норме ' + F[1] + '–' + F[2],
+      act: du.what.charAt(0).toUpperCase() + du.what.slice(1) + '. Основание — гайд фермы: ' + F[3] + '.', cmd: 'open', btn: 'Открыть партию' });
+  });
+  return out;
+}
+var fmMsg = function () { var m = FV.msg; FV.msg = ''; return m ? '<p class="lead" role="status" style="color:var(--grow)">' + esc(m) + '</p>' : ''; };
+var fmRow = function (b, sub) { return '<div class="line"><span class="g"><b>' + esc(fmName(b)) + (b.ex ? ' ' + badge('ex') : '') + '</b><span class="num">' + sub + '</span></span><button class="mini" type="button" data-fm="open" data-b="' + b.id + '" aria-label="Открыть партию ' + fmCode(b) + '">Открыть</button></div>'; };
+var fmHint = function (b, t) { var du = fmDue(b, t); return !du ? '' : du.lvl === 2 ? ' · срок вышел ' + du.over + ' дн. назад' : du.lvl === 1 ? ' · можно ' + du.what : ' · до срока ' + du.left + ' дн.'; };
+var fmActive = function (b, t) { var k = fmStage(b); return fmRow(b, FM_ST[k][0] + ' · ' + esc(fmWhere(b)) + ' · ' + fmAge(b, t) + fmHint(b, t)); };
+var fmEx = function () { return FBT.some(function (b) { return b.ex; }) ? '<p class="note">Партии с пометкой «пример» показывают, как выглядит конвейер. Настоящие партии появляются после записи посева.</p><div class="btns"><button class="mini" type="button" data-fm="noex">Убрать примеры</button></div>' : ''; };
+var fmSel = function (id, label, list, cur, none, text) { return '<div class="fld col"><label for="' + id + '">' + label + '</label><select id="' + id + '">' + (none ? '<option value="">' + none + '</option>' : '') + list.map(function (b) { return '<option value="' + b.id + '"' + (cur === b.id ? ' selected' : '') + '>' + esc(text(b)) + '</option>'; }).join('') + '</select></div>'; };
+var fmAge = function (b, t) { var d = daysFrom(b.sow, t); return d <= 0 ? 'посеяна сегодня' : d + '-й день от посева'; };
+var fmLow = function (x) { return x.charAt(0).toLowerCase() + x.slice(1); };
+var fmDate = function (iso) { return iso.slice(8, 10) + '.' + iso.slice(5, 7) + '.' + iso.slice(0, 4); };
+
+EXTRA.sowing = function () {
+  var t = todayISO(), cells = fmSown(t), seed = FBT.filter(function (b) { return fmStage(b) === 'seed'; });
+  var recent = FBT.slice().sort(function (a, b) { return a.sow < b.sow ? 1 : a.sow > b.sow ? -1 : b.no - a.no; }).slice(0, 7);
+  return shBar() + fmMsg() + head('Ежедневный посев', 'guide') + kv([['Норма партии', '1 200–1 300 ячеек', 'каждый день одинаково'], ['Плотность', '250–400 кубиков/м²', ''], ['Столы', '≈ 50 м²', 'прилив-отлив, 2 яруса']]) +
+    head('Записать посев') + '<div class="fld" style="grid-template-columns:minmax(0,1fr) 172px"><label for="fC">Культура</label><select id="fC">' + CROPS.map(function (c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join('') + '</select></div>' +
+    inF('fS', 'Сорт', 'необязательно', 'name') + inF('fN', 'Посеяно ячеек', '1 250') + inF('fD', 'Дата посева', '', 'date') +
+    '<div class="btns"><button class="btn solid" type="button" data-fm="sow">Записать посев</button></div>' +
+    '<p class="note">Запись посева заводит партию и даёт ей номер. Дальше партия проходит рассадную, стеллажи, приёмку и отгрузку — всё под этим номером.</p>' +
+    head('Сегодня · ' + dm(t)) + kv([['Посеяно', grp(cells) + ' ячеек', 'норма 1 200–1 300', FBT.length > 0 && (cells < FM_SOW[0] || cells > FM_SOW[1])]]) + bar(cells / 1250 * 100, cells > FM_SOW[1]) +
+    head('В рассадной сейчас') + (seed.length ? '<div>' + seed.map(function (b) { return fmRow(b, grp(b.n) + ' ячеек · посев ' + dm(b.sow) + ' · ' + fmAge(b, t) + fmHint(b, t)); }).join('') + '</div>' : '<p class="lead">В рассадной партий нет.</p>') +
+    head('Журнал посева') + (recent.length ? '<div>' + recent.map(function (b) { var k = fmStage(b); return fmRow(b, 'посев ' + dm(b.sow) + ' · ' + grp(b.n) + ' ячеек · ' + (FM_ST[k] ? fmLow(FM_ST[k][0]) : k === 'cold' ? 'собрана' : 'отгружена')); }).join('') + '</div>' : '<p class="lead">Посевов пока нет.</p><div class="btns"><button class="mini" type="button" data-fm="bex">Добавить примеры</button></div>') + fmEx();
+};
+
+EXTRA.batches = function () {
+  var cur = FV.batch && fmById(FV.batch);
+  if (cur) return fmCard(cur);
+  var t = todayISO(), y = addDays(t, -1), act = FBT.filter(function (b) { return !fmHarv(b); }), got = FBT.filter(fmHarv).sort(function (a, b) { return fmHarv(a).d < fmHarv(b).d ? 1 : -1; });
+  var fact = function (k) { var l = act.filter(function (b) { return fmStage(b) === k; }); return l.length ? 'сейчас: ' + l.length + ' ' + plr(l.length, 'партия', 'партии', 'партий') + ' · ' + grp(l.reduce(function (a, b) { return a + fmCount(b); }, 0)) + ' раст.' : 'сейчас: партий нет'; };
+  var st = function (n, d, den, ar, k) { return '<div class="box"><span class="t">' + n + '</span><span class="num">' + d + '</span><span class="s">' + den + '</span><span class="s">' + ar + '</span>' + (k ? '<span class="s num" style="color:var(--grow)">' + fact(k) + '</span>' : '') + '</div>'; };
+  var hOn = function (d) { var hs = LG.harvest.filter(function (h) { return h.d === d && (!h.b || fmById(h.b)); }); return { heads: hs.reduce(function (a, h) { return a + h.heads; }, 0), planted: hs.reduce(function (a, h) { return a + (h.planted || 0); }, 0), full: hs.length > 0 && hs.every(function (h) { return h.planted; }) }; };
+  var ht = hOn(t), hy = hOn(y), waste = hy.full && hy.planted ? (hy.planted - hy.heads) / hy.planted * 100 : null, cells = fmSown(t), due = act.filter(function (b) { var du = fmDue(b, t); return du && du.lvl > 0; });
+  return shBar() + fmMsg() + head('Конвейер партий', 'guide') + '<div class="grid2">' + st('Проращивание', '2–3 дня', '1 семя на кубик', 'без света') + st('Рассада', '10–14 дней', '250–400 кубиков/м²', '≈ 50 м² столов', 'seed') + st('Этап A', '7–10 дней', '45 раст./м²', '≈ 256 м² · 1,7 стеллажа', 'a') + st('Этап B', '14–18 дней', '22 раст./м²', '≈ 944 м² · 6,4 стеллажа', 'b') + '</div>' +
+    '<div class="frm">этап A: 256 м² × 45 / 10 дней = 1 152 раст./сут<br>этап B: 944 м² × 22 / 18 дней = 1 154 раст./сут<br>после 10 % отхода ≈ 1 040 головок в сутки</div>' +
+    (!FBT.length ? '<p class="lead">Партий пока нет. Запишите посев в рассадной — партия появится здесь и пройдёт весь путь до отгрузки.</p><div class="btns"><button class="btn solid" type="button" data-fm="tosow">Записать посев</button><button class="btn" type="button" data-fm="bex">Добавить примеры</button></div>' :
+      head('Сегодня · ' + dm(t)) + kv([['Посеяно', grp(cells) + ' ячеек', 'норма 1 200–1 300', cells < FM_SOW[0] || cells > FM_SOW[1]], ['Собрано', grp(ht.heads) + ' головок', 'план ' + grp(FM_HEADS)],
+        ['Собрано вчера', hy.heads ? grp(hy.heads) + ' головок' : '—', hy.full ? grp(hy.planted) + ' посажено' : ''], ['Отход вчера', waste === null ? '—' : fmt(waste) + ' %', 'план 10 %', waste !== null && waste > 10]]) +
+      head('Срок подошёл') + (due.length ? '<div>' + due.map(function (b) { return fmActive(b, t); }).join('') + '</div>' : '<p class="lead">Партий, которые пора пересаживать или собирать, нет.</p>') +
+      head('Партии в работе') + (act.length ? '<div>' + act.map(function (b) { return fmActive(b, t); }).join('') + '</div>' : '<p class="lead">Растущих партий нет.</p>') +
+      head('Собранные партии') + (got.length ? '<div>' + got.slice(0, 6).map(function (b) { var h = fmHarv(b), left = fmLeft(b); return fmRow(b, 'сбор ' + dm(h.d) + ' · ' + fmt(h.kg) + ' кг · ' + (left > 0 ? 'к отгрузке ' + fmt(left) + ' кг' : 'отгружена полностью')); }).join('') + '</div>' : '<p class="lead">Собранных партий пока нет.</p>') +
+      head('Найти партию по номеру') + '<div class="mv"><input id="fF" type="text" inputmode="numeric" placeholder="номер, например 3" aria-label="Номер партии"><button class="mini" type="button" data-fm="find">Найти</button></div>' +
+      '<div class="btns"><button class="btn" type="button" data-fm="tosow">Записать посев</button></div>' + fmEx());
+};
+
+function fmCard(b) {
+  var t = todayISO(), st = btStays(b), h = fmHarv(b), sh = fmShips(b), k = fmStage(b), c = cropById(b.crop), cyc = cycDays(c), rows = fmRows(b), bad = rows.filter(function (r) { return rowBad(r).length; });
+  var age = daysFrom(b.sow, h ? h.d : t), cnt = b.n, last = fmLast(b), planted = fmCount(b), smp = LG.samples.filter(function (s) { return s.b === b.id; }), ev = b.ev || {}, nk = FM_NEXT[k];
+  var status = k === 'done' ? 'отгружена полностью' : k === 'cold' ? 'собрана, к отгрузке ' + fmt(fmLeft(b)) + ' кг' : fmLow(FM_ST[k][0]) + ' · ' + esc(fmWhere(b));
+  var html = '<div class="btns"><button class="mini" type="button" data-fm="back">← К конвейеру</button></div>' + fmMsg() + '<h2>Партия ' + esc(fmName(b)) + (b.ex ? ' ' + badge('ex') : '') + '</h2>' +
+    '<p class="lead">Посев ' + dm(b.sow) + ', ' + grp(b.n) + ' ячеек. Сейчас: ' + status + '. ' + (h ? 'От посева до сбора ' + age + ' дн.' : age <= 0 ? 'Посеяна сегодня.' : age + '-й день от посева.') + '</p>';
+  html += head('Путь партии') + '<div>' + st.map(function (x, i) {
+    var to = st[i + 1] ? st[i + 1].d : (h ? h.d : null), days = daysFrom(x.d, to || t), F = FM_ST[x.k || 'seed'];
+    if (x.n) cnt = x.n;
+    return line(F[0] + ' · ' + esc(x.p + (x.tr ? ', ' + x.tr : '')), 'с ' + dm(x.d) + (to ? ' по ' + dm(to) : '') + ' · ' + days + ' дн. при норме ' + F[1] + '–' + F[2] + ' · ' + grp(cnt) + (i ? ' раст.' : ' ячеек'), to ? '' : 'сейчас', days > F[2]);
+  }).join('') + (h ? line('Сбор и приёмка', dm(h.d) + ' · ' + grp(h.heads) + ' головок · ' + fmt(h.kg) + ' кг · ' + fmt(h.kg / h.heads * 1000, 0) + ' г на головку', '') : '') +
+    sh.map(function (x) { return '<div class="line"><span class="dotS"></span><span class="g"><b>Отгрузка · ' + esc(x.to) + '</b><span class="num">' + dm(x.d) + ' · ' + fmt(x.kg) + ' кг</span></span><button class="mini" type="button" data-fm="shdel" data-b="' + b.id + '" data-id="' + x.id + '" aria-label="Удалить отгрузку ' + esc(x.to) + '">Удалить</button></div>'; }).join('') + '</div>';
+  if (h) html += kv([['Посеяно', grp(b.n) + ' ячеек', ''], ['Дошло до сбора', grp(planted) + ' раст.', 'потери до этапа B ' + fmt((b.n - planted) / b.n * 100) + ' %'],
+    ['Собрано', grp(h.heads) + ' головок', 'отход ' + fmt(Math.max(0, planted - h.heads) / planted * 100) + ' % при плане 10 %', (planted - h.heads) / planted * 100 > 10],
+    ['Отгружено', fmt(Math.round((h.kg - fmLeft(b)) * 10) / 10) + ' из ' + fmt(h.kg) + ' кг', fmLeft(b) > 0 ? 'остаток ' + fmt(fmLeft(b)) + ' кг' : 'остатка нет']]);
+  else html += kv([['Возраст', age + ' дн.', c ? 'цикл ' + c.cycle + ' дн.' : ''], ['Растений сейчас', grp(planted), planted < b.n ? 'из ' + grp(b.n) + ' посеянных · потери ' + fmt((b.n - planted) / b.n * 100) + ' %' : 'как посеяно']]
+    .concat(cyc ? [['Сбор по плану', dm(addDays(b.sow, cyc[0])) + ' – ' + dm(addDays(b.sow, cyc[1])), 'посев + ' + cyc[0] + '–' + cyc[1] + ' дней']] : []));
+  if (k === 'b') html += '<div>' + (cyc && cyc[0] - age <= 5 ? line('Перед сбором', 'за 3–5 дней снизить EC на 20–30 %, собирать утром', 'гайд') : '') +
+    line('Проба листа на нитраты', smp.length ? 'записана: П-' + String(smp[0].no).padStart(3, '0') + ' · ' + SST[smp[0].st || 0] : 'отобрать до сбора, чтобы партия ушла с результатом', smp.length ? '' : 'нет пробы', !smp.length) + '</div>';
+  html += head('Что делать с партией');
+  if (nk) html += '<p class="lead">' + (function () { var du = fmDue(b, t); return du.lvl === 2 ? 'Срок этапа вышел ' + du.over + ' дн. назад — пора ' + du.what + '.' : du.lvl === 1 ? 'Срок подошёл: можно ' + du.what + '.' : 'До срока ' + du.left + ' дн. Пересадка раньше срока тоже записывается.'; })() + '</p>' +
+    '<div class="fld" style="grid-template-columns:minmax(0,1fr) 172px"><label for="fMr">' + FM_ST[nk][0] + ': стеллаж</label><select id="fMr">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function (n) { return '<option' + (n === (nk === 'a' ? 1 : 3) ? ' selected' : '') + '>Стеллаж ' + n + '</option>'; }).join('') + '</select></div>' +
+    '<div class="fld" style="grid-template-columns:minmax(0,1fr) 172px"><label for="fT1">Ярусы: с какого</label><select id="fT1">' + [1, 2, 3, 4, 5, 6, 7].map(function (n) { return '<option>' + n + '</option>'; }).join('') + '</select></div>' +
+    '<div class="fld" style="grid-template-columns:minmax(0,1fr) 172px"><label for="fT2">Ярусы: по какой</label><select id="fT2">' + [1, 2, 3, 4, 5, 6, 7].map(function (n) { return '<option' + (n === (nk === 'a' ? 2 : 3) ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select></div>' +
+    '<div class="fld"><label for="fMn">Сколько растений пересажено</label><input id="fMn" type="text" inputmode="decimal" value="' + planted + '"></div>' + inF('fMd', 'Дата', '', 'date') +
+    '<div class="btns"><button class="btn solid" type="button" data-fm="move">Записать пересадку</button></div>' +
+    '<div class="frm">вместимость = ярусы × 21 м² × ' + FM_DENS[nk] + ' раст./м² · один ярус: 15 × 1,4 м = 21 м² → ' + grp(FM_TIER * FM_DENS[nk]) + ' раст.</div>';
+  else if (k === 'b') html += '<p class="lead">' + (function () { var du = fmDue(b, t); return du.lvl === 2 ? 'Срок этапа вышел ' + du.over + ' дн. назад — пора собирать.' : du.lvl === 1 ? 'Срок подошёл: партию можно собирать.' : 'До сбора по сроку этапа ' + du.left + ' дн.'; })() + ' Сбор записывает упаковщик на приёмке.</p><div class="btns"><button class="btn solid" type="button" data-fm="toharv">Принять урожай этой партии</button><button class="btn" type="button" data-fm="tosmp">Записать пробу</button></div>';
+  else if (k === 'cold') html += '<p class="lead">Партия в холодильной камере. Остаток ' + fmt(fmLeft(b)) + ' кг.</p><div class="btns"><button class="btn solid" type="button" data-fm="toship">Отгрузить</button><button class="btn" type="button" data-fm="tolabel">Этикетка</button></div>';
+  else html += '<p class="lead">Партия отгружена полностью. Запись остаётся для прослеживаемости.</p>';
+  html += head('Условия за время партии') + (rows.length ? '<p class="lead">Замеров по зонам, где стояла партия: ' + rows.length + ', из них с отклонением: ' + bad.length + '.</p><div>' + rows.slice(-3).reverse().map(function (r) { var bd = rowBad(r); return line(when(r) + ' · ' + esc(r.z) + (r.ex ? ' ' + badge('ex') : ''), rowText(r), bd.length ? 'вне нормы: ' + bd.join(', ') : 'в норме', bd.length > 0); }).join('') + '</div>' : '<p class="lead">Замеров по зонам, где стояла партия, нет.</p>') +
+    (last && !h ? '<div class="btns"><button class="mini" type="button" data-j="open" data-z="' + esc(last.p) + '">Разбор зоны «' + esc(last.p) + '»</button></div>' : '');
+  html += head('Наблюдения') + '<div class="mv"><input id="fNx" type="text" placeholder="что увидели" aria-label="Наблюдение по партии"><button class="mini" type="button" data-fm="note">Записать</button></div>' +
+    '<div>' + Object.keys(ev).filter(function (id) { return ev[id]; }).map(function (id) { return ev[id]; }).sort(function (x, y) { return (y.t || 0) - (x.t || 0); }).map(function (x) { return line(dm(x.d), esc(x.x), ''); }).join('') + '</div>';
+  html += head('Прослеживаемость') + '<div class="frm">посев ' + dm(b.sow) + ' → ' + st.map(function (x) { return esc(x.p + (x.tr ? ', ' + x.tr : '')); }).join(' → ') + (h ? ' → сбор ' + dm(h.d) : '') + (sh.length ? ' → ' + sh.map(function (x) { return esc(x.to); }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join(', ') : '') + '</div>' +
+    (smp.length ? '<div>' + smp.map(function (s) { return line('Проба П-' + String(s.no).padStart(3, '0') + ' · ' + esc(String(s.what || '').toLowerCase()), esc(s.test) + (s.res ? ' · результат: ' + esc(s.res) : ''), SST[s.st || 0]); }).join('') + '</div>' : '') +
+    '<p class="note">По номеру партии видно всё: когда посеяна, где росла, какие были замеры и отклонения, какие пробы взяты и кому она отгружена.</p>' +
+    '<div class="btns"><button class="mini" type="button" data-fm="del">Удалить партию</button></div>';
+  return shBar() + html;
+}
+
+EXTRA.orders = function () {
+  var t = todayISO(), ready = FBT.filter(function (b) { return fmLeft(b) > 0; }), all = [];
+  FBT.forEach(function (b) { fmShips(b).forEach(function (x) { all.push({ b: b, x: x }); }); });
+  all.sort(function (p, q) { return p.x.d < q.x.d ? 1 : p.x.d > q.x.d ? -1 : (q.x.t || 0) - (p.x.t || 0); });
+  var sum = ready.reduce(function (a, b) { return a + fmLeft(b); }, 0);
+  return shBar() + fmMsg() + head('Готово к отгрузке') + (ready.length ? '<div>' + ready.map(function (b) { var h = fmHarv(b); return fmRow(b, 'сбор ' + dm(h.d) + ' · собрано ' + fmt(h.kg) + ' кг · остаток ' + fmt(fmLeft(b)) + ' кг'); }).join('') + '</div><div class="frm">всего к отгрузке: ' + fmt(sum) + ' кг</div>' : '<p class="lead">Собранных партий с остатком нет. Партия появляется здесь после приёмки урожая.</p>') +
+    head('Записать отгрузку') + (ready.length ? fmSel('oB', 'Партия', ready, FV.ship, '', function (b) { return fmName(b) + ' · остаток ' + fmt(fmLeft(b)) + ' кг'; }) + inF('oT', 'Покупатель', 'Кафе на Сарыарке', 'name') + inF('oK', 'Масса, кг', '40') + inF('oD', 'Дата отгрузки', '', 'date') +
+      '<div class="btns"><button class="btn solid" type="button" data-fm="ship">Записать отгрузку</button></div>' : '<p class="lead">Отгружать пока нечего.</p>') +
+    head('Журнал отгрузок') + (all.length ? '<div>' + all.slice(0, 10).map(function (p) { var b = p.b, st = btStays(b), lp = st[st.length - 1];
+      return '<div class="line"><span class="g"><b>' + dm(p.x.d) + ' · ' + esc(p.x.to) + (p.x.ex ? ' ' + badge('ex') : '') + '</b><span class="num">' + fmt(p.x.kg) + ' кг · партия ' + esc(fmName(b)) + ' · ' + esc(lp ? lp.p + (lp.tr ? ', ' + lp.tr : '') : '') + ' · посев ' + dm(b.sow) + '</span></span><button class="mini" type="button" data-fm="open" data-b="' + b.id + '" aria-label="Открыть партию ' + fmCode(b) + '">Партия</button></div>'; }).join('') + '</div>' : '<p class="lead">Отгрузок пока нет.</p>') +
+    '<p class="note">Каждая отгрузка привязана к партии: если у покупателя вопрос, по записи видно, где салат рос, какие были замеры и пробы и кому ещё ушла эта партия.</p>' +
+    head('Заказы на неделю', 'cond') + '<div>' + line('Кафе, заказ 1', 'отгрузка 24.11', '40 кг') + line('Магазин, заказ 2', 'отгрузка 24.11', '120 кг') + line('Ресторан, заказ 3', 'отгрузка 25.11', '25 кг') + '</div>' +
+    '<div class="frm">резерв под заказы: 40 + 120 + 25 = 185 кг<br>суточный сбор по плану: 156–187 кг</div>';
+};
+
+EXTRA.label = function () {
+  var got = FBT.filter(fmHarv).sort(function (a, b) { return fmHarv(a).d < fmHarv(b).d ? 1 : -1; }), pick = FV.batch && fmById(FV.batch), b = pick && fmHarv(pick) ? pick : got[0];
+  var lbl = function (title, rows) { return '<div class="lbl"><div class="lbl-t">' + title + '</div><dl class="kv">' + rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd><b class="num">' + r[1] + '</b></dd>'; }).join('') + '</dl></div>'; };
+  var rest = [['Срок годности', '[уточнить]'], ['Условия хранения', '[уточнить]'], ['Изготовитель', '[уточнить]']], law = '<p class="note">Перечень обязательных сведений на этикетке нужно проверить по ТР ТС 022/2011 — документ в реестре помечен «проверить».</p>';
+  if (!b) return head('Макет этикетки', 'cond') + lbl('Салат батавия', [['Масса нетто', '165 г'], ['Дата сбора', '—'], ['Номер партии', '—']].concat(rest)) + law + '<p class="lead">Собранных партий пока нет. После приёмки урожая сюда подставятся номер партии, дата сбора и средняя масса головки.</p>';
+  var h = fmHarv(b), c = cropById(b.crop), nm = b.sort || (c ? c.name : b.crop), smp = LG.samples.filter(function (s) { return s.b === b.id; }), st = btStays(b);
+  return head('Этикетка партии ' + fmCode(b), b.ex ? 'ex' : '') + lbl(esc(c && c.lettuce ? 'Салат ' + nm.charAt(0).toLowerCase() + nm.slice(1) : nm), [['Масса нетто', fmt(h.kg / h.heads * 1000, 0) + ' г'], ['Дата сбора', fmDate(h.d)], ['Номер партии', fmCode(b)]].concat(rest)) +
+    '<p class="note">Масса нетто здесь — средняя масса головки по приёмке; на этикетку идёт масса, принятая для фасовки.</p>' + law +
+    kv([['Прослеживаемость', fmCode(b) + ' → ' + esc(st.length ? st[st.length - 1].p + (st[st.length - 1].tr ? ', ' + st[st.length - 1].tr : '') : '—'), 'посев ' + dm(b.sow) + ' · сбор ' + dm(h.d)],
+      ['Проба на нитраты', smp.length ? SST[smp[0].st || 0] : 'не записана', smp.length ? 'П-' + String(smp[0].no).padStart(3, '0') : 'пробу отбирают до сбора', !smp.length]]) +
+    '<div class="btns"><button class="mini" type="button" data-fm="open" data-b="' + b.id + '">Открыть партию</button></div>';
+};
+
+function fmCmd(c, el) {
+  var t = todayISO(), b = fmById(el.dataset.b || FV.batch), msg = '', top = true, e = {};
+  var fail = function (m) { FV.msg = m; renderTabs(); };
+  var open = function (loc, tab) { S.tabs[loc] = tab; if (S.loc !== loc) go(loc); };
+  FV.msg = '';
+  if (c === 'open') { if (!b) return; FV.batch = b.id; open('hall', 'batches'); }
+  else if (c === 'back') FV.batch = null;
+  else if (c === 'tosow') { FV.batch = null; open('seedling', 'sowing'); }
+  else if (c === 'toharv') { FV.pick = b ? b.id : ''; open('prep', 'intake'); }
+  else if (c === 'toship') { FV.ship = b ? b.id : ''; open('store', 'orders'); }
+  else if (c === 'tosmp') { FV.smp = b ? b.id : ''; open('lab', 'samples'); }
+  else if (c === 'tolabel') open('prep', 'label');
+  else if (c === 'find') {
+    var q = parseInt(txtOf('fF').replace(/\D/g, ''), 10), hit = FBT.filter(function (x) { return x.no === q; })[0];
+    if (hit) FV.batch = hit.id; else { msg = isNaN(q) ? 'Введите номер партии цифрами.' : 'Партии с номером ' + q + ' нет.'; top = false; }
+  } else {
+    if (shared() && SH.ro) { fail('Общий журнал открыт вам только для чтения — запись не сохранена.'); return; }
+    if (c === 'sow') {
+      var n = numOf('fN'), d = $('#fD').value, crop = $('#fC').value, cc = cropById(crop);
+      if (!d || !n || n <= 0 || !cc) { fail('Укажите культуру, число ячеек и дату посева.'); return; }
+      if (d > t) { fail('Дата посева в будущем.'); return; }
+      var id = uidGen(), no = FBT.reduce(function (a, x) { return Math.max(a, x.no || 0); }, 0) + 1, st = {};
+      st[uidGen()] = { k: 'seed', p: 'Рассадная', d: d, t: Date.now() };
+      put('batches/' + id, stamp({ f: 1, no: no, crop: crop, sort: txtOf('fS') || cc.name, sow: d, n: Math.round(n), st: st }));
+      msg = 'Посев записан: партия Ф-' + String(no).padStart(3, '0') + ', ' + grp(n) + ' ячеек.' + (n < FM_SOW[0] || n > FM_SOW[1] ? ' Норма суточной партии — 1 200–1 300 ячеек.' : '');
+    } else if (c === 'bex') {
+      var fx = exampleFarm(), hm = fx.hd.slice(0, 7);
+      fx.docs.forEach(function (x) { put(x[0], x[1]); }); putIn('harvest/' + hm, hm, 'h', 'x1', fx.harvest);
+      msg = 'Примеры добавлены: девять партий на разных этапах, одна собрана и частично отгружена.';
+    } else if (c === 'noex') {
+      LG.harvest.forEach(function (h) { var hb = h.b && fmById(h.b); if (h.ex && hb && hb.ex) putIn(h._p, null, 'h', h.id, null); });
+      FBT.forEach(function (x) { if (x.ex) put(x._p, { del: 1 }); });
+      FV.batch = null; msg = 'Примеры партий убраны.';
+    } else if (c === 'ship') {
+      var sb = fmById(($('#oB') || {}).value), to = txtOf('oT'), kg = numOf('oK'), sd = $('#oD').value;
+      if (!sb || !to || !kg || kg <= 0 || !sd) { fail('Укажите партию, покупателя, массу и дату.'); return; }
+      var left = fmLeft(sb);
+      if (kg > left + 1e-9) { fail('Отгрузка ' + fmt(kg) + ' кг больше остатка партии: ' + fmt(left) + ' кг.'); return; }
+      if (sd < fmHarv(sb).d) { fail('Дата отгрузки раньше сбора партии.'); return; }
+      e[uidGen()] = { d: sd, to: to, kg: Math.round(kg * 10) / 10, t: Date.now() }; put(sb._p, { sh: e }); FV.ship = '';
+      msg = 'Отгрузка записана: ' + to + ', ' + fmt(kg) + ' кг из партии ' + fmCode(sb) + '. Остаток партии ' + fmt(Math.round((left - kg) * 10) / 10) + ' кг.'; top = false;
+    } else if (!b) { renderTabs(); return; }
+    else if (c === 'shdel') { e[el.dataset.id] = null; put(b._p, { sh: e }); msg = 'Отгрузка удалена.'; top = false; }
+    else if (c === 'move') {
+      var nk = FM_NEXT[fmStage(b)], rack = ($('#fMr') || {}).value, t1 = +($('#fT1') || {}).value, t2 = +($('#fT2') || {}).value, mn = numOf('fMn'), md = ($('#fMd') || {}).value, was = fmCount(b), lst = fmLast(b);
+      if (!nk) { fail('Эту партию уже некуда пересаживать: следующий шаг — сбор.'); return; }
+      if (!rack || !md || !mn || mn <= 0 || !t1 || !t2) { fail('Укажите стеллаж, ярусы, число растений и дату.'); return; }
+      if (t2 < t1) { fail('Ярус «по какой» меньше яруса «с какого».'); return; }
+      if (md < lst.d) { fail('Дата пересадки раньше начала текущего этапа (' + dm(lst.d) + ').'); return; }
+      if (md > t) { fail('Дата пересадки в будущем.'); return; }
+      if (mn > was) { fail('Растений не может стать больше, чем было: ' + grp(was) + '.'); return; }
+      var cap = (t2 - t1 + 1) * FM_TIER * FM_DENS[nk], tr = t1 === t2 ? 'ярус ' + t1 : 'ярусы ' + t1 + '–' + t2;
+      e[uidGen()] = { k: nk, p: rack, tr: tr, n: Math.round(mn), d: md, t: Date.now() }; put(b._p, { st: e });
+      msg = fmCode(b) + ': ' + fmLow(FM_ST[nk][0]) + ', ' + rack + ', ' + tr + '. Потери на прошлом этапе: ' + grp(was - mn) + ' раст. (' + fmt((was - mn) / was * 100) + ' %). ' +
+        (mn > cap ? 'На этих ярусах при ' + FM_DENS[nk] + ' раст./м² помещается ' + grp(cap) + ' — займите ещё ярус.' : 'Вместимость выбранных ярусов: ' + grp(cap) + ' раст.');
+    } else if (c === 'note') {
+      var x = txtOf('fNx'); if (!x) { fail('Напишите, что увидели.'); return; }
+      e[uidGen()] = { d: t, k: 'note', x: x, t: Date.now() }; put(b._p, { ev: e }); msg = 'Наблюдение записано.'; top = false;
+    } else if (c === 'del') { put(b._p, { del: 1 }); FV.batch = null; msg = 'Партия ' + fmCode(b) + ' удалена.'; }
+    rebuild();
+  }
+  FV.msg = msg;
+  renderWays(); renderTasks(); renderTabs(); buildTags();
+  if (top) $('#panel').scrollTop = 0;
+}
 /* ---------- рецептура раствора: граммы солей из целей по элементам, баки A и B ---------- */
 var AM = { H: 1.008, N: 14.007, O: 15.999, Mg: 24.305, P: 30.974, S: 32.06, K: 39.098, Ca: 40.078 };
 var M_KNO3 = AM.K + AM.N + 3 * AM.O, M_MKP = AM.K + 2 * AM.H + AM.P + 4 * AM.O, M_MGS = AM.Mg + AM.S + 4 * AM.O + 7 * (2 * AM.H + AM.O), M_K2S = 2 * AM.K + AM.S + 4 * AM.O, M_CAN = AM.Ca + 2 * (AM.N + 3 * AM.O) + 4 * (2 * AM.H + AM.O);
@@ -2767,7 +3021,7 @@ var STORY = [
   { sec: 12, t: 'Посев', x: function () { return 'Путь партии начинается в рассадной. Каждый день сеется одинаковая партия, 1 200–1 300 ячеек: так урожай идёт ровным потоком. Рассада растёт 10–14 дней под своим режимом.'; },
     run: function () { at({}, {}, 'seedling', 'sowing'); } },
   { sec: 12, t: 'На стеллаже', x: function () { return 'Рассаду пересаживают на стеллаж: сначала плотно, потом раздвигают. Партия привязана к стеллажу и ярусу — по ней видны возраст и срок сбора.'; },
-    run: function () { at({}, {}, 'hall', 'batches'); } },
+    run: function () { FV.batch = fmById('f3') ? 'f3' : null; at({}, {}, 'hall', 'batches'); } },
   { sec: 12, t: 'Ярус под контролем', x: function () { return 'Наша батавия — на стеллаже 4, ярус 2. Воздух, раствор и свет измеряются постоянно и сравниваются с нормой этапа роста.'; },
     run: function () { at({}, {}, 'shelf', 'charts'); } },
   { sec: 14, t: 'Отклонение: перегрелся раствор', x: function () { return 'Раствор нагрелся до 25,8 °C при норме 18–22. Кислорода осталось ' + fmt(6.1 / doSat(25.8) * 100, 0) + ' % от насыщения — корням нечем дышать. Система заметила это в растворном узле.'; },
@@ -2824,7 +3078,7 @@ function storyStart() {
 }
 function storyExit(openTab, stay) {
   if (!show) return;
-  var sn = show.snap, here = S.loc; clearInterval(showTimer); show = null;
+  var sn = show.snap, here = S.loc; clearInterval(showTimer); show = null; FV.batch = null;
   S.ev = sn.ev; S.done = sn.done; S.ahead = sn.ahead; S.tabs = sn.tabs;
   if (openTab) S.tabs.overview = openTab;
   $('#panel').classList.remove('showing'); $('.app').classList.remove('showing');
@@ -2848,6 +3102,7 @@ $('#panel').addEventListener('click', function (e) {
   if (b.dataset.st) { storyCmd(b.dataset.st); return; }
   if (b.dataset.j) { jCmd(b.dataset.j, b); return; }
   if (b.dataset.bt) { btCmd(b.dataset.bt, b); return; }
+  if (b.dataset.fm) { fmCmd(b.dataset.fm, b); return; }
   if (b.dataset.rc && RC_SETS[b.dataset.rc]) { var rs = RC_SETS[b.dataset.rc][1]; Object.keys(rs).forEach(function (k) { RC.t[k] = rs[k]; }); renderTabs(); return; }
   if (show) storyPause();
   if (b.dataset.ev || b.dataset.evreset) {
