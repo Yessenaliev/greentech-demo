@@ -323,13 +323,92 @@ div.bar{display:block;padding:0;min-height:0;border:0;flex:none}
   .cap{font-size:15px;bottom:62px}
 }
 @media (prefers-reduced-motion:reduce){.live,.tag .dot{animation:none!important}}
+
+/* ---------- шапка: роль и быстрый поиск ---------- */
+svg.ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.rolechip{flex:none;display:flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 5px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+.rolechip:hover,.kopen:hover{border-color:var(--grow)}
+.rolechip .av{width:24px;height:24px;border-radius:50%;background:var(--grow);color:var(--on-accent);display:grid;place-items:center}
+.rolechip .av svg{width:15px;height:15px}
+.rolechip.none .av{background:var(--line);color:var(--fg)}
+.kopen{flex:none;display:flex;align-items:center;gap:8px;height:34px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--muted);font-size:13px;cursor:pointer}
+kbd{font-family:var(--font-num);font-size:11px;border:1px solid var(--line);border-radius:5px;padding:1px 5px;color:var(--muted)}
+/* ---------- стартовый экран: плитки специалистов поверх сцены ---------- */
+.launch{position:fixed;inset:0;z-index:60;display:flex;overflow:auto;padding:max(24px,env(safe-area-inset-top,0px)) 16px 24px;
+  background:radial-gradient(1100px 560px at 50% -8%,rgba(95,211,141,.18),transparent 62%),rgba(7,12,10,.74);backdrop-filter:blur(16px) saturate(1.15);-webkit-backdrop-filter:blur(16px) saturate(1.15)}
+/* появление только сдвигом: если анимация не проиграется, плитки всё равно видны */
+@keyframes lrise{from{transform:translateY(12px)}to{transform:none}}
+.launch-in{position:relative;width:min(920px,100%);margin:auto;display:flex;flex-direction:column;gap:14px}
+.launch-k{color:var(--grow);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.launch h1{font-size:clamp(28px,5vw,46px);line-height:1.05;letter-spacing:-.03em;font-weight:800;padding-right:48px}
+.launch-s{color:var(--muted);font-size:15px;max-width:58ch}
+.launch-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:6px}
+.rcard{position:relative;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:136px;padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.09);
+  background:linear-gradient(160deg,rgba(255,255,255,.075),rgba(255,255,255,.02));cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease;animation:lrise .45s ease both}
+.rcard:hover,.rcard:focus-visible,.rcard[aria-current="true"]{border-color:var(--grow);background:linear-gradient(160deg,rgba(95,211,141,.17),rgba(255,255,255,.03))}
+.rcard:hover{transform:translateY(-3px)}
+.rcard .ric{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(95,211,141,.14);color:var(--grow);margin-bottom:auto}
+.rcard b{font-size:17px;letter-spacing:-.01em;margin-top:10px}
+.rcard .rd{color:var(--muted);font-size:12.5px;line-height:1.35}
+.rcard .rn{position:absolute;top:14px;right:14px;font-family:var(--font-num);font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;background:var(--warn);color:#2B1600}
+.rcard .rn.z{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.launch-b{display:grid;grid-template-columns:1.2fr 1fr;gap:10px}
+.lbig{text-align:left;display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:18px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);cursor:pointer}
+.lbig:hover{border-color:var(--grow)}
+.lbig b{font-size:16px;display:flex;align-items:center;gap:8px}
+.rcard.all .ric{background:rgba(255,255,255,.08);color:var(--fg)}
+.lbig span{color:var(--muted);font-size:12.5px}
+.lbig.acc{background:var(--grow);border-color:var(--grow);color:var(--on-accent)}
+.lbig.acc span{color:rgba(6,20,12,.78)}
+.launch-f{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;border:1px dashed var(--line);background:transparent;color:var(--muted);cursor:pointer;font-size:14px}
+.launch-f:hover{border-color:var(--grow);color:var(--fg)}
+.launch-f span{display:flex;align-items:center;gap:10px}
+.launch-x{position:absolute;top:-6px;right:0;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--surface-2);cursor:pointer;font-size:15px}
+/* ---------- быстрый поиск ---------- */
+.kbar{position:fixed;inset:0;z-index:70;background:rgba(7,12,10,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:flex-start;padding:max(10vh,56px) 14px 14px}
+.kbox{width:min(620px,100%);border-radius:18px;border:1px solid rgba(255,255,255,.12);background:rgba(18,28,24,.97);box-shadow:0 30px 80px rgba(0,0,0,.55);overflow:hidden;animation:lrise .2s ease both}
+.kbox input,.kbox input:focus-visible{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--fg);font:inherit;font-size:17px;padding:16px 18px;outline:none}
+.klist{max-height:min(56vh,440px);overflow:auto;padding:6px}
+.kitem{width:100%;display:flex;align-items:center;gap:10px;text-align:left;padding:10px 12px;border-radius:12px;border:0;background:transparent;cursor:pointer}
+.kitem[aria-selected="true"],.kitem:hover{background:var(--surface-2)}
+.kitem[aria-selected="true"]{box-shadow:inset 0 0 0 1px var(--grow)}
+.kitem .kt{flex:1;min-width:0}
+.kitem .kt b{display:block}
+.kitem .kt span{color:var(--muted);font-size:12.5px}
+.kitem .kk{flex:none;font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 7px}
+.kempty{padding:18px;color:var(--muted)}
+.khint{display:flex;gap:14px;padding:8px 14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+/* ---------- экран роли: разделы плитками ---------- */
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tile{min-height:52px;text-align:left;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--surface-2);font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tile:hover{border-color:var(--grow)}
+.tile::after{content:'→';color:var(--muted);font-weight:500}
+.rolebar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--muted)}
+.app.showing .rolechip,.app.showing .kopen{display:none}
+@media (max-width:760px){
+  .launch-g{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rcard{min-height:118px}
+  .launch-b{grid-template-columns:1fr}
+  .kopen span,.kopen kbd,.launch-f kbd,.khint,.demo .dl{display:none}
+  .kopen{padding:0 8px}
+  .bar{gap:6px}
+  .crumb,.clock{display:none}
+  .brand{font-size:18px}
+  .rolechip{margin-left:auto}
+  .rolechip{padding-right:10px;max-width:42vw}
+  .rolechip .rl{overflow:hidden;text-overflow:ellipsis}
+  .kbar{padding-top:max(12px,env(safe-area-inset-top,0px))}
+}
+@media (prefers-reduced-motion:reduce){.rcard,.kbox{animation:none}.rcard{transition:none}}
 </style>
 
 <div class="app">
   <header class="bar">
     <div class="brand">GreenTech</div>
     <div class="crumb num" id="crumb">Ферма</div>
-    <span class="demo">Демо-версия. Данные условные</span>
+    <button class="rolechip none" id="roleChip" type="button" aria-label="Выбрать роль"></button>
+    <button class="kopen" id="kOpen" type="button" aria-label="Быстрый поиск"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path></svg><span>Поиск</span><kbd>Ctrl K</kbd></button>
+    <span class="demo">Демо<span class="dl">-версия. Данные условные</span></span>
     <span class="clock"><span class="live"></span><span class="num" id="clock">14:32:00</span></span>
   </header>
 
@@ -364,6 +443,9 @@ div.bar{display:block;padding:0;min-height:0;border:0;flex:none}
     <section class="sec" id="pFacts"></section>
     <section class="sec" id="pExtra"></section>
   </aside>
+
+  <div class="launch" id="launch" hidden></div>
+  <div class="kbar" id="kbar" hidden></div>
 
   <nav class="mnav" id="mnav" aria-label="Быстрый переход">
     <button type="button" data-m="farm"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg><span>Ферма</span></button>
@@ -1081,13 +1163,16 @@ function placeTags(w, h) {
 
 /* ---------- панель ---------- */
 function renderWhere() {
-  var L = LOCS[S.loc], c = S.crop && cropById(S.crop);
+  var L = LOCS[S.loc], c = S.crop && cropById(S.crop), mine = S.loc === 'overview' && roleOn(), mn = mine ? mineIn(null) : 0;
+  /* на общем виде с ролью — короткий личный заголовок вместо описания всей фермы */
+  if (mine) L = { who: 'Ваш экран', name: ROLES[ROLE][0], lead: (mn ? 'Ваших открытых задач — ' + mn + '.' : 'Ваших открытых задач нет.') + ' Ниже — ваши разделы и задачи. Остальная ферма — по кнопке «Все помещения».' };
   $('#pWhere').innerHTML = (navCan() ? '<div class="btns" style="margin:0 0 10px"><button class="mini" type="button" data-nav="back">← Назад</button>' + (S.loc !== 'overview' ? '<button class="mini" type="button" data-go="overview">Общий вид</button>' : '') + '</div>' : '') + '<div class="kicker">' + L.who + '</div><h1>' + (c ? c.name : L.name) + '</h1><p class="lead">' + L.lead + '</p>';
   $('#crumb').textContent = S.loc === 'overview' ? 'Ферма' : 'Ферма › ' + (S.loc === 'shelf' ? 'Проход между стеллажами › ' : '') + L.name + (c ? ' › ' + c.name : '');
   $('#back').hidden = S.loc === 'overview'; navUi();
 }
 function renderWays() {
   var L = LOCS[S.loc];
+  $('#pWays').hidden = S.loc === 'overview' && roleOn() && !S.wide;
   $('#pWays').innerHTML = '<h2>Куда пройти</h2><div class="ways">' + L.links.map(function (id) {
     var n = id === 'overview' ? 0 : cntIn(id);
     return '<button class="way" type="button" data-go="' + id + '">' + (id === 'overview' ? 'Общий вид' : LOCS[id].name) + (n ? '<span class="n">' + n + '</span>' : '') + '</button>';
@@ -3135,12 +3220,13 @@ var ROLES = {
 };
 /* во время экскурсии роль не действует: показ идёт по задачам разных специалистов */
 function roleOn() { return !!(ROLE && ROLES[ROLE] && !show); }
-function mineIn(loc) {
-  var w = ROLES[ROLE][1];
+function mineOf(role, loc) {
+  var w = ROLES[role][1];
   return allTasks().filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id] && t.who === w; }).length +
     pilotOpen().filter(function (c) { return (!loc || c.loc === loc || (loc === 'journal' && c.site === 'farm')) && PRM[c.k][1] === w; }).length +
     recTasks().filter(function (x) { return (!loc || x.loc === loc) && x.who === w; }).length;
 }
+function mineIn(loc) { return mineOf(ROLE, loc); }
 /* счётчик на кнопках и метках: с ролью — только свои задачи */
 function cntIn(loc) { return roleOn() ? mineIn(loc) : openIn(loc); }
 function setRole(r) {
@@ -3148,22 +3234,23 @@ function setRole(r) {
   try { if (ROLE) localStorage.setItem('gt-role', ROLE); else localStorage.removeItem('gt-role'); } catch (e) {}
   renderRole(); renderWays(); renderTasks(); renderTabs(); buildTags();
 }
+/* блок роли на общем виде. С ролью — только её разделы плитками; без роли — одна строка с кнопкой выбора */
 function renderRole() {
+  renderChip();
   var el = $('#pRole'); if (!el) return;
-  if (S.loc !== 'overview') { el.hidden = true; return; }
+  if (S.loc !== 'overview' || show) { el.hidden = true; return; }
   el.hidden = false;
-  var on = ROLE && ROLES[ROLE], n = on ? mineIn(null) : 0;
-  el.innerHTML = '<div class="fld" style="grid-template-columns:minmax(0,1fr) 190px"><label for="roleSel">Кто вы</label><select id="roleSel"><option value="">Все специалисты</option>' +
-    Object.keys(ROLES).map(function (k) { return '<option value="' + k + '"' + (ROLE === k ? ' selected' : '') + '>' + ROLES[k][0] + '</option>'; }).join('') + '</select></div>' +
-    (on ? '<p class="lead">' + ROLES[ROLE][0] + ': ' + (n ? 'ваших открытых задач — ' + n + '.' : 'ваших открытых задач нет.') + ' Счётчики на кнопках считают только ваши задачи.</p><h2>Мои разделы</h2><div class="ways">' +
-      ROLES[ROLE][2].map(function (x) { return '<button class="way" type="button" data-rgo="' + x[0] + '|' + x[1] + '">' + x[2] + '</button>'; }).join('') + '</div>'
-      : '<p class="note">Выберите роль — наверху останутся ваши задачи и ваши разделы. Остальное не пропадает: открывается одной кнопкой.</p>');
+  el.innerHTML = roleOn()
+    ? '<h2>Мои разделы</h2><div class="tiles">' + ROLES[ROLE][2].map(function (x) { return '<button class="tile" type="button" data-rgo="' + x[0] + '|' + x[1] + '"><span>' + x[2] + '</span></button>'; }).join('') + '</div>' +
+      '<div class="btns" style="margin-top:10px"><button class="mini" type="button" data-role="launch">Сменить роль</button><button class="mini" type="button" data-role="wide" aria-pressed="' + !!S.wide + '">' + (S.wide ? 'Скрыть помещения' : 'Все помещения') + '</button></div>'
+    : '<div class="rolebar"><span>Вы смотрите всю ферму целиком.</span><button class="btn" type="button" data-role="launch">Выбрать роль</button></div>';
 }
 function roleGo(v) {
   var p = v.split('|');
   if (!LOCS[p[0]]) return;
+  if (S.loc === p[0]) navTab(p[1]);
   S.tabs[p[0]] = p[1];
-  if (S.loc !== p[0]) go(p[0]); else renderTabs();
+  if (S.loc !== p[0]) go(p[0]); else { renderWhere(); renderTabs(); }
   $('#panel').scrollTop = 0;
 }
 
@@ -3236,6 +3323,135 @@ function navBack() {
 function navCan() { return !show && (NAV.length > 0 || S.loc !== 'overview'); }
 function navUi() { var b = $('#backPrev'); if (b) b.hidden = !navCan(); }
 window.addEventListener('popstate', function () { if (NAV.length && !show) navBack(); });
+/* ---------- современный вход: стартовый экран с плитками специалистов, роль в шапке, быстрый поиск по всему приложению ---------- */
+/* значок и короткое «чем занят» для каждой роли */
+var RUI = {
+  owner: ['<path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M3 20h18"></path>', 'экономика, риски, готовность к проверке'],
+  agro: ['<path d="M5 19c0-8 5-13 14-14 0 9-5 14-14 14z"></path><path d="M5 19l8-8"></path>', 'партии, замеры, диагностика, рецептура'],
+  eng: ['<circle cx="12" cy="12" r="3.2"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"></path>', 'раствор, датчики, климат, обслуживание'],
+  oper: ['<rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4h6v3H9z"></path><path d="M9 14l2 2 4-4"></path>', 'смена, посев, пересадки, уборка'],
+  pack: ['<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"></path><path d="M4 7.5l8 4.5 8-4.5"></path><path d="M12 12v9"></path>', 'приёмка урожая, фасовка, этикетка'],
+  store: ['<path d="M3 10l9-6 9 6v10H3z"></path><path d="M8 20v-6h8v6"></path>', 'заказы, отгрузка, остатки, камера'],
+  lab: ['<path d="M9 3h6"></path><path d="M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"></path><path d="M7.5 15h9"></path>', 'пробы, нормативы, журналы проверки']
+};
+var IC_ALL = '<rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect>';
+var IC_FIND = '<circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4.5 4.5"></path>';
+var icon = function (inner) { return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">' + inner + '</svg>'; };
+var roleIcon = function (k) { return icon(RUI[k] ? RUI[k][0] : IC_ALL); };
+function seenGet() { try { return localStorage.getItem('gt-launch') === '1'; } catch (e) { return false; } }
+function seenSet() { try { localStorage.setItem('gt-launch', '1'); } catch (e) {} }
+
+/* роль в шапке: видна на любом экране, открывает стартовый экран */
+function renderChip() {
+  var c = $('#roleChip'); if (!c) return;
+  var on = !!(ROLE && ROLES[ROLE]);
+  c.classList.toggle('none', !on);
+  c.innerHTML = '<span class="av">' + roleIcon(on ? ROLE : '') + '</span><span class="rl">' + (on ? ROLES[ROLE][0] : 'Кто вы') + '</span>';
+  c.setAttribute('aria-label', on ? 'Роль: ' + ROLES[ROLE][0] + '. Сменить' : 'Выбрать роль');
+}
+
+/* ---------- стартовый экран ---------- */
+function launchOpen() {
+  if (show) storyExit();
+  var el = $('#launch'), i = 0;
+  el.innerHTML = '<div class="launch-in" role="dialog" aria-modal="true" aria-label="Выбор роли">' +
+    '<button class="launch-x" type="button" data-l="close" aria-label="Закрыть">✕</button>' +
+    '<div class="launch-k">GreenTech · гидроферма в цоколе</div><h1>Кто вы сегодня?</h1>' +
+    '<p class="launch-s">Выберите роль — останутся только ваши задачи и ваши разделы. Сменить роль можно в любой момент в шапке.</p>' +
+    '<div class="launch-g">' + Object.keys(ROLES).map(function (k) { var n = mineOf(k, null);
+      return '<button class="rcard" type="button" data-l="role" data-r="' + k + '"' + (ROLE === k ? ' aria-current="true"' : '') + ' style="animation-delay:' + (i++ * 45) + 'ms"><span class="ric">' + roleIcon(k) + '</span><span class="rn' + (n ? '' : ' z') + '">' + (n ? word(n) : 'задач нет') + '</span><b>' + ROLES[k][0] + '</b><span class="rd">' + RUI[k][1] + '</span></button>'; }).join('') +
+      '<button class="rcard all" type="button" data-l="all"' + (ROLE ? '' : ' aria-current="true"') + ' style="animation-delay:' + (i * 45) + 'ms"><span class="ric">' + icon(IC_ALL) + '</span><span class="rn' + (openIn() ? '' : ' z') + '">' + word(openIn()) + '</span><b>Вся ферма</b><span class="rd">все помещения и все задачи, без роли</span></button></div>' +
+    '<div class="launch-b"><button class="lbig acc" type="button" data-l="story"><b>Проследить путь салата</b><span>одна партия от семени до упаковки · около двух минут</span></button>' +
+    '<button class="lbig find" type="button" data-l="find"><b>' + icon(IC_FIND) + ' Быстрый поиск</b><span>раздел, партия или действие · Ctrl K</span></button></div></div>';
+  el.hidden = false;
+}
+function launchClose() { var el = $('#launch'); if (el.hidden) return; el.hidden = true; seenSet(); }
+/* выбор роли со стартового экрана или из поиска: роль включается, открывается её экран */
+function pickRole(r) {
+  launchClose(); setRole(r); S.wide = false; S.tabs.overview = 'tasks';
+  if (S.loc !== 'overview') go('overview'); else renderAll();
+  $('#panel').scrollTop = 0;
+}
+$('#launch').addEventListener('click', function (e) {
+  var b = e.target.closest('button');
+  if (!b) { if (e.target === this) launchClose(); return; }
+  var c = b.dataset.l;
+  if (c === 'role') pickRole(b.dataset.r);
+  else if (c === 'all') pickRole('');
+  else if (c === 'story') { launchClose(); storyStart(); }
+  else if (c === 'find') { launchClose(); kOpen(); }
+  else launchClose();
+});
+$('#roleChip').addEventListener('click', launchOpen);
+
+/* ---------- быстрый поиск: роли, помещения, разделы, действия, партии ---------- */
+/* действие: [что сделать, помещение, вкладка, слова для поиска] */
+var KACT = [['Записать посев', 'seedling', 'sowing', 'посеять семена'], ['Принять урожай', 'prep', 'intake', 'сбор приёмка собрать'], ['Записать отгрузку или заказ', 'store', 'orders', 'покупатель отгрузить'],
+  ['Записать температуру камеры', 'store', 'cold', 'холодильная замер'], ['Записать уборку', 'prep', 'clean', 'дезинфекция мойка'], ['Ввести замер', 'journal', 'jadd', 'ph ec журнал измерение'],
+  ['Разобрать отклонение', 'journal', 'jrev', 'ph ec норма указание'], ['Записать пробу', 'lab', 'samples', 'нитраты анализ'], ['Отметить обслуживание', 'solution', 'service', 'то регламент смена раствора'],
+  ['Посчитать рецепт раствора', 'journal', 'recipe', 'удобрения соли'], ['Что нужно уточнить', 'owner', 'ask', 'открытые вопросы']];
+var KB = { all: [], list: [], sel: 0 };
+function kIndex() {
+  var out = [], add = function (kind, t, sub, run, key) { out.push({ kind: kind, t: t, sub: sub || '', run: run, s: (t + ' ' + (sub || '') + ' ' + (key || '')).toLowerCase() }); };
+  Object.keys(ROLES).forEach(function (k) { add('роль', ROLES[k][0], RUI[k][1], function () { pickRole(k); }, 'я специалист роль'); });
+  KACT.forEach(function (a) { if (LOCS[a[1]]) add('действие', a[0], LOCS[a[1]].name, function () { roleGo(a[1] + '|' + a[2]); }, a[3]); });
+  FBT.forEach(function (b) { var id = b.id; add('партия', 'Партия ' + fmName(b), fmWhere(b), function () { fmCmd('open', { dataset: { b: id } }); }, String(b.no)); });
+  Object.keys(TABS).forEach(function (loc) {
+    if (!LOCS[loc]) return;
+    if (loc !== 'overview') add('помещение', LOCS[loc].name, LOCS[loc].who, function () { if (S.loc !== loc) go(loc); $('#panel').scrollTop = 0; });
+    TABS[loc].forEach(function (tb) { add('раздел', tb[1], LOCS[loc].name, function () { roleGo(loc + '|' + tb[0]); }); });
+  });
+  add('показ', 'Проследить путь салата', 'экскурсия за одной партией', function () { storyStart(); }, 'тур показ экскурсия');
+  add('вид', 'Вся ферма', 'все помещения и задачи, без роли', function () { pickRole(''); }, 'общий вид');
+  return out;
+}
+var KORD = { 'действие': 0, 'роль': 1, 'партия': 2, 'помещение': 3, 'раздел': 4, 'показ': 5, 'вид': 6 };
+function kFilter(q) {
+  var words = q.toLowerCase().split(/\s+/).filter(Boolean), ql = q.toLowerCase().trim();
+  if (!words.length) {
+    /* без запроса — подсказки: с ролью её разделы и действия, без роли — сами роли */
+    var mine = roleOn() ? ROLES[ROLE][2].map(function (x) { return { kind: 'мой раздел', t: x[2], sub: LOCS[x[0]] ? LOCS[x[0]].name : '', run: function () { roleGo(x[0] + '|' + x[1]); } }; }) : [];
+    return mine.concat(KB.all.filter(function (x) { return x.kind === (roleOn() ? 'действие' : 'роль'); })).slice(0, 9);
+  }
+  return KB.all.filter(function (x) { return words.every(function (w) { return x.s.indexOf(w) >= 0; }); })
+    .map(function (x) { var tl = x.t.toLowerCase(); return { x: x, r: (tl.indexOf(ql) === 0 ? 0 : tl.indexOf(ql) > 0 ? 1 : 2) * 10 + KORD[x.kind] }; })
+    .sort(function (a, b) { return a.r - b.r; }).slice(0, 9).map(function (p) { return p.x; });
+}
+function kRender() {
+  var box = $('#kList');
+  KB.list = kFilter($('#kIn').value);
+  if (KB.sel >= KB.list.length) KB.sel = Math.max(0, KB.list.length - 1);
+  box.innerHTML = KB.list.length ? KB.list.map(function (x, i) { return '<button class="kitem" type="button" role="option" data-i="' + i + '" aria-selected="' + (i === KB.sel) + '"><span class="kt"><b>' + esc(x.t) + '</b><span>' + esc(x.sub) + '</span></span><span class="kk">' + x.kind + '</span></button>'; }).join('') : '<div class="kempty">Ничего не нашлось. Попробуйте: «камера», «посев», «партия 3», «агроном».</div>';
+  var cur = box.querySelector('[aria-selected="true"]'); if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' });
+}
+function kOpen() {
+  if (show) storyExit();
+  launchClose();
+  var el = $('#kbar');
+  el.innerHTML = '<div class="kbox" role="dialog" aria-modal="true" aria-label="Быстрый поиск"><input id="kIn" type="text" autocomplete="off" spellcheck="false" placeholder="Найти раздел, партию или действие" aria-label="Быстрый поиск">' +
+    '<div class="klist" id="kList" role="listbox"></div><div class="khint"><span>↑↓ выбрать</span><span>Enter открыть</span><span>Esc закрыть</span></div></div>';
+  el.hidden = false; KB.all = kIndex(); KB.sel = 0; kRender();
+  var inp = $('#kIn'); if (inp && inp.focus) inp.focus();
+}
+function kClose() { $('#kbar').hidden = true; }
+function kRun(i) { var x = KB.list[i]; if (!x) return; kClose(); x.run(); }
+$('#kbar').addEventListener('click', function (e) { var b = e.target.closest('.kitem'); if (b) kRun(+b.dataset.i); else if (e.target === this) kClose(); });
+$('#kbar').addEventListener('input', function () { KB.sel = 0; kRender(); });
+$('#kOpen').addEventListener('click', kOpen);
+window.addEventListener('keydown', function (e) {
+  var kb = $('#kbar'), la = $('#launch'), tag = e.target && e.target.tagName;
+  if ((e.ctrlKey || e.metaKey) && e.code === 'KeyK') { e.preventDefault(); if (kb.hidden) kOpen(); else kClose(); return; }
+  if (!kb.hidden) {
+    if (e.key === 'Escape') { kClose(); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (KB.list.length) { KB.sel = (KB.sel + (e.key === 'ArrowDown' ? 1 : KB.list.length - 1)) % KB.list.length; kRender(); } return; }
+    if (e.key === 'Enter') { e.preventDefault(); kRun(KB.sel); }
+    return;
+  }
+  if (e.key === 'Escape' && !la.hidden) { launchClose(); return; }
+  if (e.key === '/' && !/^(INPUT|TEXTAREA|SELECT)$/.test(tag || '')) { e.preventDefault(); kOpen(); }
+});
+/* первый вход без роли и без особой ссылки начинается со стартового экрана */
+function launchFirst() { if (!ROLE && !seenGet() && !location.hash && !/[?&]role=/.test(QS)) launchOpen(); }
 /* ---------- рецептура раствора: граммы солей из целей по элементам, баки A и B ---------- */
 var AM = { H: 1.008, N: 14.007, O: 15.999, Mg: 24.305, P: 30.974, S: 32.06, K: 39.098, Ca: 40.078 };
 var M_KNO3 = AM.K + AM.N + 3 * AM.O, M_MKP = AM.K + 2 * AM.H + AM.P + 4 * AM.O, M_MGS = AM.Mg + AM.S + 4 * AM.O + 7 * (2 * AM.H + AM.O), M_K2S = 2 * AM.K + AM.S + 4 * AM.O, M_CAN = AM.Ca + 2 * (AM.N + 3 * AM.O) + 4 * (2 * AM.H + AM.O);
@@ -3360,7 +3576,7 @@ var STORY = [
 function storyRender() {
   var el = $('#pStory'); if (!el) return;
   if (!show) {
-    el.innerHTML = S.loc === 'overview' && !tour ? '<button class="btn solid start" type="button" data-st="start">Проследить путь салата</button><div class="btns"><button class="btn" type="button" data-st="explore">Исследовать ферму</button></div><p class="note">Одна партия батавии от семени до упаковки; посередине — перегрев раствора и как его закрыли, в конце — наш пилот. ' + STORY.length + ' шагов, около двух минут; идут сами, можно листать вручную.</p>' : '';
+    el.innerHTML = S.loc === 'overview' && !tour && !roleOn() ? '<button class="btn solid start" type="button" data-st="start">Проследить путь салата</button><div class="btns"><button class="btn" type="button" data-st="explore">Исследовать ферму</button></div><p class="note">Одна партия батавии от семени до упаковки; посередине — перегрев раствора и как его закрыли, в конце — наш пилот. ' + STORY.length + ' шагов, около двух минут; идут сами, можно листать вручную.</p>' : '';
     return;
   }
   var st = STORY[show.i], last = show.i === STORY.length - 1;
@@ -3427,6 +3643,8 @@ $('#panel').addEventListener('click', function (e) {
   if (b.dataset.nav) { navBack(); return; }
   if (b.dataset.rgo) { roleGo(b.dataset.rgo); return; }
   if (b.dataset.role === 'others') { S.others = !S.others; renderTasks(); return; }
+  if (b.dataset.role === 'launch') { launchOpen(); return; }
+  if (b.dataset.role === 'wide') { S.wide = !S.wide; renderRole(); renderWays(); return; }
   if (b.dataset.rc && RC_SETS[b.dataset.rc]) { var rs = RC_SETS[b.dataset.rc][1]; Object.keys(rs).forEach(function (k) { RC.t[k] = rs[k]; }); renderTabs(); return; }
   if (show) storyPause();
   if (b.dataset.ev || b.dataset.evreset) {
@@ -3566,6 +3784,7 @@ function hashGo() {
   else if (location.hash === '#pilot' && LOCS.pilot) go('pilot');
 }
 if (location.hash === '#show') setTimeout(storyStart, 1500); else if (location.hash === '#pilot') setTimeout(hashGo, 600);
+launchFirst();
 window.addEventListener('hashchange', hashGo);
 function tickClock() {
   var total = 14 * 3600 + 32 * 60 + S.tick * 2 + (S.ahead || 0) * 3600, p = function (n) { return String(n).padStart(2, '0'); };
