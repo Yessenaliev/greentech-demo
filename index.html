@@ -97,7 +97,7 @@ button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid
 .story .btns > *{flex:1 1 auto}
 .story .mini[disabled]{opacity:.4;cursor:default}
 .panel.showing #pStory{position:sticky;top:0;z-index:4;background:var(--surface);padding-bottom:6px}
-.panel.showing #pWays{display:none}
+.panel.showing #pWays,.panel.showing #pRole{display:none}
 .app.showing .hud.bottom,.app.showing #back{display:none}
 .vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 56%,rgba(0,0,0,.4) 100%);transition:box-shadow .5s ease}
 .app.touring .vig{box-shadow:inset 0 44px 0 #000,inset 0 -44px 0 #000}
@@ -356,6 +356,7 @@ div.bar{display:block;padding:0;min-height:0;border:0;flex:none}
   <aside class="panel" id="panel">
     <section class="sec" id="pStory"></section>
     <section class="sec where" id="pWhere"></section>
+    <section class="sec" id="pRole" hidden></section>
     <section class="sec" id="pWays"></section>
     <nav class="sec" id="pTabs" aria-label="Функции"></nav>
     <section class="sec" id="pCrops" hidden></section>
@@ -392,6 +393,8 @@ var doSat = function (t) { return 14.652 - 0.41022 * t + 0.007991 * t * t - 0.00
 var QS = location.search || '', HASCL = !!(window.claude && typeof window.claude.use === 'function'), FORCE_USER = /[?&]mode=user\b/.test(QS);
 var CAN_TEAM = !FORCE_USER && (HASCL ? (function () { try { return localStorage.getItem('gt-team') === '1'; } catch (e) { return false; } })() : (location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)));
 var TEAM = CAN_TEAM;
+/* роль выбирается на общем виде и запоминается на устройстве; ссылка с ?role=agro открывает страницу сразу для роли */
+var ROLE = (function () { var m = /[?&]role=(\w+)/.exec(QS); if (m) return m[1]; try { return localStorage.getItem('gt-role') || ''; } catch (e) { return ''; } })();
 var S = { loc: 'overview', crop: null, sensors: true, night: false, done: {}, tick: 0, tabs: {}, shift: {}, ev: {} };
 var wob = function (amp, ph) { return Math.sin(S.tick * 0.9 + ph) * amp; };
 var live = function () {
@@ -1021,7 +1024,7 @@ function buildTags() {
   if (!renderer) return;
   L.links.forEach(function (id) {
     if (id === 'overview') return;
-    var T = LOCS[id], n = openIn(id), b = document.createElement('button');
+    var T = LOCS[id], n = cntIn(id), b = document.createElement('button');
     b.type = 'button'; b.className = 'tag go' + (n ? ' hot' : '');
     b.innerHTML = '<span class="dot"></span><span class="t"><b>' + T.name + '</b><span>' + (n ? T.sub + ' · ' + word(n) : T.sub) + '</span></span>';
     b.addEventListener('click', function () { go(id); });
@@ -1080,7 +1083,7 @@ function renderWhere() {
 function renderWays() {
   var L = LOCS[S.loc];
   $('#pWays').innerHTML = '<h2>Куда пройти</h2><div class="ways">' + L.links.map(function (id) {
-    var n = id === 'overview' ? 0 : openIn(id);
+    var n = id === 'overview' ? 0 : cntIn(id);
     return '<button class="way" type="button" data-go="' + id + '">' + (id === 'overview' ? 'Общий вид' : LOCS[id].name) + (n ? '<span class="n">' + n + '</span>' : '') + '</button>';
   }).join('') + '</div>';
 }
@@ -1104,20 +1107,18 @@ function renderTasks() {
   var el = $('#pTasks');
   if (here === 'showcase') { el.hidden = true; return; }
   el.hidden = false;
-  var html = '<h2>' + (all ? 'Задачи по всей ферме' : 'Задачи здесь') + '</h2>';
   var pc = pilotOpen().filter(function (c) { return all || c.loc === here; });
   var ft = recTasks().filter(function (x) { return all || x.loc === here; });
-  if (!list.length && !pc.length && !ft.length) html += '<p class="lead">Открытых задач в этом помещении нет.</p>';
-  html += pc.map(function (c) { var la = c.acts[c.acts.length - 1];
+  var hp = pc.map(function (c) { var la = c.acts[c.acts.length - 1];
     return '<article class="task"><div class="top"><span class="lvl ' + (c.st ? 'plan' : 'warn') + '">' + (c.site === 'cellar' ? 'Погреб' : 'Журнал') + ' · ' + (c.st ? 'ждёт повторного замера' : 'ждёт действия') + '</span><span class="who">' + PRM[c.k][1] + '</span></div>' +
       '<div class="what"><b>' + esc(c.z) + '</b> · ' + c.v + ' вне нормы с ' + dm(c.from.d) + (c.last.ex ? ' ' + badge('ex') : '') + '</div>' +
       '<div class="act">' + (c.st ? 'Действие записано ' + dm(la.d) + '. Нужен повторный замер.' : 'Откройте разбор: там указание с расчётом.') + (fresh(c.last).lvl === 2 ? ' Замер устарел (' + fresh(c.last).txt + ') — сначала перемерьте.' : '') + ' Задача закроется замером в норме, а не отметкой.</div>' +
-      '<div class="btns"><button class="btn solid" type="button" data-j="open" data-z="' + esc(c.z) + '">Открыть разбор</button></div></article>'; }).join('');
-  html += ft.map(function (x) {
+      '<div class="btns"><button class="btn solid" type="button" data-j="open" data-z="' + esc(c.z) + '">Открыть разбор</button></div></article>'; });
+  var hf = ft.map(function (x) {
     return '<article class="task"><div class="top"><span class="lvl ' + x.lvl + '">' + (x.tag || 'Партии') + ' · ' + x.when + '</span><span class="who">' + x.who + '</span></div>' +
       '<div class="what"><b>' + x.place + '</b> · ' + x.what + '</div><div class="act">' + x.act + ' Задача закроется записью, а не отметкой.</div>' +
-      '<div class="btns"><button class="btn solid" type="button" ' + (x.op ? 'data-op="' + x.op + '"' : 'data-fm="' + x.cmd + '"') + (x.b ? ' data-b="' + x.b + '"' : '') + '>' + x.btn + '</button></div></article>'; }).join('');
-  html += list.map(function (t) {
+      '<div class="btns"><button class="btn solid" type="button" ' + (x.op ? 'data-op="' + x.op + '"' : 'data-fm="' + x.cmd + '"') + (x.b ? ' data-b="' + x.b + '"' : '') + '>' + x.btn + '</button></div></article>'; });
+  var hl = list.map(function (t) {
     var done = !!S.done[t.id], away = t.loc !== here, off = !done && !!snz[t.id], fid = 't:' + t.id;
     return '<article class="task ' + (t.lvl === 'urgent' && !done && !off ? 'urgent' : '') + (done ? ' done' : '') + (off ? ' snz' : '') + '">' +
       '<div class="top"><span class="lvl ' + t.lvl + '">' + LVL[t.lvl] + ' · ' + (off ? 'отложено' : t.when) + '</span><span class="who">' + t.who + '</span></div>' +
@@ -1127,7 +1128,14 @@ function renderTasks() {
       '<div class="btns">' + (away ? '<button class="btn" type="button" data-go="' + t.loc + '">Пройти к месту</button>' : '') +
       '<button class="btn solid" type="button" data-done="' + t.id + '">' + (done ? 'Вернуть в работу' : 'Сделано') + '</button>' +
       (done ? '' : '<button class="btn" type="button" data-snz="' + t.id + '">' + (off ? 'Вернуть' : 'Отложить') + '</button>' + (fbOf(fid) ? '' : '<button class="btn" type="button" data-dis="' + fid + '">Не согласен</button>')) + '</div></article>';
-  }).join('');
+  });
+  /* с выбранной ролью сначала идут свои задачи, чужие открываются кнопкой */
+  var w = roleOn() ? ROLES[ROLE][1] : null, mine = [], other = [], put2 = function (who, h) { (!w || who === w ? mine : other).push(h); };
+  pc.forEach(function (c, i) { put2(PRM[c.k][1], hp[i]); }); ft.forEach(function (x, i) { put2(x.who, hf[i]); }); list.forEach(function (t, i) { put2(t.who, hl[i]); });
+  var html = '<h2>' + (w ? 'Мои задачи · ' + ROLES[ROLE][0] : all ? 'Задачи по всей ферме' : 'Задачи здесь') + '</h2>';
+  if (!mine.length) html += '<p class="lead">' + (w ? (all ? 'Ваших открытых задач нет.' : 'Ваших задач в этом помещении нет.') : 'Открытых задач в этом помещении нет.') + '</p>';
+  html += mine.join('');
+  if (other.length) html += '<div class="btns"><button class="btn" type="button" data-role="others">' + (S.others ? 'Скрыть задачи других специалистов' : 'Задачи других специалистов: ' + other.length) + '</button></div>' + (S.others ? other.join('') : '');
   el.innerHTML = html;
 }
 function renderFacts() {
@@ -3086,6 +3094,50 @@ function opCmd(c, el) {
   renderWays(); renderTasks(); renderTabs(); buildTags();
   if (top) $('#panel').scrollTop = 0;
 }
+/* ---------- вход по роли: специалист видит сначала свои задачи и свои разделы. Остальное не прячется насовсем — открывается кнопкой ---------- */
+/* роль: [название, чьи задачи (как в поле «кому»), разделы [помещение, вкладка, подпись]] */
+var ROLES = {
+  owner: ['Собственник', 'собственник', [['owner', 'summary', 'Сводка'], ['owner', 'econ', 'Экономика'], ['owner', 'payback', 'Окупаемость'], ['owner', 'risk', 'Риски'], ['lab', 'ready', 'Готовность к проверке']]],
+  agro: ['Агроном', 'агроном', [['hall', 'batches', 'Партии'], ['journal', 'jadd', 'Ввод замеров'], ['journal', 'jrev', 'Разбор отклонений'], ['journal', 'diag', 'Диагностика'], ['journal', 'recipe', 'Рецептура'], ['seedling', 'sowing', 'Посев'], ['hall', 'modes', 'Режимы']]],
+  eng: ['Инженер', 'инженер', [['solution', 'facts', 'Раствор'], ['solution', 'service', 'Регламент ТО'], ['solution', 'sensors', 'Датчики'], ['solution', 'climate', 'Климат'], ['solution', 'power', 'Электрика'], ['solution', 'equip', 'Оборудование']]],
+  oper: ['Оператор', 'оператор', [['overview', 'shift', 'Смена'], ['seedling', 'sowing', 'Посев'], ['hall', 'batches', 'Партии'], ['journal', 'jadd', 'Ввод замеров'], ['prep', 'clean', 'Уборка']]],
+  pack: ['Упаковщик', 'упаковщик', [['prep', 'intake', 'Приёмка'], ['prep', 'packing', 'Фасовка'], ['prep', 'label', 'Этикетка'], ['prep', 'clean', 'Уборка']]],
+  store: ['Кладовщик', 'кладовщик', [['store', 'orders', 'Отгрузка и заказы'], ['store', 'stock', 'Остатки'], ['store', 'cold', 'Камера'], ['store', 'forecast', 'Прогноз']]],
+  lab: ['Лаборант', 'лаборант', [['lab', 'samples', 'Журнал проб'], ['lab', 'journals', 'Журналы'], ['lab', 'ready', 'Готовность'], ['lab', 'norms', 'Нормативы'], ['lab', 'elements', 'Раствор']]]
+};
+/* во время экскурсии роль не действует: показ идёт по задачам разных специалистов */
+function roleOn() { return !!(ROLE && ROLES[ROLE] && !show); }
+function mineIn(loc) {
+  var w = ROLES[ROLE][1];
+  return allTasks().filter(function (t) { return (!loc || t.loc === loc || (loc === 'hall' && t.loc === 'shelf')) && !S.done[t.id] && t.who === w; }).length +
+    pilotOpen().filter(function (c) { return (!loc || c.loc === loc || (loc === 'journal' && c.site === 'farm')) && PRM[c.k][1] === w; }).length +
+    recTasks().filter(function (x) { return (!loc || x.loc === loc) && x.who === w; }).length;
+}
+/* счётчик на кнопках и метках: с ролью — только свои задачи */
+function cntIn(loc) { return roleOn() ? mineIn(loc) : openIn(loc); }
+function setRole(r) {
+  ROLE = ROLES[r] ? r : ''; S.others = false;
+  try { if (ROLE) localStorage.setItem('gt-role', ROLE); else localStorage.removeItem('gt-role'); } catch (e) {}
+  renderRole(); renderWays(); renderTasks(); renderTabs(); buildTags();
+}
+function renderRole() {
+  var el = $('#pRole'); if (!el) return;
+  if (S.loc !== 'overview') { el.hidden = true; return; }
+  el.hidden = false;
+  var on = ROLE && ROLES[ROLE], n = on ? mineIn(null) : 0;
+  el.innerHTML = '<div class="fld" style="grid-template-columns:minmax(0,1fr) 190px"><label for="roleSel">Кто вы</label><select id="roleSel"><option value="">Все специалисты</option>' +
+    Object.keys(ROLES).map(function (k) { return '<option value="' + k + '"' + (ROLE === k ? ' selected' : '') + '>' + ROLES[k][0] + '</option>'; }).join('') + '</select></div>' +
+    (on ? '<p class="lead">' + ROLES[ROLE][0] + ': ' + (n ? 'ваших открытых задач — ' + n + '.' : 'ваших открытых задач нет.') + ' Счётчики на кнопках считают только ваши задачи.</p><h2>Мои разделы</h2><div class="ways">' +
+      ROLES[ROLE][2].map(function (x) { return '<button class="way" type="button" data-rgo="' + x[0] + '|' + x[1] + '">' + x[2] + '</button>'; }).join('') + '</div>'
+      : '<p class="note">Выберите роль — наверху останутся ваши задачи и ваши разделы. Остальное не пропадает: открывается одной кнопкой.</p>');
+}
+function roleGo(v) {
+  var p = v.split('|');
+  if (!LOCS[p[0]]) return;
+  S.tabs[p[0]] = p[1];
+  if (S.loc !== p[0]) go(p[0]); else renderTabs();
+  $('#panel').scrollTop = 0;
+}
 /* ---------- рецептура раствора: граммы солей из целей по элементам, баки A и B ---------- */
 var AM = { H: 1.008, N: 14.007, O: 15.999, Mg: 24.305, P: 30.974, S: 32.06, K: 39.098, Ca: 40.078 };
 var M_KNO3 = AM.K + AM.N + 3 * AM.O, M_MKP = AM.K + 2 * AM.H + AM.P + 4 * AM.O, M_MGS = AM.Mg + AM.S + 4 * AM.O + 7 * (2 * AM.H + AM.O), M_K2S = 2 * AM.K + AM.S + 4 * AM.O, M_CAN = AM.Ca + 2 * (AM.N + 3 * AM.O) + 4 * (2 * AM.H + AM.O);
@@ -3155,7 +3207,7 @@ EXTRA.recipe = function () {
 
 function curTab() { var list = TABS[S.loc] || [['tasks', 'Задачи']], id = S.tabs[S.loc]; return list.some(function (t) { return t[0] === id; }) ? id : list[0][0]; }
 function renderTabs(keepFocus) {
-  var list = TABS[S.loc] || [['tasks', 'Задачи']], id = curTab(), el = $('#pTabs'), n = openIn(S.loc === 'overview' ? null : S.loc);
+  var list = TABS[S.loc] || [['tasks', 'Задачи']], id = curTab(), el = $('#pTabs'), n = cntIn(S.loc === 'overview' ? null : S.loc);
   el.hidden = list.length < 2;
   /* полоса вкладок строится один раз на раздел и дальше только обновляется: кнопки не пересоздаются под курсором */
   if (el.dataset.loc !== S.loc) {
@@ -3179,7 +3231,7 @@ function renderTabs(keepFocus) {
   updateMnav();
   if (keepFocus) { var f = el.querySelector('[aria-selected="true"]'); if (f) f.focus(); }
 }
-function renderAll() { renderWhere(); renderWays(); renderCrops(); renderTasks(); renderFacts(); renderTabs(); buildTags(); storyRender(); }
+function renderAll() { renderWhere(); renderRole(); renderWays(); renderCrops(); renderTasks(); renderFacts(); renderTabs(); buildTags(); storyRender(); }
 
 /* ---------- показ за две минуты: одна история по шагам ---------- */
 var show = null, showTimer = null;
@@ -3274,6 +3326,8 @@ $('#panel').addEventListener('click', function (e) {
   if (b.dataset.bt) { btCmd(b.dataset.bt, b); return; }
   if (b.dataset.fm) { fmCmd(b.dataset.fm, b); return; }
   if (b.dataset.op) { opCmd(b.dataset.op, b); return; }
+  if (b.dataset.rgo) { roleGo(b.dataset.rgo); return; }
+  if (b.dataset.role === 'others') { S.others = !S.others; renderTasks(); return; }
   if (b.dataset.rc && RC_SETS[b.dataset.rc]) { var rs = RC_SETS[b.dataset.rc][1]; Object.keys(rs).forEach(function (k) { RC.t[k] = rs[k]; }); renderTabs(); return; }
   if (show) storyPause();
   if (b.dataset.ev || b.dataset.evreset) {
@@ -3300,6 +3354,7 @@ $('#panel').addEventListener('click', function (e) {
 });
 $('#panel').addEventListener('change', function (e) {
   if (/^sr[\w-]+$/.test(e.target.id)) { srSave(e.target); return; }
+  if (e.target.id === 'roleSel') { setRole(e.target.value); return; }
   if (e.target.id !== 'cI' || roBlock('lg')) return;
   var ci = Math.round(parseFloat(String(e.target.value).replace(',', '.')));
   if (ci >= 1 && ci <= 365) { put('cfg/sensors', { calInt: ci }); rebuild(); LGmsg = 'Интервал калибровки: ' + ci + ' дн.'; }
